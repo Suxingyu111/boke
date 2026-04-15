@@ -22,6 +22,7 @@ describe('entity column mapping', () => {
     expect(findColumnName(User, 'avatar')).toBe('avatar_url');
     expect(findColumnName(User, 'isActive')).toBe('status');
     expect(findColumn(User, 'password')?.options.select).toBe(false);
+    expect(findColumn(User, 'role')?.options.default).toBe('user');
   });
 
   it('Article 实体应映射到 SQL 列名', () => {

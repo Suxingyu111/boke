@@ -7,6 +7,7 @@ import { validationSchema } from './config/validation';
 import { DatabaseModule } from './database/database.module';
 import { RedisModule } from './common/redis/redis.module';
 import { HealthModule } from './modules/health/health.module';
+import { AuthModule } from './modules/auth/auth.module';
 
 @Module({
   imports: [
@@ -38,6 +39,9 @@ import { HealthModule } from './modules/health/health.module';
 
     // 健康检查模块
     HealthModule,
+
+    // 认证模块
+    AuthModule,
   ],
   controllers: [],
   providers: [

@@ -1,12 +1,14 @@
 export interface ApiResponse<T> {
   success: boolean;
   statusCode: number;
+  message: string;
   data: T;
+  errors?: string | string[] | null;
   timestamp: string;
 }
 
 export type ArticleStatus = "draft" | "published" | "archived";
-export type UserRole = "admin" | "user";
+export type UserRole = "super_admin" | "admin" | "author" | "user";
 
 export interface Author {
   id: string;
@@ -70,4 +72,37 @@ export interface SiteSettings {
   description: string;
   icp: string;
   copyright: string;
+}
+
+export interface AuthUser {
+  id: string;
+  username: string;
+  email: string;
+  nickname: string | null;
+  avatar: string | null;
+  bio: string | null;
+  isActive: boolean;
+  role: UserRole;
+  lastLoginAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface AuthResponse {
+  accessToken: string;
+  tokenType: "Bearer";
+  expiresIn: string;
+  user: AuthUser;
+}
+
+export interface LoginPayload {
+  account: string;
+  password: string;
+}
+
+export interface RegisterPayload {
+  username: string;
+  email: string;
+  password: string;
+  nickname?: string;
 }

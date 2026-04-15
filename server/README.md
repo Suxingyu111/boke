@@ -198,10 +198,11 @@ npm run migration:revert   # 回滚迁移
 1. 用户登录时返回 access token
 2. 后续请求在 Authorization header 中传递 token
 3. 服务器验证 token 并提取用户信息
+4. 当前认证接口文档见 [server/docs/AUTH_API.md](server/docs/AUTH_API.md)
 
 ```bash
 # 请求示例
-curl -H "Authorization: Bearer <token>" http://localhost:3000/api/profile
+curl -H "Authorization: Bearer <token>" http://localhost:3000/api/auth/me
 ```
 
 ## 🗄️ 数据库连接配置
@@ -241,7 +242,7 @@ npm run migration:run
 项目已准备好开发以下功能模块：
 
 - [x] 项目初始化和基础配置
-- [ ] 用户认证模块 (auth)
+- [x] 用户认证模块 (auth)
 - [ ] 用户管理模块 (users)
 - [ ] 文章管理模块 (articles)
 - [ ] 分类管理模块 (categories)

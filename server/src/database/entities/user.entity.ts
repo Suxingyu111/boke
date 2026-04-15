@@ -34,13 +34,13 @@ export class User {
   password: string;
 
   @Column({ type: 'varchar', length: 100, nullable: true })
-  nickname: string;
+  nickname: string | null;
 
   @Column({ name: 'avatar_url', type: 'varchar', length: 500, nullable: true })
-  avatar: string;
+  avatar: string | null;
 
   @Column({ type: 'text', nullable: true })
-  bio: string;
+  bio: string | null;
 
   @Column({
     name: 'status',
@@ -54,7 +54,7 @@ export class User {
   @Column({
     type: 'enum',
     enum: ['super_admin', 'admin', 'author', 'user'],
-    default: 'admin',
+    default: 'user',
   })
   role: 'super_admin' | 'admin' | 'author' | 'user';
 

@@ -1,8 +1,10 @@
 <script setup lang="ts">
 import { ref } from "vue";
 import { useSiteStore } from "@/stores/site";
+import { useAuthStore } from "@/stores/auth";
 
 const siteStore = useSiteStore();
+const authStore = useAuthStore();
 const isOpen = ref(false);
 
 const navItems = [
@@ -13,6 +15,15 @@ const navItems = [
   { label: "关于", to: "/about" },
   { label: "友链", to: "/links" },
 ];
+
+function closeMenu() {
+  isOpen.value = false;
+}
+
+function logout() {
+  authStore.logout();
+  closeMenu();
+}
 </script>
 
 <template>
@@ -45,11 +56,34 @@ const navItems = [
           {{ item.label }}
         </RouterLink>
         <RouterLink
-          class="focus-ring ml-2 rounded-md bg-ink px-4 py-2 text-sm text-paper hover:bg-moss"
+          v-if="!authStore.isAuthenticated"
+          class="focus-ring ml-2 rounded-md border border-line px-4 py-2 text-sm hover:border-coral hover:text-coral"
           to="/login"
         >
-          管理入口
+          登录
         </RouterLink>
+        <RouterLink
+          v-if="!authStore.isAuthenticated"
+          class="focus-ring rounded-md bg-ink px-4 py-2 text-sm text-paper hover:bg-moss"
+          to="/register"
+        >
+          注册
+        </RouterLink>
+        <RouterLink
+          v-if="authStore.canAccessAdmin"
+          class="focus-ring ml-2 rounded-md bg-ink px-4 py-2 text-sm text-paper hover:bg-moss"
+          to="/admin"
+        >
+          后台
+        </RouterLink>
+        <button
+          v-if="authStore.isAuthenticated"
+          class="focus-ring rounded-md border border-line px-4 py-2 text-sm hover:border-coral hover:text-coral"
+          type="button"
+          @click="logout"
+        >
+          {{ authStore.displayName }} · 退出
+        </button>
       </nav>
     </div>
 
@@ -67,12 +101,37 @@ const navItems = [
         {{ item.label }}
       </RouterLink>
       <RouterLink
-        class="focus-ring rounded-md bg-ink px-3 py-2 text-paper"
+        v-if="!authStore.isAuthenticated"
+        class="focus-ring rounded-md border border-line px-3 py-2"
         to="/login"
-        @click="isOpen = false"
+        @click="closeMenu"
       >
-        管理入口
+        登录
       </RouterLink>
+      <RouterLink
+        v-if="!authStore.isAuthenticated"
+        class="focus-ring rounded-md bg-ink px-3 py-2 text-paper"
+        to="/register"
+        @click="closeMenu"
+      >
+        注册
+      </RouterLink>
+      <RouterLink
+        v-if="authStore.canAccessAdmin"
+        class="focus-ring rounded-md bg-ink px-3 py-2 text-paper"
+        to="/admin"
+        @click="closeMenu"
+      >
+        后台
+      </RouterLink>
+      <button
+        v-if="authStore.isAuthenticated"
+        class="focus-ring rounded-md border border-line px-3 py-2 text-left"
+        type="button"
+        @click="logout"
+      >
+        {{ authStore.displayName }} · 退出
+      </button>
     </nav>
   </header>
 </template>

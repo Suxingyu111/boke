@@ -1,7 +1,14 @@
 <script setup lang="ts">
+import { useRouter } from "vue-router";
 import { useAuthStore } from "@/stores/auth";
 
 const authStore = useAuthStore();
+const router = useRouter();
+
+async function logout() {
+  authStore.logout();
+  await router.push("/login");
+}
 </script>
 
 <template>
@@ -13,7 +20,9 @@ const authStore = useAuthStore();
         <RouterLink class="block font-display text-3xl" to="/"
           >纸上码头</RouterLink
         >
-        <p class="mt-2 text-sm text-white/60">后台管理</p>
+        <p class="mt-2 text-sm text-white/60">
+          {{ authStore.displayName || "后台管理" }}
+        </p>
 
         <nav class="mt-8 grid gap-2 text-sm">
           <RouterLink
@@ -39,7 +48,7 @@ const authStore = useAuthStore();
         <button
           class="focus-ring mt-8 w-full rounded-md border border-white/20 px-3 py-2 text-left text-sm hover:bg-white/10"
           type="button"
-          @click="authStore.logout"
+          @click="logout"
         >
           退出登录
         </button>

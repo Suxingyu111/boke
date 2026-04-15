@@ -1,4 +1,5 @@
 import 'reflect-metadata';
+import helmet from 'helmet';
 import { NestFactory } from '@nestjs/core';
 import { Logger, ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
@@ -17,6 +18,8 @@ async function bootstrap(): Promise<void> {
     'cors.allowRequestsWithoutOrigin',
     true,
   );
+
+  app.use(helmet());
 
   // 启用 CORS
   app.enableCors(

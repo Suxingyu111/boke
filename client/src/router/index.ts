@@ -5,6 +5,8 @@ import {
 } from "vue-router";
 import BlogLayout from "@/layouts/BlogLayout.vue";
 import AdminLayout from "@/layouts/AdminLayout.vue";
+import { getApiStatusCode } from "@/api/auth";
+import { useAuthStore } from "@/stores/auth";
 import HomeView from "@/views/HomeView.vue";
 import ArticleDetailView from "@/views/ArticleDetailView.vue";
 import CategoriesView from "@/views/CategoriesView.vue";
@@ -13,6 +15,7 @@ import AboutView from "@/views/AboutView.vue";
 import LinksView from "@/views/LinksView.vue";
 import SearchView from "@/views/SearchView.vue";
 import LoginView from "@/views/admin/LoginView.vue";
+import RegisterView from "@/views/admin/RegisterView.vue";
 import DashboardView from "@/views/admin/DashboardView.vue";
 import ArticleManageView from "@/views/admin/ArticleManageView.vue";
 import SettingsView from "@/views/admin/SettingsView.vue";
@@ -36,9 +39,11 @@ const routes: RouteRecordRaw[] = [
     ],
   },
   { path: "/login", name: "login", component: LoginView },
+  { path: "/register", name: "register", component: RegisterView },
   {
     path: "/admin",
     component: AdminLayout,
+    meta: { requiresAuth: true, requiresAdmin: true },
     children: [
       { path: "", name: "admin-dashboard", component: DashboardView },
       {
@@ -51,10 +56,60 @@ const routes: RouteRecordRaw[] = [
   },
 ];
 
-export default createRouter({
+const router = createRouter({
   history: createWebHistory(),
   routes,
   scrollBehavior() {
     return { top: 0 };
   },
 });
+
+router.beforeEach(async (to) => {
+  const authStore = useAuthStore();
+
+  if (authStore.token && !authStore.user) {
+    try {
+      await authStore.refreshCurrentUser();
+    } catch {
+      authStore.logout();
+    }
+  }
+
+  if (to.meta.requiresAuth && !authStore.isAuthenticated) {
+    return {
+      name: "login",
+      query: { redirect: to.fullPath },
+    };
+  }
+
+  if (to.meta.requiresAdmin && authStore.isAuthenticated) {
+    try {
+      await authStore.refreshCurrentAdminUser();
+    } catch (error) {
+      if (getApiStatusCode(error) === 401) {
+        authStore.logout();
+        return {
+          name: "login",
+          query: { redirect: to.fullPath },
+        };
+      }
+
+      return { name: "home" };
+    }
+
+    if (!authStore.canAccessAdmin) {
+      return { name: "home" };
+    }
+  }
+
+  if (
+    (to.name === "login" || to.name === "register") &&
+    authStore.isAuthenticated
+  ) {
+    return authStore.canAccessAdmin
+      ? { name: "admin-dashboard" }
+      : { name: "home" };
+  }
+});
+
+export default router;

@@ -8,7 +8,7 @@ CREATE TABLE IF NOT EXISTS users (
   nickname VARCHAR(100) DEFAULT NULL,
   avatar_url VARCHAR(500) DEFAULT NULL,
   bio TEXT,
-  role ENUM('super_admin', 'admin', 'author', 'user') NOT NULL DEFAULT 'admin',
+  role ENUM('super_admin', 'admin', 'author', 'user') NOT NULL DEFAULT 'user',
   status ENUM('active', 'disabled') NOT NULL DEFAULT 'active',
   last_login_at DATETIME DEFAULT NULL,
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
