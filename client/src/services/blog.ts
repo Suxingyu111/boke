@@ -1,14 +1,11 @@
-import {
-  articles,
-  categories,
-  links,
-  siteSettings,
-  siteStats,
-  tags,
-} from "@/data/mock";
+import { links, siteSettings } from "@/data/mock";
+import { useContentStore } from "@/stores/content";
 
 export function listArticles(keyword = "") {
+  const contentStore = useContentStore();
   const value = keyword.trim().toLowerCase();
+  const articles = contentStore.publishedArticles;
+
   if (!value) {
     return articles;
   }
@@ -21,15 +18,18 @@ export function listArticles(keyword = "") {
 }
 
 export function getArticleBySlug(slug: string) {
-  return articles.find((article) => article.slug === slug);
+  const contentStore = useContentStore();
+  return contentStore.publishedArticles.find(
+    (article) => article.slug === slug,
+  );
 }
 
 export function listCategories() {
-  return categories;
+  return useContentStore().visibleCategories;
 }
 
 export function listTags() {
-  return tags;
+  return useContentStore().tagCloud;
 }
 
 export function listLinks() {
@@ -37,7 +37,7 @@ export function listLinks() {
 }
 
 export function getSiteStats() {
-  return siteStats;
+  return useContentStore().stats;
 }
 
 export function getSiteSettings() {

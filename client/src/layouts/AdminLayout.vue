@@ -14,9 +14,11 @@ async function logout() {
 <template>
   <div class="min-h-screen bg-ink text-paper">
     <div
-      class="content-shell grid gap-6 py-6 lg:grid-cols-[240px_minmax(0,1fr)]"
+      class="content-shell grid gap-6 py-6 lg:grid-cols-[250px_minmax(0,1fr)]"
     >
-      <aside class="border border-white/15 bg-white/5 p-4">
+      <aside
+        class="h-fit rounded-md border border-white/15 bg-white/[0.07] p-4 shadow-editorial backdrop-blur lg:sticky lg:top-6"
+      >
         <RouterLink class="block font-display text-3xl" to="/"
           >纸上码头</RouterLink
         >
@@ -26,19 +28,22 @@ async function logout() {
 
         <nav class="mt-8 grid gap-2 text-sm">
           <RouterLink
-            class="focus-ring rounded-md px-3 py-2 hover:bg-white/10"
+            class="focus-ring min-h-11 rounded-md px-3 py-2 font-medium text-white/72 hover:bg-white/10 hover:text-white"
+            active-class="bg-white text-ink"
             to="/admin"
           >
             数据概览
           </RouterLink>
           <RouterLink
-            class="focus-ring rounded-md px-3 py-2 hover:bg-white/10"
+            class="focus-ring min-h-11 rounded-md px-3 py-2 font-medium text-white/72 hover:bg-white/10 hover:text-white"
+            active-class="bg-white text-ink"
             to="/admin/articles"
           >
             文章管理
           </RouterLink>
           <RouterLink
-            class="focus-ring rounded-md px-3 py-2 hover:bg-white/10"
+            class="focus-ring min-h-11 rounded-md px-3 py-2 font-medium text-white/72 hover:bg-white/10 hover:text-white"
+            active-class="bg-white text-ink"
             to="/admin/settings"
           >
             系统设置
@@ -46,7 +51,7 @@ async function logout() {
         </nav>
 
         <button
-          class="focus-ring mt-8 w-full rounded-md border border-white/20 px-3 py-2 text-left text-sm hover:bg-white/10"
+          class="focus-ring mt-8 min-h-11 w-full rounded-md border border-white/20 px-3 py-2 text-left text-sm hover:bg-white/10"
           type="button"
           @click="logout"
         >
@@ -55,7 +60,7 @@ async function logout() {
       </aside>
 
       <section
-        class="min-w-0 border border-white/15 bg-paper p-5 text-ink md:p-8"
+        class="min-w-0 rounded-md border border-white/15 bg-paper/96 p-5 text-ink shadow-editorial md:p-8"
       >
         <RouterView />
       </section>

@@ -21,7 +21,7 @@ export class Category {
   slug: string;
 
   @Column({ type: 'text', nullable: true })
-  description: string;
+  description: string | null;
 
   @Column({ name: 'sort_order', type: 'int', default: 0 })
   sortOrder: number;

@@ -8,6 +8,9 @@ import { DatabaseModule } from './database/database.module';
 import { RedisModule } from './common/redis/redis.module';
 import { HealthModule } from './modules/health/health.module';
 import { AuthModule } from './modules/auth/auth.module';
+import { CategoriesModule } from './modules/categories/categories.module';
+import { TagsModule } from './modules/tags/tags.module';
+import { ArticlesModule } from './modules/articles/articles.module';
 
 @Module({
   imports: [
@@ -42,6 +45,15 @@ import { AuthModule } from './modules/auth/auth.module';
 
     // 认证模块
     AuthModule,
+
+    // 分类模块
+    CategoriesModule,
+
+    // 标签模块
+    TagsModule,
+
+    // 文章模块
+    ArticlesModule,
   ],
   controllers: [],
   providers: [

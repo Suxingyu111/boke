@@ -28,7 +28,7 @@ export class Article {
   slug: string;
 
   @Column({ name: 'summary', type: 'text', nullable: true })
-  excerpt: string;
+  excerpt: string | null;
 
   @Column({ name: 'content_markdown', type: 'longtext' })
   content: string;
@@ -37,7 +37,7 @@ export class Article {
   contentHtml: string | null;
 
   @Column({ name: 'cover_image_url', type: 'varchar', length: 500, nullable: true })
-  coverImage: string;
+  coverImage: string | null;
 
   @Column({ name: 'category_id', type: 'char', length: 36 })
   categoryId: string;
@@ -104,7 +104,7 @@ export class Article {
   updatedAt: Date;
 
   @Column({ name: 'published_at', type: 'datetime', nullable: true })
-  publishedAt: Date;
+  publishedAt: Date | null;
 
   @Column({ name: 'deleted_at', type: 'datetime', nullable: true })
   deletedAt: Date | null;

@@ -6,8 +6,8 @@ defineProps<{
 </script>
 
 <template>
-  <div class="border border-line bg-white px-4 py-3">
-    <p class="text-sm text-ink/55">{{ label }}</p>
-    <p class="mt-1 font-display text-3xl">{{ value }}</p>
+  <div class="ui-surface-soft ui-hover-lift px-5 py-4">
+    <p class="text-sm font-medium text-ink/55">{{ label }}</p>
+    <p class="mt-2 font-display text-4xl leading-none">{{ value }}</p>
   </div>
 </template>

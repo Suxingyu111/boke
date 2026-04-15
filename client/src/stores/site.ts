@@ -1,9 +1,12 @@
 import { defineStore } from "pinia";
-import { getSiteSettings, getSiteStats } from "@/services/blog";
+import { getSiteSettings } from "@/services/blog";
+import { useContentStore } from "@/stores/content";
 
 export const useSiteStore = defineStore("site", {
   state: () => ({
     settings: getSiteSettings(),
-    stats: getSiteStats(),
   }),
+  getters: {
+    stats: () => useContentStore().stats,
+  },
 });

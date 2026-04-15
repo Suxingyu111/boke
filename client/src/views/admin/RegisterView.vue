@@ -74,7 +74,7 @@ async function handleRegister() {
   >
     <section class="flex min-h-screen items-center p-5 md:p-8">
       <form
-        class="w-full border border-line bg-white p-5 shadow-editorial md:p-8"
+        class="ui-surface w-full p-5 md:p-8"
         @submit.prevent="handleRegister"
       >
         <RouterLink
@@ -84,7 +84,7 @@ async function handleRegister() {
           返回首页
         </RouterLink>
 
-        <p class="mt-8 text-sm text-coral">Register</p>
+        <p class="eyebrow mt-8">Register</p>
         <h1 class="mt-2 font-display text-5xl leading-none">开一个新账号</h1>
         <p class="mt-4 text-sm leading-6 text-ink/60">
           注册成功后会自动登录。默认角色为普通用户，管理员权限由后端分配。
@@ -169,7 +169,7 @@ async function handleRegister() {
         </div>
 
         <button
-          class="focus-ring mt-6 w-full rounded-md bg-ink px-4 py-3 text-paper hover:bg-moss disabled:cursor-not-allowed disabled:opacity-60"
+          class="focus-ring ui-button-primary mt-6 w-full px-4 py-3 disabled:cursor-not-allowed disabled:opacity-60"
           :disabled="authStore.loading"
           type="submit"
         >
@@ -210,7 +210,7 @@ async function handleRegister() {
         </div>
 
         <div class="ml-auto max-w-3xl text-right">
-          <p class="text-sm uppercase text-citron">new author</p>
+          <p class="text-sm font-semibold uppercase text-citron">new author</p>
           <h2 class="mt-5 font-display text-6xl leading-tight">
             写作账户，从第一枚铅字开始。
           </h2>

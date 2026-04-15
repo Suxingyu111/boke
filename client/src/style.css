@@ -1,3 +1,5 @@
+@import url("https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Libre+Bodoni:wght@500;600;700&family=Public+Sans:wght@400;500;600;700&display=swap");
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -5,7 +7,8 @@
 :root {
   color: #111414;
   background: #f7f9f8;
-  font-family: "Avenir Next", "Trebuchet MS", Verdana, sans-serif;
+  font-family:
+    "Public Sans", "Avenir Next", "Trebuchet MS", Verdana, sans-serif;
   font-size: 16px;
   font-synthesis: none;
   letter-spacing: 0;
@@ -22,6 +25,15 @@ body {
   min-width: 320px;
   min-height: 100vh;
   margin: 0;
+  overflow-x: hidden;
+  background:
+    linear-gradient(rgba(17, 20, 20, 0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(17, 20, 20, 0.035) 1px, transparent 1px),
+    #f7f9f8;
+  background-size:
+    32px 32px,
+    32px 32px,
+    auto;
 }
 
 a {
@@ -37,6 +49,41 @@ select {
   letter-spacing: 0;
 }
 
+button,
+a,
+input,
+textarea,
+select {
+  transition:
+    color 180ms ease-out,
+    background-color 180ms ease-out,
+    border-color 180ms ease-out,
+    box-shadow 180ms ease-out,
+    opacity 180ms ease-out,
+    transform 180ms ease-out;
+}
+
+button,
+select,
+input[type="checkbox"],
+input[type="color"],
+a[href] {
+  cursor: pointer;
+}
+
+input,
+textarea,
+select {
+  min-height: 44px;
+  background-color: #ffffff;
+}
+
+input:hover,
+textarea:hover,
+select:hover {
+  border-color: rgba(24, 92, 82, 0.42);
+}
+
 img {
   display: block;
   max-width: 100%;
@@ -48,7 +95,7 @@ img {
 }
 
 .content-shell {
-  width: min(1160px, calc(100% - 32px));
+  width: min(1200px, calc(100% - 32px));
   margin-inline: auto;
 }
 
@@ -58,7 +105,145 @@ img {
 }
 
 .focus-ring:focus-visible {
-  outline-color: #c6283f;
+  outline-color: #185c52;
+  outline-offset: 3px;
+}
+
+.eyebrow {
+  color: #c6283f;
+  font-size: 0.76rem;
+  font-weight: 700;
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
+.ui-surface {
+  border: 1px solid #d7dedb;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 16px 40px rgba(17, 20, 20, 0.08);
+}
+
+.ui-surface-soft {
+  border: 1px solid rgba(215, 222, 219, 0.84);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.74);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.72);
+}
+
+.ui-hover-lift:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 22px 60px rgba(17, 20, 20, 0.12);
+}
+
+.ui-button-primary {
+  min-height: 44px;
+  border-radius: 8px;
+  background: #111414;
+  color: #f7f9f8;
+  box-shadow: 0 12px 24px rgba(17, 20, 20, 0.14);
+}
+
+.ui-button-primary:hover {
+  background: #185c52;
+  transform: translateY(-1px);
+}
+
+.ui-button-secondary {
+  min-height: 44px;
+  border: 1px solid #d7dedb;
+  border-radius: 8px;
+  background: #ffffff;
+  color: rgba(17, 20, 20, 0.74);
+}
+
+.ui-button-secondary:hover {
+  border-color: #185c52;
+  color: #185c52;
+  box-shadow: 0 10px 24px rgba(17, 20, 20, 0.08);
+}
+
+.markdown-body {
+  color: rgba(17, 20, 20, 0.8);
+  line-height: 1.8;
+}
+
+.markdown-body h1,
+.markdown-body h2,
+.markdown-body h3 {
+  margin: 1.2em 0 0.45em;
+  color: #111414;
+  font-family: Georgia, "Times New Roman", serif;
+  line-height: 1.15;
+}
+
+.markdown-body h1 {
+  font-size: 2.6rem;
+}
+
+.markdown-body h2 {
+  font-size: 2rem;
+}
+
+.markdown-body h3 {
+  font-size: 1.5rem;
+}
+
+.markdown-body p,
+.markdown-body ul,
+.markdown-body blockquote,
+.markdown-body pre {
+  margin-top: 1rem;
+}
+
+.markdown-body ul {
+  padding-left: 1.4rem;
+  list-style: disc;
+}
+
+.markdown-body blockquote {
+  border-left: 4px solid #c6283f;
+  padding-left: 1rem;
+  color: rgba(17, 20, 20, 0.62);
+}
+
+.markdown-body pre {
+  overflow-x: auto;
+  border: 1px solid #d7dedb;
+  border-radius: 8px;
+  background: #111414;
+  padding: 1rem;
+  color: #f7f9f8;
+}
+
+.markdown-body code {
+  border-radius: 6px;
+  background: rgba(24, 92, 82, 0.12);
+  padding: 0.15rem 0.35rem;
+  color: #185c52;
+}
+
+.markdown-body pre code {
+  background: transparent;
+  padding: 0;
+  color: inherit;
+}
+
+.markdown-body a {
+  color: #c6283f;
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
 }
 
 @media (max-width: 768px) {

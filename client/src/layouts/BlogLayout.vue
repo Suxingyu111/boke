@@ -6,7 +6,7 @@ import AppHeader from "@/components/AppHeader.vue";
 <template>
   <div class="min-h-screen bg-paper text-ink">
     <AppHeader />
-    <main>
+    <main id="main-content" class="animate-rise">
       <RouterView />
     </main>
     <AppFooter />

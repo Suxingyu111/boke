@@ -35,8 +35,11 @@ http.interceptors.response.use(
   },
 );
 
-export async function request<T>(url: string): Promise<ApiResponse<T>> {
-  return http.get<unknown, ApiResponse<T>>(url);
+export async function request<T>(
+  url: string,
+  params?: object,
+): Promise<ApiResponse<T>> {
+  return http.get<unknown, ApiResponse<T>>(url, { params });
 }
 
 export async function post<T, D = unknown>(
@@ -44,4 +47,15 @@ export async function post<T, D = unknown>(
   data: D,
 ): Promise<ApiResponse<T>> {
   return http.post<unknown, ApiResponse<T>>(url, data);
+}
+
+export async function patch<T, D = unknown>(
+  url: string,
+  data: D,
+): Promise<ApiResponse<T>> {
+  return http.patch<unknown, ApiResponse<T>>(url, data);
+}
+
+export async function remove<T>(url: string): Promise<ApiResponse<T>> {
+  return http.delete<unknown, ApiResponse<T>>(url);
 }

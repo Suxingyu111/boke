@@ -7,7 +7,7 @@ export interface ApiResponse<T> {
   timestamp: string;
 }
 
-export type ArticleStatus = "draft" | "published" | "archived";
+export type ArticleStatus = "draft" | "scheduled" | "published" | "archived";
 export type UserRole = "super_admin" | "admin" | "author" | "user";
 
 export interface Author {
@@ -41,6 +41,7 @@ export interface Article {
   slug: string;
   excerpt: string;
   content: string;
+  contentHtml?: string;
   coverImage: string;
   status: ArticleStatus;
   viewCount: number;
@@ -49,6 +50,8 @@ export interface Article {
   category: Category;
   tags: Tag[];
   publishedAt: string;
+  scheduledAt?: string;
+  deletedAt?: string;
   createdAt: string;
   updatedAt: string;
 }

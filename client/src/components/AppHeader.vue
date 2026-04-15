@@ -27,19 +27,31 @@ function logout() {
 </script>
 
 <template>
+  <a
+    class="focus-ring sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 focus:rounded-md focus:bg-ink focus:px-4 focus:py-3 focus:text-paper"
+    href="#main-content"
+  >
+    跳到正文
+  </a>
   <header
-    class="sticky top-0 z-20 border-b border-line bg-paper/95 backdrop-blur"
+    class="sticky top-0 z-20 border-b border-line/80 bg-paper/88 backdrop-blur-xl"
   >
     <div class="content-shell flex min-h-20 items-center justify-between gap-4">
       <RouterLink
-        class="focus-ring rounded-md font-display text-3xl leading-none"
+        class="focus-ring group rounded-md font-display text-3xl leading-none"
         to="/"
       >
-        {{ siteStore.settings.title }}
+        <span
+          class="inline-block transition-transform duration-200 group-hover:-translate-y-0.5"
+        >
+          {{ siteStore.settings.title }}
+        </span>
       </RouterLink>
 
       <button
-        class="focus-ring rounded-md border border-line px-3 py-2 text-sm md:hidden"
+        class="focus-ring ui-button-secondary px-4 py-2 text-sm md:hidden"
+        :aria-expanded="isOpen"
+        aria-label="打开或关闭导航菜单"
         type="button"
         @click="isOpen = !isOpen"
       >
@@ -50,35 +62,36 @@ function logout() {
         <RouterLink
           v-for="item in navItems"
           :key="item.to"
-          class="focus-ring rounded-md px-3 py-2 text-sm hover:bg-white"
+          class="focus-ring rounded-md px-3 py-2 text-sm font-medium text-ink/68 hover:bg-white hover:text-ink"
+          active-class="bg-white text-ink shadow-insetline"
           :to="item.to"
         >
           {{ item.label }}
         </RouterLink>
         <RouterLink
           v-if="!authStore.isAuthenticated"
-          class="focus-ring ml-2 rounded-md border border-line px-4 py-2 text-sm hover:border-coral hover:text-coral"
+          class="focus-ring ui-button-secondary ml-2 px-4 py-2 text-sm"
           to="/login"
         >
           登录
         </RouterLink>
         <RouterLink
           v-if="!authStore.isAuthenticated"
-          class="focus-ring rounded-md bg-ink px-4 py-2 text-sm text-paper hover:bg-moss"
+          class="focus-ring ui-button-primary px-4 py-2 text-sm"
           to="/register"
         >
           注册
         </RouterLink>
         <RouterLink
           v-if="authStore.canAccessAdmin"
-          class="focus-ring ml-2 rounded-md bg-ink px-4 py-2 text-sm text-paper hover:bg-moss"
+          class="focus-ring ui-button-primary ml-2 px-4 py-2 text-sm"
           to="/admin"
         >
           后台
         </RouterLink>
         <button
           v-if="authStore.isAuthenticated"
-          class="focus-ring rounded-md border border-line px-4 py-2 text-sm hover:border-coral hover:text-coral"
+          class="focus-ring ui-button-secondary px-4 py-2 text-sm"
           type="button"
           @click="logout"
         >
@@ -89,12 +102,14 @@ function logout() {
 
     <nav
       v-if="isOpen"
-      class="content-shell grid gap-2 border-t border-line py-3 md:hidden"
+      class="content-shell grid gap-2 border-t border-line/80 py-3 md:hidden"
+      aria-label="移动端导航"
     >
       <RouterLink
         v-for="item in navItems"
         :key="item.to"
-        class="focus-ring rounded-md px-3 py-2 hover:bg-white"
+        class="focus-ring min-h-11 rounded-md px-3 py-2 font-medium hover:bg-white"
+        active-class="bg-white shadow-insetline"
         :to="item.to"
         @click="isOpen = false"
       >
@@ -102,7 +117,7 @@ function logout() {
       </RouterLink>
       <RouterLink
         v-if="!authStore.isAuthenticated"
-        class="focus-ring rounded-md border border-line px-3 py-2"
+        class="focus-ring ui-button-secondary px-3 py-2"
         to="/login"
         @click="closeMenu"
       >
@@ -110,7 +125,7 @@ function logout() {
       </RouterLink>
       <RouterLink
         v-if="!authStore.isAuthenticated"
-        class="focus-ring rounded-md bg-ink px-3 py-2 text-paper"
+        class="focus-ring ui-button-primary px-3 py-2"
         to="/register"
         @click="closeMenu"
       >
@@ -118,7 +133,7 @@ function logout() {
       </RouterLink>
       <RouterLink
         v-if="authStore.canAccessAdmin"
-        class="focus-ring rounded-md bg-ink px-3 py-2 text-paper"
+        class="focus-ring ui-button-primary px-3 py-2"
         to="/admin"
         @click="closeMenu"
       >
@@ -126,7 +141,7 @@ function logout() {
       </RouterLink>
       <button
         v-if="authStore.isAuthenticated"
-        class="focus-ring rounded-md border border-line px-3 py-2 text-left"
+        class="focus-ring ui-button-secondary px-3 py-2 text-left"
         type="button"
         @click="logout"
       >

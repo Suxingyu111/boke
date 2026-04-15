@@ -1,23 +1,41 @@
 <script setup lang="ts">
-import { computed } from "vue";
+import { computed, watch } from "vue";
 import { useRoute } from "vue-router";
 import { getArticleBySlug } from "@/services/blog";
+import { useContentStore } from "@/stores/content";
+import { renderMarkdown } from "@/utils/markdown";
 
 const route = useRoute();
+const contentStore = useContentStore();
 const article = computed(() => getArticleBySlug(String(route.params.slug)));
+const renderedContent = computed(() =>
+  article.value ? renderMarkdown(article.value.content) : "",
+);
+
+watch(
+  () => route.params.slug,
+  (slug) => {
+    void contentStore.loadPublicArticleDetail(String(slug));
+  },
+  { immediate: true },
+);
 </script>
 
 <template>
-  <article v-if="article" class="bg-white">
-    <header class="border-b border-line">
+  <article v-if="article" class="bg-white/80">
+    <header class="border-b border-line/80">
       <div
         class="content-shell grid gap-8 py-8 lg:grid-cols-[minmax(0,1fr)_420px] lg:items-end"
       >
         <div>
-          <RouterLink class="focus-ring rounded-md text-sm text-coral" to="/"
+          <RouterLink
+            class="focus-ring rounded-md text-sm font-medium text-coral hover:text-moss"
+            to="/"
             >返回首页</RouterLink
           >
-          <h1 class="mt-6 font-display text-5xl leading-tight md:text-6xl">
+          <h1
+            class="mt-6 max-w-4xl font-display text-5xl leading-tight md:text-7xl"
+          >
             {{ article.title }}
           </h1>
           <p class="mt-5 max-w-2xl text-lg text-ink/70">
@@ -33,27 +51,25 @@ const article = computed(() => getArticleBySlug(String(route.params.slug)));
           </div>
         </div>
 
-        <img
-          class="h-80 w-full rounded-md object-cover"
-          :alt="article.title"
-          :src="article.coverImage"
-        />
+        <div class="ui-surface overflow-hidden p-2">
+          <img
+            class="h-80 w-full rounded-md object-cover"
+            :alt="article.title"
+            :src="article.coverImage"
+          />
+        </div>
       </div>
     </header>
 
     <div
       class="content-shell grid gap-8 py-10 lg:grid-cols-[minmax(0,760px)_240px]"
     >
-      <div class="prose max-w-none">
-        <p class="text-lg leading-8 text-ink/80">{{ article.content }}</p>
-        <h2 class="mt-10 font-display text-3xl">下一步</h2>
-        <p class="mt-4 leading-8 text-ink/75">
-          接入真实文章接口后，这里可以渲染
-          Markdown、代码高亮、目录锚点和阅读进度。
-        </p>
-      </div>
+      <div
+        class="markdown-body ui-surface bg-white p-5 md:p-8"
+        v-html="renderedContent"
+      ></div>
 
-      <aside class="h-fit border border-line bg-paper p-5">
+      <aside class="ui-surface-soft h-fit p-5">
         <p class="font-display text-2xl">分类</p>
         <p class="mt-2" :style="{ color: article.category.color }">
           {{ article.category.name }}
@@ -63,7 +79,7 @@ const article = computed(() => getArticleBySlug(String(route.params.slug)));
           <RouterLink
             v-for="tag in article.tags"
             :key="tag.id"
-            class="focus-ring rounded-md bg-white px-2 py-1 text-sm"
+            class="focus-ring min-h-9 rounded-md bg-white px-2 py-1 text-sm hover:text-coral"
             :to="`/tags?tag=${tag.slug}`"
           >
             #{{ tag.name }}

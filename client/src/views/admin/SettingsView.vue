@@ -7,10 +7,10 @@ const settings = reactive({ ...getSiteSettings() });
 
 <template>
   <div>
-    <p class="text-sm text-coral">Settings</p>
+    <p class="eyebrow">Settings</p>
     <h1 class="mt-2 font-display text-5xl">系统设置</h1>
 
-    <form class="mt-8 grid gap-5 border border-line bg-white p-5">
+    <form class="ui-surface mt-8 grid gap-5 p-5 md:p-6">
       <label class="block">
         <span class="text-sm text-ink/60">博客标题</span>
         <input
@@ -40,7 +40,7 @@ const settings = reactive({ ...getSiteSettings() });
         />
       </label>
       <button
-        class="focus-ring w-fit rounded-md bg-ink px-4 py-3 text-paper hover:bg-moss"
+        class="focus-ring ui-button-primary w-fit px-5 py-3"
         type="button"
       >
         保存设置

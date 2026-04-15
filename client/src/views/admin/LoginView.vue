@@ -82,7 +82,7 @@ async function handleLogin() {
         </RouterLink>
 
         <div class="max-w-3xl">
-          <p class="text-sm uppercase text-citron">secure desk</p>
+          <p class="text-sm font-semibold uppercase text-citron">secure desk</p>
           <h1 class="mt-5 font-display text-6xl leading-tight">
             把写作台重新点亮。
           </h1>
@@ -109,10 +109,7 @@ async function handleLogin() {
     </section>
 
     <section class="flex min-h-screen items-center p-5 md:p-8">
-      <form
-        class="w-full border border-line bg-white p-5 shadow-editorial md:p-8"
-        @submit.prevent="handleLogin"
-      >
+      <form class="ui-surface w-full p-5 md:p-8" @submit.prevent="handleLogin">
         <RouterLink
           class="focus-ring inline-block rounded-md text-sm text-coral lg:hidden"
           to="/"
@@ -120,7 +117,7 @@ async function handleLogin() {
           返回首页
         </RouterLink>
 
-        <p class="mt-8 text-sm text-coral lg:mt-0">Login</p>
+        <p class="eyebrow mt-8 lg:mt-0">Login</p>
         <h2 class="mt-2 font-display text-5xl leading-none">欢迎回来</h2>
         <p class="mt-4 text-sm leading-6 text-ink/60">
           使用用户名或邮箱登录。勾选记住登录状态后，浏览器会保留 JWT。
@@ -165,7 +162,7 @@ async function handleLogin() {
         </label>
 
         <button
-          class="focus-ring mt-6 w-full rounded-md bg-ink px-4 py-3 text-paper hover:bg-moss disabled:cursor-not-allowed disabled:opacity-60"
+          class="focus-ring ui-button-primary mt-6 w-full px-4 py-3 disabled:cursor-not-allowed disabled:opacity-60"
           :disabled="authStore.loading"
           type="submit"
         >
