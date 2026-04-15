@@ -1,0 +1,72 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color: #111414;
+  background: #f7f9f8;
+  font-family: "Avenir Next", "Trebuchet MS", Verdana, sans-serif;
+  font-size: 16px;
+  font-synthesis: none;
+  letter-spacing: 0;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  min-width: 320px;
+  min-height: 100vh;
+  margin: 0;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+  letter-spacing: 0;
+}
+
+img {
+  display: block;
+  max-width: 100%;
+}
+
+::selection {
+  color: #f7f9f8;
+  background: #185c52;
+}
+
+.content-shell {
+  width: min(1160px, calc(100% - 32px));
+  margin-inline: auto;
+}
+
+.focus-ring {
+  outline: 2px solid transparent;
+  outline-offset: 2px;
+}
+
+.focus-ring:focus-visible {
+  outline-color: #c6283f;
+}
+
+@media (max-width: 768px) {
+  :root {
+    font-size: 15px;
+  }
+
+  .content-shell {
+    width: min(100% - 24px, 1160px);
+  }
+}
