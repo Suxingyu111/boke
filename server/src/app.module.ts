@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common';
 import { APP_GUARD } from '@nestjs/core';
-import { ConfigModule } from '@nestjs/config';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { configuration } from './config/configuration';
 import { validationSchema } from './config/validation';
@@ -12,6 +12,8 @@ import { CategoriesModule } from './modules/categories/categories.module';
 import { TagsModule } from './modules/tags/tags.module';
 import { ArticlesModule } from './modules/articles/articles.module';
 import { PagesModule } from './modules/pages/pages.module';
+import { SettingsModule } from './modules/settings/settings.module';
+import { DashboardModule } from './modules/dashboard/dashboard.module';
 
 @Module({
   imports: [
@@ -28,12 +30,16 @@ import { PagesModule } from './modules/pages/pages.module';
     }),
 
     // 速率限制
-    ThrottlerModule.forRoot([
-      {
-        ttl: 60000,
-        limit: 10,
-      },
-    ]),
+    ThrottlerModule.forRootAsync({
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: (configService: ConfigService) => [
+        {
+          ttl: configService.get<number>('throttle.ttl', 60000),
+          limit: configService.get<number>('throttle.limit', 120),
+        },
+      ],
+    }),
 
     // 数据库模块
     DatabaseModule,
@@ -58,6 +64,12 @@ import { PagesModule } from './modules/pages/pages.module';
 
     // 页面模块
     PagesModule,
+
+    // 站点设置模块
+    SettingsModule,
+
+    // 仪表盘模块
+    DashboardModule,
   ],
   controllers: [],
   providers: [

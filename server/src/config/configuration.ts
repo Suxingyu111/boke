@@ -28,6 +28,10 @@ export const configuration = (): {
   nodeEnv: string;
   port: number;
   app: { name: string; desc: string };
+  throttle: {
+    ttl: number;
+    limit: number;
+  };
   database: {
     type: string;
     host: string | undefined;
@@ -62,6 +66,10 @@ export const configuration = (): {
   app: {
     name: process.env.APP_NAME || 'Blog System',
     desc: process.env.APP_DESC || 'Personal Blog System API',
+  },
+  throttle: {
+    ttl: parseNumber(process.env.THROTTLE_TTL, 60000),
+    limit: parseNumber(process.env.THROTTLE_LIMIT, 120),
   },
   database: {
     type: process.env.DB_TYPE || 'mysql',

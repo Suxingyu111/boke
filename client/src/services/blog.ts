@@ -41,5 +41,5 @@ export function getSiteStats() {
 }
 
 export function getSiteSettings() {
-  return siteSettings;
+  return { ...siteSettings };
 }

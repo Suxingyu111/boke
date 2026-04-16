@@ -4,7 +4,6 @@ import {
   articles as mockArticles,
   author,
   categories as mockCategories,
-  siteStats as mockSiteStats,
   tags as mockTags,
 } from "@/data/mock";
 import type {
@@ -189,6 +188,7 @@ function mapArticle(raw: unknown): Article {
     status: normalizeStatus(raw.status),
     viewCount: getNumber(raw, "viewCount"),
     likes: getNumber(raw, "likes"),
+    commentCount: getNumber(raw, "commentCount"),
     author,
     category,
     tags,
@@ -317,7 +317,10 @@ export const useContentStore = defineStore("content", {
         (sum, article) => sum + article.viewCount,
         0,
       ),
-      comments: mockSiteStats.comments,
+      comments: state.articles.reduce(
+        (sum, article) => sum + article.commentCount,
+        0,
+      ),
     }),
   },
   actions: {

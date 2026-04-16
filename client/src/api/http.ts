@@ -56,6 +56,13 @@ export async function patch<T, D = unknown>(
   return http.patch<unknown, ApiResponse<T>>(url, data);
 }
 
+export async function put<T, D = unknown>(
+  url: string,
+  data: D,
+): Promise<ApiResponse<T>> {
+  return http.put<unknown, ApiResponse<T>>(url, data);
+}
+
 export async function remove<T>(url: string): Promise<ApiResponse<T>> {
   return http.delete<unknown, ApiResponse<T>>(url);
 }

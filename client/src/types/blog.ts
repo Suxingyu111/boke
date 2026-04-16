@@ -46,6 +46,7 @@ export interface Article {
   status: ArticleStatus;
   viewCount: number;
   likes: number;
+  commentCount: number;
   author: Author;
   category: Category;
   tags: Tag[];

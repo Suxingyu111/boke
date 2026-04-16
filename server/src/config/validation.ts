@@ -6,6 +6,8 @@ export const validationSchema = Joi.object({
   APP_NAME: Joi.string().default('Blog System'),
   APP_DESC: Joi.string(),
   CORS_ORIGINS: Joi.string().allow('').optional(),
+  THROTTLE_TTL: Joi.number().default(60000),
+  THROTTLE_LIMIT: Joi.number().default(120),
 
   // Database
   DB_TYPE: Joi.string().valid('mysql').default('mysql'),
