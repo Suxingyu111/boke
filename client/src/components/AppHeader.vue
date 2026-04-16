@@ -1,19 +1,21 @@
 <script setup lang="ts">
 import { ref } from "vue";
+import { useRouter } from "vue-router";
 import { useSiteStore } from "@/stores/site";
 import { useAuthStore } from "@/stores/auth";
 
 const siteStore = useSiteStore();
 const authStore = useAuthStore();
+const router = useRouter();
 const isOpen = ref(false);
+const searchTerm = ref("");
 
 const navItems = [
   { label: "首页", to: "/" },
   { label: "分类", to: "/categories" },
   { label: "标签", to: "/tags" },
-  { label: "搜索", to: "/search" },
   { label: "关于", to: "/about" },
-  { label: "友链", to: "/links" },
+  { label: "友情链接", to: "/links" },
 ];
 
 function closeMenu() {
@@ -22,6 +24,16 @@ function closeMenu() {
 
 function logout() {
   authStore.logout();
+  closeMenu();
+}
+
+function submitSearch() {
+  const keyword = searchTerm.value.trim();
+  void router.push({
+    name: "search",
+    query: keyword ? { q: keyword } : {},
+  });
+  searchTerm.value = "";
   closeMenu();
 }
 </script>
@@ -68,6 +80,26 @@ function logout() {
         >
           {{ item.label }}
         </RouterLink>
+        <form
+          class="hidden items-center gap-2 lg:flex"
+          role="search"
+          @submit.prevent="submitSearch"
+        >
+          <label class="sr-only" for="site-search">搜索文章</label>
+          <input
+            id="site-search"
+            v-model="searchTerm"
+            class="focus-ring min-h-11 w-40 rounded-md border border-line bg-white px-3 py-2 text-sm xl:w-52"
+            placeholder="搜索标题或正文"
+            type="search"
+          />
+          <button
+            class="focus-ring ui-button-secondary px-3 py-2 text-sm"
+            type="submit"
+          >
+            搜索
+          </button>
+        </form>
         <RouterLink
           v-if="!authStore.isAuthenticated"
           class="focus-ring ui-button-secondary ml-2 px-4 py-2 text-sm"
@@ -115,6 +147,26 @@ function logout() {
       >
         {{ item.label }}
       </RouterLink>
+      <form class="grid gap-2" role="search" @submit.prevent="submitSearch">
+        <label class="text-sm font-medium text-ink/60" for="mobile-site-search">
+          搜索文章
+        </label>
+        <div class="grid gap-2 sm:grid-cols-[minmax(0,1fr)_auto]">
+          <input
+            id="mobile-site-search"
+            v-model="searchTerm"
+            class="focus-ring min-h-11 w-full rounded-md border border-line bg-white px-3 py-2"
+            placeholder="输入标题或正文关键词"
+            type="search"
+          />
+          <button
+            class="focus-ring ui-button-secondary px-4 py-2"
+            type="submit"
+          >
+            搜索
+          </button>
+        </div>
+      </form>
       <RouterLink
         v-if="!authStore.isAuthenticated"
         class="focus-ring ui-button-secondary px-3 py-2"

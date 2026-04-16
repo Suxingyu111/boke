@@ -203,4 +203,9 @@ export const siteSettings: SiteSettings = {
   description: "一座安静但能持续生长的个人博客。",
   icp: "粤ICP备00000000号",
   copyright: "Copyright 2026 纸上码头",
+  socialLinks: [
+    { label: "GitHub", url: "https://github.com/example" },
+    { label: "邮箱", url: "mailto:hello@example.com" },
+    { label: "RSS", url: "/rss.xml" },
+  ],
 };

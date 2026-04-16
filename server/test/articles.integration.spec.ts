@@ -402,6 +402,60 @@ describe('Articles integration', () => {
     ).toBeUndefined();
   });
 
+  it('公开搜索应支持按标题和正文关键字过滤', async () => {
+    const categoryId = categoryRepository.items[0].id as string;
+
+    await request(app.getHttpServer())
+      .post('/api/admin/articles')
+      .set('x-test-role', 'admin')
+      .set('x-test-user-id', 'author-search-1')
+      .send({
+        title: 'NestJS 搜索实践',
+        slug: 'nestjs-search-practice',
+        content: '这是一篇关于全文检索索引设计的文章。',
+        categoryId,
+        status: 'published',
+      })
+      .expect(201);
+
+    await request(app.getHttpServer())
+      .post('/api/admin/articles')
+      .set('x-test-role', 'admin')
+      .set('x-test-user-id', 'author-search-2')
+      .send({
+        title: '缓存设计随笔',
+        slug: 'cache-design-notes',
+        content: '正文中详细介绍了搜索召回、全文检索与排序策略。',
+        categoryId,
+        status: 'published',
+      })
+      .expect(201);
+
+    const titleMatchedResponse = await request(app.getHttpServer())
+      .get('/api/articles?keyword=搜索实践&page=1&pageSize=10')
+      .expect(200);
+
+    expect(titleMatchedResponse.body.data.items.map((item: { slug: string }) => item.slug)).toEqual(
+      expect.arrayContaining(['nestjs-search-practice']),
+    );
+
+    const contentMatchedResponse = await request(app.getHttpServer())
+      .get('/api/articles?keyword=全文检索&page=1&pageSize=10')
+      .expect(200);
+
+    expect(
+      contentMatchedResponse.body.data.items.map((item: { slug: string }) => item.slug),
+    ).toEqual(expect.arrayContaining(['nestjs-search-practice', 'cache-design-notes']));
+  });
+
+  it('公开文章列表不应接受 status 过滤参数', async () => {
+    const response = await request(app.getHttpServer())
+      .get('/api/articles?status=draft&page=1&pageSize=10')
+      .expect(400);
+
+    expect(response.body.message).toContain('property status should not exist');
+  });
+
   it('分类和标签应支持更新、删除与引用校验', async () => {
     const category = categoryRepository.items[0];
     const tag = tagRepository.items[0];

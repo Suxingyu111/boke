@@ -8,6 +8,7 @@
   "scripts": {
     "build": "nest build",
     "db:init": "node ./node_modules/ts-node/dist/bin.js --project tsconfig.json scripts/init-db.ts",
+    "db:seed-content": "node ./node_modules/ts-node/dist/bin.js --project tsconfig.json scripts/seed-content.ts",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
     "start": "nest start",
     "start:dev": "nest start --watch",

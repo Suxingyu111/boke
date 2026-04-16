@@ -64,6 +64,11 @@ export interface LinkItem {
   description: string;
 }
 
+export interface SocialLink {
+  label: string;
+  url: string;
+}
+
 export type PageType = "about" | "custom" | "resume" | "portfolio";
 export type PageStatus = "draft" | "published";
 export type FriendLinkStatus = "pending" | "approved" | "rejected" | "offline";
@@ -112,6 +117,7 @@ export interface SiteSettings {
   description: string;
   icp: string;
   copyright: string;
+  socialLinks: SocialLink[];
 }
 
 export interface AuthUser {

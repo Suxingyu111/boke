@@ -9,6 +9,7 @@ import {
 const pagesStore = usePagesStore();
 const applicationNotice = ref("");
 const applicationError = ref("");
+const applicationLoading = ref(false);
 const applicationForm = reactive<FriendLinkApplicationPayload>({
   siteName: "",
   siteUrl: "",
@@ -18,7 +19,7 @@ const applicationForm = reactive<FriendLinkApplicationPayload>({
 });
 
 onMounted(() => {
-  void pagesStore.loadPublicFriendLinks();
+  void pagesStore.loadPublicFriendLinks().catch(() => undefined);
 });
 
 function getInitials(value: string) {
@@ -52,6 +53,7 @@ async function submitApplication() {
   }
 
   try {
+    applicationLoading.value = true;
     await pagesStore.applyFriendLink({
       siteName,
       siteUrl,
@@ -63,6 +65,8 @@ async function submitApplication() {
     resetApplicationForm();
   } catch (error) {
     applicationError.value = getApiErrorMessage(error, "友链申请提交失败");
+  } finally {
+    applicationLoading.value = false;
   }
 }
 </script>
@@ -73,6 +77,17 @@ async function submitApplication() {
     <h1 class="mt-2 font-display text-5xl">友情链接</h1>
     <p class="mt-4 max-w-2xl leading-7 text-ink/65">
       一些值得长期阅读的站点和工具。所有链接会在新标签页打开。
+    </p>
+
+    <p
+      v-if="pagesStore.errorMessage"
+      class="mt-6 rounded-md border border-coral/25 bg-coral/10 px-4 py-3 text-sm text-coral"
+    >
+      {{ pagesStore.errorMessage }}
+    </p>
+
+    <p v-if="pagesStore.loading" class="mt-6 text-sm text-ink/55">
+      正在加载友情链接...
     </p>
 
     <div
@@ -196,9 +211,10 @@ async function submitApplication() {
 
         <button
           class="focus-ring ui-button-primary w-fit px-5 py-3"
+          :disabled="applicationLoading"
           type="submit"
         >
-          提交申请
+          {{ applicationLoading ? "正在提交..." : "提交申请" }}
         </button>
       </form>
     </section>

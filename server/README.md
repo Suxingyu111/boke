@@ -200,6 +200,8 @@ npm run migration:revert   # 回滚迁移
 3. 服务器验证 token 并提取用户信息
 4. 当前认证接口文档见 [server/docs/AUTH_API.md](server/docs/AUTH_API.md)
 5. 内容管理接口文档见 [server/docs/CONTENT_API.md](server/docs/CONTENT_API.md)
+6. 页面管理接口文档见 [server/docs/PAGES_API.md](server/docs/PAGES_API.md)
+7. 前端展示接口文档见 [server/docs/FRONTEND_DISPLAY_API.md](server/docs/FRONTEND_DISPLAY_API.md)
 
 ```bash
 # 请求示例

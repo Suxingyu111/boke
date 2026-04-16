@@ -1,13 +1,13 @@
 import { Controller, Get, Param, Query } from '@nestjs/common';
 import { ArticlesService } from './articles.service';
-import { ListArticlesDto } from './dto/list-articles.dto';
+import { PublicListArticlesDto } from './dto/public-list-articles.dto';
 
 @Controller('articles')
 export class PublicArticlesController {
   constructor(private readonly articlesService: ArticlesService) {}
 
   @Get()
-  findList(@Query() query: ListArticlesDto) {
+  findList(@Query() query: PublicListArticlesDto) {
     return this.articlesService.findPublicList(query);
   }
 

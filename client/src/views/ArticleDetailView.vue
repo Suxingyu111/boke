@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, watch } from "vue";
+import { computed, ref, watch } from "vue";
 import { useRoute } from "vue-router";
 import { getArticleBySlug } from "@/services/blog";
 import { useContentStore } from "@/stores/content";
@@ -8,20 +8,42 @@ import { renderMarkdown } from "@/utils/markdown";
 const route = useRoute();
 const contentStore = useContentStore();
 const article = computed(() => getArticleBySlug(String(route.params.slug)));
+const articleError = ref("");
+const detailReady = ref(false);
 const renderedContent = computed(() =>
-  article.value ? renderMarkdown(article.value.content) : "",
+  article.value
+    ? article.value.contentHtml || renderMarkdown(article.value.content)
+    : "",
 );
 
 watch(
   () => route.params.slug,
-  (slug) => {
-    void contentStore.loadPublicArticleDetail(String(slug));
+  async (slug) => {
+    articleError.value = "";
+    detailReady.value = false;
+
+    try {
+      await contentStore.loadPublicArticleDetail(String(slug));
+    } catch {
+      articleError.value = contentStore.errorMessage || "文章详情加载失败";
+    } finally {
+      detailReady.value = true;
+    }
   },
   { immediate: true },
 );
 </script>
 
 <template>
+  <section v-if="contentStore.loading && !detailReady" class="content-shell py-20">
+    <div class="ui-surface animate-pulse p-6 md:p-8">
+      <div class="h-4 w-20 rounded-md bg-line"></div>
+      <div class="mt-6 h-12 w-3/4 rounded-md bg-line"></div>
+      <div class="mt-4 h-4 w-1/2 rounded-md bg-line"></div>
+      <div class="mt-8 h-80 rounded-md bg-line"></div>
+    </div>
+  </section>
+
   <article v-if="article" class="bg-white/80">
     <header class="border-b border-line/80">
       <div
@@ -90,7 +112,10 @@ watch(
   </article>
 
   <section v-else class="content-shell py-20">
-    <h1 class="font-display text-5xl">文章不存在</h1>
+    <h1 class="font-display text-5xl">文章暂不可用</h1>
+    <p class="mt-4 max-w-xl text-ink/65">
+      {{ articleError || contentStore.errorMessage || "这篇文章可能尚未发布，或请求已经失败。" }}
+    </p>
     <RouterLink
       class="focus-ring mt-6 inline-block rounded-md bg-ink px-4 py-2 text-paper"
       to="/"

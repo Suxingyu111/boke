@@ -16,7 +16,7 @@ export class SettingsService {
     const settings = await this.settingRepository.find({
       where: { isPublic: true },
     });
-    return this.toKeyValueMap(settings);
+    return this.toPublicSettingsMap(settings);
   }
 
   /** 按分组获取全部设置（管理后台用） */
@@ -87,5 +87,45 @@ export class SettingsService {
       map[s.settingKey] = s.settingValue;
     }
     return map;
+  }
+
+  private toPublicSettingsMap(settings: SiteSetting[]): Record<string, unknown> {
+    const map = this.toKeyValueMap(settings);
+    const socialLinks = settings.reduce<Record<string, string>>((result, setting) => {
+      const normalizedKey = this.resolveSocialLinkKey(setting);
+      if (!normalizedKey) {
+        return result;
+      }
+
+      if (typeof setting.settingValue !== 'string') {
+        return result;
+      }
+
+      const normalizedValue = setting.settingValue.trim();
+      if (!normalizedValue) {
+        return result;
+      }
+
+      result[normalizedKey] = normalizedValue;
+      return result;
+    }, {});
+
+    if (Object.keys(socialLinks).length > 0) {
+      map.socialLinks = socialLinks;
+    }
+
+    return map;
+  }
+
+  private resolveSocialLinkKey(setting: SiteSetting): string | null {
+    if (setting.settingKey.startsWith('social_')) {
+      return setting.settingKey.slice('social_'.length) || null;
+    }
+
+    if (setting.groupName === 'social' && typeof setting.settingKey === 'string') {
+      return setting.settingKey.trim() || null;
+    }
+
+    return null;
   }
 }

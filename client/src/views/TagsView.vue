@@ -2,28 +2,21 @@
 import { computed, onMounted, watch } from "vue";
 import { useRoute } from "vue-router";
 import ArticleCard from "@/components/ArticleCard.vue";
-import { listArticles, listTags } from "@/services/blog";
 import { useContentStore } from "@/stores/content";
 
 const route = useRoute();
 const contentStore = useContentStore();
-const tags = computed(() => listTags());
+const tags = computed(() => contentStore.tagCloud);
 const selectedSlug = computed(() => String(route.query.tag ?? ""));
 const selectedTag = computed(() =>
   tags.value.find((tag) => tag.slug === selectedSlug.value),
 );
-const tagArticles = computed(() =>
-  selectedTag.value
-    ? listArticles().filter((article) =>
-        article.tags.some((tag) => tag.id === selectedTag.value?.id),
-      )
-    : [],
-);
+const tagArticles = computed(() => contentStore.publishedArticles);
 
 function loadTagArticles() {
-  void contentStore.loadPublicContent(
-    selectedTag.value ? { tagId: selectedTag.value.id } : {},
-  );
+  void contentStore
+    .loadPublicContent(selectedTag.value ? { tagId: selectedTag.value.id } : {})
+    .catch(() => undefined);
 }
 
 onMounted(loadTagArticles);
@@ -46,6 +39,17 @@ watch(() => selectedTag.value?.id, loadTagArticles);
       </RouterLink>
     </div>
 
+    <p
+      v-if="contentStore.errorMessage"
+      class="mt-6 rounded-md border border-coral/25 bg-coral/10 px-4 py-3 text-sm text-coral"
+    >
+      {{ contentStore.errorMessage }}
+    </p>
+
+    <div v-if="contentStore.loading" class="mt-8 grid gap-4 md:grid-cols-2">
+      <div v-for="index in 2" :key="index" class="ui-surface h-40 animate-pulse bg-line/40"></div>
+    </div>
+
     <section v-if="selectedTag" class="mt-10">
       <p class="eyebrow">Selected</p>
       <h2 class="mt-2 font-display text-4xl">#{{ selectedTag.name }}</h2>
@@ -55,6 +59,15 @@ watch(() => selectedTag.value?.id, loadTagArticles);
           :key="article.id"
           :article="article"
         />
+      </div>
+      <div
+        v-if="!contentStore.loading && !tagArticles.length"
+        class="ui-surface mt-6 p-6"
+      >
+        <h3 class="font-display text-3xl">该标签下暂无公开文章</h3>
+        <p class="mt-3 leading-7 text-ink/65">
+          你可以尝试其他标签，或者检查后台文章是否已经绑定标签并公开发布。
+        </p>
       </div>
     </section>
   </section>

@@ -4,7 +4,12 @@ import * as settingsApi from "@/api/settings";
 import { getApiErrorMessage } from "@/api/auth";
 import { getSiteSettings } from "@/services/blog";
 import { useContentStore } from "@/stores/content";
-import type { ArticleStatus, SiteSettings, SiteStats } from "@/types/blog";
+import type {
+  ArticleStatus,
+  SiteSettings,
+  SiteStats,
+  SocialLink,
+} from "@/types/blog";
 
 const localSettingsKey = "blog_site_settings";
 
@@ -30,6 +35,66 @@ function getStringSetting(
     .map((key) => source[key])
     .find((item) => item !== undefined);
   return typeof value === "string" ? value : fallback;
+}
+
+function normalizeSocialLinks(
+  value: unknown,
+  fallback: SocialLink[],
+): SocialLink[] {
+  if (typeof value === "string") {
+    try {
+      return normalizeSocialLinks(JSON.parse(value), fallback);
+    } catch {
+      return [...fallback];
+    }
+  }
+
+  if (!Array.isArray(value)) {
+    if (typeof value === "object" && value !== null) {
+      const entries = Object.entries(value as Record<string, unknown>)
+        .map(([key, url]) => {
+          if (typeof url !== "string" || !url.trim()) {
+            return null;
+          }
+
+          return {
+            label: key
+              .replace(/^social_/i, "")
+              .replace(/[_-]+/g, " ")
+              .replace(/\b\w/g, (char) => char.toUpperCase()),
+            url: url.trim(),
+          };
+        })
+        .filter((item): item is SocialLink => item !== null);
+
+      return entries.length ? entries : [...fallback];
+    }
+
+    return [...fallback];
+  }
+
+  const links = value
+    .map((item) => {
+      if (typeof item !== "object" || item === null) {
+        return null;
+      }
+
+      const source = item as Record<string, unknown>;
+      const label =
+        typeof source.label === "string"
+          ? source.label
+          : typeof source.name === "string"
+            ? source.name
+            : "";
+      const url = typeof source.url === "string" ? source.url : "";
+
+      return label.trim() && url.trim()
+        ? { label: label.trim(), url: url.trim() }
+        : null;
+    })
+    .filter((item): item is SocialLink => item !== null);
+
+  return links;
 }
 
 function normalizeSettings(
@@ -66,6 +131,10 @@ function normalizeSettings(
       source,
       ["site_copyright", "copyright"],
       fallback.copyright,
+    ),
+    socialLinks: normalizeSocialLinks(
+      source.social_links ?? source.socialLinks,
+      fallback.socialLinks,
     ),
   };
 }
@@ -166,10 +235,9 @@ export const useSiteStore = defineStore("site", {
         this.settingsNotice = "设置已保存";
         return true;
       } catch (error) {
-        this.applySettings(nextSettings);
         this.settingsError = getApiErrorMessage(
           error,
-          "设置接口暂不可用，已保存到本地浏览器",
+          "设置保存失败，请检查接口或登录状态",
         );
         return false;
       } finally {

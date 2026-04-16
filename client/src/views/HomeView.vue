@@ -2,7 +2,6 @@
 import { computed, onMounted, ref, watch } from "vue";
 import ArticleCard from "@/components/ArticleCard.vue";
 import StatPill from "@/components/StatPill.vue";
-import { listArticles, listTags } from "@/services/blog";
 import { useContentStore } from "@/stores/content";
 import { useSiteStore } from "@/stores/site";
 
@@ -10,7 +9,7 @@ const siteStore = useSiteStore();
 const contentStore = useContentStore();
 const currentPage = ref(1);
 const pageSize = 4;
-const allArticles = computed(() => listArticles());
+const allArticles = computed(() => contentStore.publishedArticles);
 const featuredArticle = computed(() => allArticles.value[0]);
 const latestArticles = computed(() => allArticles.value.slice(1));
 const totalPages = computed(() =>
@@ -20,7 +19,7 @@ const pagedArticles = computed(() => {
   const start = (currentPage.value - 1) * pageSize;
   return latestArticles.value.slice(start, start + pageSize);
 });
-const popularTags = computed(() => listTags());
+const popularTags = computed(() => contentStore.tagCloud);
 
 watch(totalPages, (pages) => {
   if (currentPage.value > pages) {
@@ -29,7 +28,7 @@ watch(totalPages, (pages) => {
 });
 
 onMounted(() => {
-  void contentStore.loadPublicContent();
+  void contentStore.loadPublicContent().catch(() => undefined);
 });
 </script>
 
@@ -76,10 +75,40 @@ onMounted(() => {
     </div>
   </section>
 
+  <section
+    v-else-if="contentStore.loading"
+    class="border-b border-line/80 bg-white/72"
+  >
+    <div class="content-shell grid gap-8 py-8 lg:grid-cols-[minmax(0,1fr)_420px]">
+      <div class="ui-surface min-h-[460px] animate-pulse bg-line/40"></div>
+      <div class="ui-surface min-h-[320px] animate-pulse bg-line/40"></div>
+    </div>
+  </section>
+
+  <section v-else class="border-b border-line/80 bg-white/72">
+    <div class="content-shell py-12">
+      <div class="ui-surface p-6 md:p-8">
+        <p class="eyebrow">Content</p>
+        <h1 class="mt-2 font-display text-5xl">还没有公开文章</h1>
+        <p class="mt-4 max-w-2xl text-ink/65">
+          文章发布后会出现在这里。若你刚完成部署，请先确认公开文章接口和发布状态。
+        </p>
+      </div>
+    </div>
+  </section>
+
   <section class="content-shell grid gap-4 py-8 md:grid-cols-3">
     <StatPill label="文章" :value="siteStore.stats.articles" />
     <StatPill label="阅读" :value="siteStore.stats.views" />
     <StatPill label="评论" :value="siteStore.stats.comments" />
+  </section>
+
+  <section v-if="contentStore.errorMessage" class="content-shell pb-2">
+    <p
+      class="rounded-md border border-coral/25 bg-coral/10 px-4 py-3 text-sm text-coral"
+    >
+      {{ contentStore.errorMessage }}
+    </p>
   </section>
 
   <section
@@ -95,6 +124,12 @@ onMounted(() => {
         :key="article.id"
         :article="article"
       />
+      <div v-if="!contentStore.loading && !pagedArticles.length" class="ui-surface p-6">
+        <h2 class="font-display text-3xl">暂无更多文章</h2>
+        <p class="mt-3 leading-7 text-ink/65">
+          当前公开文章数量不足以填满列表，发布更多文章后这里会继续更新。
+        </p>
+      </div>
       <div
         v-if="totalPages > 1"
         class="ui-surface-soft flex flex-wrap items-center justify-between gap-3 p-4"
@@ -125,7 +160,7 @@ onMounted(() => {
 
     <aside class="ui-surface h-fit p-5">
       <h2 class="font-display text-3xl">标签云</h2>
-      <div class="mt-4 flex flex-wrap gap-2">
+      <div v-if="popularTags.length" class="mt-4 flex flex-wrap gap-2">
         <RouterLink
           v-for="tag in popularTags"
           :key="tag.id"
@@ -135,6 +170,7 @@ onMounted(() => {
           #{{ tag.name }} {{ tag.articleCount }}
         </RouterLink>
       </div>
+      <p v-else class="mt-4 text-sm text-ink/55">暂无标签数据</p>
     </aside>
   </section>
 </template>

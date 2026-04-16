@@ -17,6 +17,7 @@ type ArticleVisibility = 'public' | 'private' | 'password';
 
 type ArticleView = Article & {
   category: Category;
+  author: User;
   tags: Tag[];
   status: ArticleStatus;
   visibility: ArticleVisibility;
@@ -40,6 +41,8 @@ export class ArticlesService {
     private readonly tagRepository: Repository<Tag>,
     @InjectRepository(ArticleTag)
     private readonly articleTagRepository: Repository<ArticleTag>,
+    @InjectRepository(User)
+    private readonly userRepository: Repository<User>,
   ) {}
 
   async create(dto: CreateArticleDto, currentUser: User): Promise<ArticleView> {
@@ -346,11 +349,28 @@ export class ArticlesService {
     }
 
     const tags = await this.findArticleTags(article.id);
+    const author =
+      (await this.userRepository.findOne({ where: { id: article.userId } })) ??
+      ({
+        id: article.userId,
+        username: 'unknown',
+        email: '',
+        password: '',
+        nickname: '作者',
+        avatar: null,
+        bio: null,
+        isActive: true,
+        role: 'author',
+        lastLoginAt: null,
+        createdAt: article.createdAt,
+        updatedAt: article.updatedAt,
+      } as User);
     return {
       ...article,
       status: article.status as ArticleStatus,
       visibility: article.visibility as ArticleVisibility,
       category,
+      author,
       tags,
     };
   }
@@ -553,6 +573,7 @@ export class ArticlesService {
       slug: article.slug,
       excerpt: article.excerpt,
       coverImage: article.coverImage,
+      author: this.toPublicAuthor(article.author),
       category: this.toPublicCategory(article.category),
       tags: article.tags.map(tag => this.toPublicTag(tag)),
       status: article.status,
@@ -579,6 +600,17 @@ export class ArticlesService {
       slug: category.slug,
       color: category.color,
       articleCount: category.articleCount,
+    };
+  }
+
+  private toPublicAuthor(author: User) {
+    return {
+      id: author.id,
+      username: author.username,
+      nickname: author.nickname ?? author.username,
+      avatar: author.avatar,
+      bio: author.bio,
+      role: author.role,
     };
   }
 

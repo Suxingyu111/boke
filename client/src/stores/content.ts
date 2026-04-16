@@ -1,10 +1,9 @@
 import { defineStore } from "pinia";
+import { getApiErrorMessage } from "@/api/auth";
 import * as contentApi from "@/api/content";
 import {
   articles as mockArticles,
   author,
-  categories as mockCategories,
-  tags as mockTags,
 } from "@/data/mock";
 import type {
   Article,
@@ -280,20 +279,20 @@ function buildTagRequest(
 
 export const useContentStore = defineStore("content", {
   state: () => ({
-    articles: [...mockArticles],
-    categories: [...mockCategories],
-    tags: [...mockTags],
+    articles: [] as Article[],
+    categories: [] as Category[],
+    tags: [] as Tag[],
     publicMeta: {
-      total: mockArticles.length,
+      total: 0,
       page: 1,
-      pageSize: mockArticles.length,
-      totalPages: 1,
+      pageSize: 10,
+      totalPages: 0,
     } as contentApi.PaginationMeta,
     adminMeta: {
-      total: mockArticles.length,
+      total: 0,
       page: 1,
-      pageSize: mockArticles.length,
-      totalPages: 1,
+      pageSize: 10,
+      totalPages: 0,
     } as contentApi.PaginationMeta,
     loading: false,
     adminLoading: false,
@@ -355,13 +354,8 @@ export const useContentStore = defineStore("content", {
         this.tags = tags.map(mapTag);
         this.apiReady = true;
       } catch (error) {
-        this.errorMessage =
-          error instanceof Error ? error.message : "内容接口暂不可用";
-        if (!this.apiReady) {
-          this.articles = [...mockArticles];
-          this.categories = [...mockCategories];
-          this.tags = [...mockTags];
-        }
+        this.errorMessage = getApiErrorMessage(error, "内容接口暂不可用");
+        throw error;
       } finally {
         this.loading = false;
       }
@@ -374,6 +368,9 @@ export const useContentStore = defineStore("content", {
         this.upsertArticle(article);
         this.apiReady = true;
         return article;
+      } catch (error) {
+        this.errorMessage = getApiErrorMessage(error, "文章详情加载失败");
+        throw error;
       } finally {
         this.loading = false;
       }
@@ -401,6 +398,9 @@ export const useContentStore = defineStore("content", {
         this.categories = categories.map(mapCategory);
         this.tags = tags.map(mapTag);
         this.apiReady = true;
+      } catch (error) {
+        this.errorMessage = getApiErrorMessage(error, "内容管理接口加载失败");
+        throw error;
       } finally {
         this.adminLoading = false;
       }
@@ -413,6 +413,9 @@ export const useContentStore = defineStore("content", {
         this.upsertArticle(article);
         this.apiReady = true;
         return article;
+      } catch (error) {
+        this.errorMessage = getApiErrorMessage(error, "文章详情加载失败");
+        throw error;
       } finally {
         this.adminLoading = false;
       }
@@ -432,6 +435,9 @@ export const useContentStore = defineStore("content", {
         }
         this.apiReady = true;
         return category;
+      } catch (error) {
+        this.errorMessage = getApiErrorMessage(error, "分类详情加载失败");
+        throw error;
       } finally {
         this.adminLoading = false;
       }
@@ -449,6 +455,9 @@ export const useContentStore = defineStore("content", {
         }
         this.apiReady = true;
         return tag;
+      } catch (error) {
+        this.errorMessage = getApiErrorMessage(error, "标签详情加载失败");
+        throw error;
       } finally {
         this.adminLoading = false;
       }

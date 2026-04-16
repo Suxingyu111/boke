@@ -9,9 +9,12 @@ const route = useRoute();
 const pagesStore = usePagesStore();
 const page = ref<CustomPage | undefined>();
 const isMissing = ref(false);
+const detailReady = ref(false);
 
 const renderedContent = computed(() =>
-  page.value ? renderMarkdown(page.value.content) : "",
+  page.value
+    ? page.value.contentHtml || renderMarkdown(page.value.content)
+    : "",
 );
 
 const typeText = computed(() => {
@@ -33,11 +36,13 @@ watch(
   () => route.params.slug,
   async (slug) => {
     isMissing.value = false;
+    detailReady.value = false;
     const loadedPage = await pagesStore.loadPublicPage(String(slug));
     page.value =
       loadedPage ??
       pagesStore.publishedPages.find((item) => item.slug === String(slug));
     isMissing.value = !page.value;
+    detailReady.value = true;
   },
   { immediate: true },
 );
@@ -56,6 +61,15 @@ function formatDate(value?: string | null) {
 </script>
 
 <template>
+  <section v-if="pagesStore.loading && !detailReady" class="content-shell py-20">
+    <div class="ui-surface animate-pulse p-6 md:p-8">
+      <div class="h-4 w-20 rounded-md bg-line"></div>
+      <div class="mt-6 h-12 w-2/3 rounded-md bg-line"></div>
+      <div class="mt-4 h-4 w-1/2 rounded-md bg-line"></div>
+      <div class="mt-8 h-72 rounded-md bg-line"></div>
+    </div>
+  </section>
+
   <article v-if="page && !isMissing" class="bg-white/80">
     <header class="border-b border-line/80">
       <div class="content-shell py-10">
@@ -107,9 +121,9 @@ function formatDate(value?: string | null) {
 
   <section v-else class="content-shell py-20">
     <p class="eyebrow">Page</p>
-    <h1 class="mt-2 font-display text-5xl">页面不存在</h1>
+    <h1 class="mt-2 font-display text-5xl">页面暂不可用</h1>
     <p class="mt-4 max-w-xl text-ink/65">
-      这个页面可能还没有发布，或者路径已经变更。
+      {{ pagesStore.errorMessage || "这个页面可能还没有发布，或者路径已经变更。" }}
     </p>
     <RouterLink
       class="focus-ring ui-button-primary mt-6 inline-flex px-5 py-3"

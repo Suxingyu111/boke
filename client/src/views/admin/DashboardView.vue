@@ -28,7 +28,7 @@ const articles = computed(() =>
 );
 
 onMounted(() => {
-  void contentStore.loadAdminContent();
+  void contentStore.loadAdminContent().catch(() => undefined);
   void siteStore.loadDashboardStats();
   void siteStore.loadRecentArticles(5);
 });

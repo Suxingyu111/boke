@@ -181,6 +181,8 @@ Authorization: Bearer <accessToken>
 
 **说明**：仅返回 `is_public = true` 的设置项，供前端页面渲染使用（博客标题、副标题、备案号等）。
 
+当公开设置中存在 `social_` 前缀键或 `group = social` 的配置时，响应会额外返回 `socialLinks` 聚合字段，便于前端页脚直接渲染社交链接。
+
 **响应示例**
 ```json
 {
@@ -190,7 +192,11 @@ Authorization: Bearer <accessToken>
     "site_title": "我的博客",
     "site_subtitle": "记录技术与生活",
     "site_description": "一个专注于 Web 技术的个人博客",
-    "site_icp": "京ICP备XXXXXXXX号"
+    "site_icp": "京ICP备XXXXXXXX号",
+    "social_github": "https://github.com/example",
+    "socialLinks": {
+      "github": "https://github.com/example"
+    }
   }
 }
 ```

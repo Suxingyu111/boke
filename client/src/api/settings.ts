@@ -22,6 +22,7 @@ const settingDescriptions: Record<keyof SiteSettings, string> = {
   description: "站点描述",
   icp: "备案信息",
   copyright: "版权信息",
+  socialLinks: "社交链接",
 };
 
 const settingKeys: Record<keyof SiteSettings, string> = {
@@ -30,7 +31,12 @@ const settingKeys: Record<keyof SiteSettings, string> = {
   description: "site_description",
   icp: "site_icp",
   copyright: "site_copyright",
+  socialLinks: "social_links",
 };
+
+function stringifySettingValue(value: SiteSettings[keyof SiteSettings]) {
+  return typeof value === "string" ? value : JSON.stringify(value);
+}
 
 export async function getPublicSettings() {
   const response = await request<SettingsMap>("/settings");
@@ -38,9 +44,7 @@ export async function getPublicSettings() {
 }
 
 export async function getAdminSettings() {
-  const response = await request<SettingsMap>("/admin/settings", {
-    group: "general",
-  });
+  const response = await request<SettingsMap>("/admin/settings");
   return response.data;
 }
 
@@ -50,7 +54,7 @@ export async function saveSiteSettings(settings: SiteSettings) {
       Object.keys(settingDescriptions) as Array<keyof SiteSettings>
     ).map((key) => ({
       settingKey: settingKeys[key],
-      settingValue: settings[key],
+      settingValue: stringifySettingValue(settings[key]),
       valueType: "string",
       groupName: "general",
       description: settingDescriptions[key],

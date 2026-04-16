@@ -1,4 +1,5 @@
 import { defineStore } from "pinia";
+import { getApiErrorMessage } from "@/api/auth";
 import * as pagesApi from "@/api/pages";
 import {
   friendLinks as mockFriendLinks,
@@ -224,8 +225,8 @@ function buildFriendLinkRequest(
 
 export const usePagesStore = defineStore("pages", {
   state: () => ({
-    pages: [...mockPages],
-    friendLinks: [...mockFriendLinks],
+    pages: [] as CustomPage[],
+    friendLinks: [] as FriendLink[],
     loading: false,
     adminLoading: false,
     errorMessage: "",
@@ -268,8 +269,7 @@ export const usePagesStore = defineStore("pages", {
         this.apiReady = true;
         return page;
       } catch (error) {
-        this.errorMessage =
-          error instanceof Error ? error.message : "关于我页面暂不可用";
+        this.errorMessage = getApiErrorMessage(error, "关于我页面暂不可用");
         return this.aboutPage;
       } finally {
         this.loading = false;
@@ -284,8 +284,7 @@ export const usePagesStore = defineStore("pages", {
         this.apiReady = true;
         return page;
       } catch (error) {
-        this.errorMessage =
-          error instanceof Error ? error.message : "页面暂不可用";
+        this.errorMessage = getApiErrorMessage(error, "页面暂不可用");
         return this.publishedPages.find((page) => page.slug === slug);
       } finally {
         this.loading = false;
@@ -299,11 +298,8 @@ export const usePagesStore = defineStore("pages", {
         this.friendLinks = links.map(mapFriendLink);
         this.apiReady = true;
       } catch (error) {
-        this.errorMessage =
-          error instanceof Error ? error.message : "友情链接暂不可用";
-        if (!this.apiReady) {
-          this.friendLinks = [...mockFriendLinks];
-        }
+        this.errorMessage = getApiErrorMessage(error, "友情链接暂不可用");
+        throw error;
       } finally {
         this.loading = false;
       }
@@ -319,6 +315,9 @@ export const usePagesStore = defineStore("pages", {
         this.pages = pages.map(mapPage);
         this.friendLinks = links.map(mapFriendLink);
         this.apiReady = true;
+      } catch (error) {
+        this.errorMessage = getApiErrorMessage(error, "页面管理接口加载失败");
+        throw error;
       } finally {
         this.adminLoading = false;
       }
@@ -331,6 +330,9 @@ export const usePagesStore = defineStore("pages", {
         this.upsertPage(page);
         this.apiReady = true;
         return page;
+      } catch (error) {
+        this.errorMessage = getApiErrorMessage(error, "页面详情加载失败");
+        throw error;
       } finally {
         this.adminLoading = false;
       }
@@ -343,6 +345,9 @@ export const usePagesStore = defineStore("pages", {
         this.upsertFriendLink(link);
         this.apiReady = true;
         return link;
+      } catch (error) {
+        this.errorMessage = getApiErrorMessage(error, "友链详情加载失败");
+        throw error;
       } finally {
         this.adminLoading = false;
       }

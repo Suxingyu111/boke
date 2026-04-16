@@ -7,7 +7,10 @@ const siteStore = useSiteStore();
 const settings = reactive<SiteSettings>({ ...siteStore.settings });
 
 function syncForm(nextSettings: SiteSettings) {
-  Object.assign(settings, nextSettings);
+  Object.assign(settings, {
+    ...nextSettings,
+    socialLinks: nextSettings.socialLinks.map((link) => ({ ...link })),
+  });
 }
 
 onMounted(async () => {
@@ -24,6 +27,14 @@ watch(
 
 async function saveSettings() {
   await siteStore.saveSettings({ ...settings });
+}
+
+function addSocialLink() {
+  settings.socialLinks.push({ label: "", url: "" });
+}
+
+function removeSocialLink(index: number) {
+  settings.socialLinks.splice(index, 1);
 }
 </script>
 
@@ -84,6 +95,45 @@ async function saveSettings() {
           class="focus-ring mt-2 w-full rounded-md border border-line px-3 py-3"
         />
       </label>
+      <fieldset class="grid gap-3">
+        <legend class="text-sm text-ink/60">社交链接</legend>
+        <div
+          v-for="(link, index) in settings.socialLinks"
+          :key="index"
+          class="grid gap-3 md:grid-cols-[minmax(0,180px)_minmax(0,1fr)_auto] md:items-end"
+        >
+          <label>
+            <span class="text-sm text-ink/60">名称</span>
+            <input
+              v-model="link.label"
+              class="focus-ring mt-2 w-full rounded-md border border-line px-3 py-3"
+              placeholder="GitHub"
+            />
+          </label>
+          <label>
+            <span class="text-sm text-ink/60">链接</span>
+            <input
+              v-model="link.url"
+              class="focus-ring mt-2 w-full rounded-md border border-line px-3 py-3"
+              placeholder="https://example.com"
+            />
+          </label>
+          <button
+            class="focus-ring ui-button-secondary px-4 py-2 text-sm"
+            type="button"
+            @click="removeSocialLink(index)"
+          >
+            删除
+          </button>
+        </div>
+        <button
+          class="focus-ring ui-button-secondary w-fit px-4 py-2 text-sm"
+          type="button"
+          @click="addSocialLink"
+        >
+          添加社交链接
+        </button>
+      </fieldset>
       <button
         class="focus-ring ui-button-primary w-fit px-5 py-3 disabled:cursor-not-allowed disabled:opacity-60"
         :disabled="siteStore.settingsSaving || siteStore.settingsLoading"

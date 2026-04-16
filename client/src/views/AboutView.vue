@@ -38,7 +38,7 @@ onMounted(() => {
       <div class="markdown-body mt-8 max-w-3xl" v-html="renderedContent"></div>
     </div>
 
-    <div v-else class="ui-surface p-6 md:p-8">
+    <div v-else-if="pagesStore.loading" class="ui-surface p-6 md:p-8">
       <p class="eyebrow">About</p>
       <h1 class="mt-2 font-display text-5xl">关于我</h1>
       <div class="mt-6 grid gap-3 text-ink/65">
@@ -46,6 +46,14 @@ onMounted(() => {
         <div class="h-4 w-5/6 rounded-md bg-line"></div>
         <div class="h-4 w-1/2 rounded-md bg-line"></div>
       </div>
+    </div>
+
+    <div v-else class="ui-surface p-6 md:p-8">
+      <p class="eyebrow">About</p>
+      <h1 class="mt-2 font-display text-5xl">关于页暂不可用</h1>
+      <p class="mt-4 max-w-2xl leading-7 text-ink/65">
+        {{ pagesStore.errorMessage || "还没有发布关于页，或接口请求失败。" }}
+      </p>
     </div>
   </section>
 </template>
