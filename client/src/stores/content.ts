@@ -402,6 +402,54 @@ export const useContentStore = defineStore("content", {
         this.adminLoading = false;
       }
     },
+    async loadAdminArticleDetail(id: string) {
+      this.adminLoading = true;
+      this.errorMessage = "";
+      try {
+        const article = mapArticle(await contentApi.getAdminArticle(id));
+        this.upsertArticle(article);
+        this.apiReady = true;
+        return article;
+      } finally {
+        this.adminLoading = false;
+      }
+    },
+    async loadAdminCategoryDetail(id: string) {
+      this.adminLoading = true;
+      this.errorMessage = "";
+      try {
+        const category = mapCategory(await contentApi.getAdminCategory(id));
+        const index = this.categories.findIndex(
+          (item) => item.id === category.id,
+        );
+        if (index === -1) {
+          this.categories.push(category);
+        } else {
+          this.categories.splice(index, 1, category);
+        }
+        this.apiReady = true;
+        return category;
+      } finally {
+        this.adminLoading = false;
+      }
+    },
+    async loadAdminTagDetail(id: string) {
+      this.adminLoading = true;
+      this.errorMessage = "";
+      try {
+        const tag = mapTag(await contentApi.getAdminTag(id));
+        const index = this.tags.findIndex((item) => item.id === tag.id);
+        if (index === -1) {
+          this.tags.push(tag);
+        } else {
+          this.tags.splice(index, 1, tag);
+        }
+        this.apiReady = true;
+        return tag;
+      } finally {
+        this.adminLoading = false;
+      }
+    },
     async createArticle(payload: ArticleMutationPayload) {
       const article = mapArticle(
         await contentApi.createArticle(

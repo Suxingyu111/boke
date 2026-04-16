@@ -67,7 +67,8 @@ export class CategoriesService {
       ...category,
       name: dto.name?.trim() ?? category.name,
       slug: dto.slug?.trim() ?? category.slug,
-      description: dto.description !== undefined ? dto.description?.trim() ?? null : category.description,
+      description:
+        dto.description !== undefined ? (dto.description?.trim() ?? null) : category.description,
       sortOrder: dto.sortOrder ?? category.sortOrder,
       isVisible: dto.isVisible ?? category.isVisible,
       color: dto.color ?? category.color,

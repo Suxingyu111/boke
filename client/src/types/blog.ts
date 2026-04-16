@@ -63,6 +63,42 @@ export interface LinkItem {
   description: string;
 }
 
+export type PageType = "about" | "custom" | "resume" | "portfolio";
+export type PageStatus = "draft" | "published";
+export type FriendLinkStatus = "pending" | "approved" | "rejected" | "offline";
+
+export interface CustomPage {
+  id: string;
+  title: string;
+  slug: string;
+  pageType: PageType;
+  content: string;
+  contentHtml?: string | null;
+  summary?: string | null;
+  isHomeVisible: boolean;
+  status: PageStatus;
+  seoTitle?: string | null;
+  seoDescription?: string | null;
+  publishedAt?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface FriendLink {
+  id: string;
+  siteName: string;
+  siteUrl: string;
+  logoUrl?: string | null;
+  description?: string | null;
+  contactEmail?: string | null;
+  applicantName?: string | null;
+  sortOrder: number;
+  status: FriendLinkStatus;
+  approvedAt?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface SiteStats {
   articles: number;
   views: number;

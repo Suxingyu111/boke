@@ -44,10 +44,12 @@ describe('RolesGuard', () => {
     const guard = new RolesGuard(reflector);
 
     expect(
-      guard.canActivate(createContext({
-        ...baseUser,
-        role: 'admin',
-      })),
+      guard.canActivate(
+        createContext({
+          ...baseUser,
+          role: 'admin',
+        }),
+      ),
     ).toBe(true);
   });
 
@@ -58,10 +60,12 @@ describe('RolesGuard', () => {
     const guard = new RolesGuard(reflector);
 
     expect(
-      guard.canActivate(createContext({
-        ...baseUser,
-        role: 'super_admin',
-      })),
+      guard.canActivate(
+        createContext({
+          ...baseUser,
+          role: 'super_admin',
+        }),
+      ),
     ).toBe(true);
   });
 

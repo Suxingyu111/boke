@@ -11,6 +11,7 @@ import { AuthModule } from './modules/auth/auth.module';
 import { CategoriesModule } from './modules/categories/categories.module';
 import { TagsModule } from './modules/tags/tags.module';
 import { ArticlesModule } from './modules/articles/articles.module';
+import { PagesModule } from './modules/pages/pages.module';
 
 @Module({
   imports: [
@@ -54,6 +55,9 @@ import { ArticlesModule } from './modules/articles/articles.module';
 
     // 文章模块
     ArticlesModule,
+
+    // 页面模块
+    PagesModule,
   ],
   controllers: [],
   providers: [

@@ -44,6 +44,13 @@ async function logout() {
           <RouterLink
             class="focus-ring min-h-11 rounded-md px-3 py-2 font-medium text-white/72 hover:bg-white/10 hover:text-white"
             active-class="bg-white text-ink"
+            to="/admin/pages"
+          >
+            页面管理
+          </RouterLink>
+          <RouterLink
+            class="focus-ring min-h-11 rounded-md px-3 py-2 font-medium text-white/72 hover:bg-white/10 hover:text-white"
+            active-class="bg-white text-ink"
             to="/admin/settings"
           >
             系统设置

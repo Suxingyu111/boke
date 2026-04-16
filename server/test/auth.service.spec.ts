@@ -149,9 +149,7 @@ describe('AuthService', () => {
   });
 
   it('注册时用户名重复应抛出冲突异常', async () => {
-    userRepository.findOne
-      .mockResolvedValueOnce(null)
-      .mockResolvedValueOnce(baseUser);
+    userRepository.findOne.mockResolvedValueOnce(null).mockResolvedValueOnce(baseUser);
 
     await expect(service.register(registerDto)).rejects.toBeInstanceOf(ConflictException);
   });
@@ -268,7 +266,9 @@ describe('AuthService', () => {
   it('当前已认证用户不存在时应抛出未授权异常', async () => {
     userRepository.findOne.mockResolvedValue(null);
 
-    await expect(service.getAuthenticatedUser(baseUser.id)).rejects.toBeInstanceOf(UnauthorizedException);
+    await expect(service.getAuthenticatedUser(baseUser.id)).rejects.toBeInstanceOf(
+      UnauthorizedException,
+    );
   });
 
   it('当前已认证用户已禁用时应抛出禁止异常', async () => {
@@ -277,6 +277,8 @@ describe('AuthService', () => {
       isActive: false,
     });
 
-    await expect(service.getAuthenticatedUser(baseUser.id)).rejects.toBeInstanceOf(ForbiddenException);
+    await expect(service.getAuthenticatedUser(baseUser.id)).rejects.toBeInstanceOf(
+      ForbiddenException,
+    );
   });
 });

@@ -31,8 +31,7 @@ export class HealthService {
       this.checkRedis(),
     ]);
 
-    const status =
-      databaseStatus === 'up' && redisStatus === 'up' ? 'ok' : 'degraded';
+    const status = databaseStatus === 'up' && redisStatus === 'up' ? 'ok' : 'degraded';
 
     return {
       status,

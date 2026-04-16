@@ -58,9 +58,6 @@ async function bootstrap(): Promise<void> {
 }
 
 bootstrap().catch(err => {
-  bootstrapLogger.error(
-    '应用启动失败',
-    err instanceof Error ? err.stack : String(err),
-  );
+  bootstrapLogger.error('应用启动失败', err instanceof Error ? err.stack : String(err));
   process.exit(1);
 });

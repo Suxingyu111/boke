@@ -2,6 +2,8 @@ import type {
   Article,
   Author,
   Category,
+  CustomPage,
+  FriendLink,
   LinkItem,
   SiteSettings,
   SiteStats,
@@ -133,6 +135,58 @@ export const links: LinkItem[] = [
     description: "快速构建一致、响应式的界面样式。",
   },
 ];
+
+export const pages: CustomPage[] = [
+  {
+    id: "page-about",
+    title: "关于我",
+    slug: "about",
+    pageType: "about",
+    summary: "记录工程、阅读和独立项目的长期主义笔记。",
+    content:
+      "# 关于我\n\n你好，我是纸上码头。这里记录前端工程、后端架构、阅读札记和那些慢慢打磨的独立项目。\n\n我喜欢把复杂问题拆成能复用的结构，也喜欢把项目做成可以长期维护的形状。\n\n## 联系方式\n\n- 邮箱：[hello@example.com](mailto:hello@example.com)\n- GitHub：[github.com/example](https://github.com/example)\n- 城市：深圳\n\n## 正在关注\n\n- Vue 与 NestJS 的工程化实践\n- 内容系统的信息架构\n- 个人知识库和长期写作",
+    contentHtml: null,
+    isHomeVisible: true,
+    status: "published",
+    seoTitle: "关于我",
+    seoDescription: "纸上码头的个人简介、联系方式和长期项目。",
+    publishedAt: "2026-04-14T10:00:00.000Z",
+    createdAt: "2026-04-14T09:00:00.000Z",
+    updatedAt: "2026-04-14T10:00:00.000Z",
+  },
+  {
+    id: "page-portfolio",
+    title: "作品集",
+    slug: "portfolio",
+    pageType: "portfolio",
+    summary: "一些正在生长的产品、实验和工程样本。",
+    content:
+      "# 作品集\n\n这里收集长期项目、产品实验和工程样本。每个项目都尽量留下目标、过程、取舍和结果。\n\n## 项目清单\n\n- 个人博客系统：文章、分类、标签、页面管理和后台管理。\n- Markdown 写作台：面向技术写作的轻量编辑体验。\n- 内容索引器：把分散资料整理成可检索的主题线索。\n\n> 好作品不是一次性完成的，它们会在使用中继续长出新的边界。",
+    contentHtml: null,
+    isHomeVisible: true,
+    status: "published",
+    seoTitle: "作品集",
+    seoDescription: "纸上码头的项目、作品和工程样本。",
+    publishedAt: "2026-04-15T10:00:00.000Z",
+    createdAt: "2026-04-15T09:00:00.000Z",
+    updatedAt: "2026-04-15T10:00:00.000Z",
+  },
+];
+
+export const friendLinks: FriendLink[] = links.map((link, index) => ({
+  id: link.id,
+  siteName: link.name,
+  siteUrl: link.url,
+  logoUrl: null,
+  description: link.description,
+  contactEmail: null,
+  applicantName: null,
+  sortOrder: index + 1,
+  status: "approved",
+  approvedAt: "2026-04-15T08:00:00.000Z",
+  createdAt: "2026-04-15T08:00:00.000Z",
+  updatedAt: "2026-04-15T08:00:00.000Z",
+}));
 
 export const siteStats: SiteStats = {
   articles: 26,

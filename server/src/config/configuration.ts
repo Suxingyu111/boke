@@ -3,10 +3,7 @@ const parseNumber = (value: string | undefined, fallback: number): number => {
   return Number.isNaN(parsed) ? fallback : parsed;
 };
 
-const parseCorsOrigins = (
-  value: string | undefined,
-  nodeEnv: string,
-): string[] => {
+const parseCorsOrigins = (value: string | undefined, nodeEnv: string): string[] => {
   if (value && value.trim().length > 0) {
     return value
       .split(',')
@@ -18,7 +15,13 @@ const parseCorsOrigins = (
     return [];
   }
 
-  return ['http://localhost:3000', 'http://localhost:5173'];
+  return [
+    'http://localhost:3000',
+    'http://localhost:5173',
+    'http://localhost:5174',
+    'http://localhost:5175',
+    'http://localhost:4173',
+  ];
 };
 
 export const configuration = (): {

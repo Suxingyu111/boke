@@ -1,9 +1,7 @@
 import * as Joi from 'joi';
 
 export const validationSchema = Joi.object({
-  NODE_ENV: Joi.string()
-    .valid('development', 'production', 'test')
-    .default('development'),
+  NODE_ENV: Joi.string().valid('development', 'production', 'test').default('development'),
   PORT: Joi.number().default(3000),
   APP_NAME: Joi.string().default('Blog System'),
   APP_DESC: Joi.string(),
@@ -51,10 +49,7 @@ export const validationSchema = Joi.object({
   }),
   ADMIN_PASSWORD: Joi.when('NODE_ENV', {
     is: 'production',
-    then: Joi.string()
-      .min(12)
-      .invalid('admin123456', 'change_me_admin_password_strong')
-      .required(),
+    then: Joi.string().min(12).invalid('admin123456', 'change_me_admin_password_strong').required(),
     otherwise: Joi.string().optional(),
   }),
 });

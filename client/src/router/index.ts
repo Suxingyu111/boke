@@ -13,11 +13,13 @@ import CategoriesView from "@/views/CategoriesView.vue";
 import TagsView from "@/views/TagsView.vue";
 import AboutView from "@/views/AboutView.vue";
 import LinksView from "@/views/LinksView.vue";
+import PageDetailView from "@/views/PageDetailView.vue";
 import SearchView from "@/views/SearchView.vue";
 import LoginView from "@/views/admin/LoginView.vue";
 import RegisterView from "@/views/admin/RegisterView.vue";
 import DashboardView from "@/views/admin/DashboardView.vue";
 import ArticleManageView from "@/views/admin/ArticleManageView.vue";
+import PageManageView from "@/views/admin/PageManageView.vue";
 import SettingsView from "@/views/admin/SettingsView.vue";
 
 const routes: RouteRecordRaw[] = [
@@ -35,6 +37,7 @@ const routes: RouteRecordRaw[] = [
       { path: "tags", name: "tags", component: TagsView },
       { path: "about", name: "about", component: AboutView },
       { path: "links", name: "links", component: LinksView },
+      { path: "pages/:slug", name: "page-detail", component: PageDetailView },
       { path: "search", name: "search", component: SearchView },
     ],
   },
@@ -50,6 +53,11 @@ const routes: RouteRecordRaw[] = [
         path: "articles",
         name: "admin-articles",
         component: ArticleManageView,
+      },
+      {
+        path: "pages",
+        name: "admin-pages",
+        component: PageManageView,
       },
       { path: "settings", name: "admin-settings", component: SettingsView },
     ],

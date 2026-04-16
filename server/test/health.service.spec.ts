@@ -41,11 +41,7 @@ describe('HealthService', () => {
       }),
     } as unknown as ConfigService;
 
-    return new HealthService(
-      dataSource,
-      redisClient as never,
-      configService,
-    );
+    return new HealthService(dataSource, redisClient as never, configService);
   };
 
   it('应返回应用、数据库和 Redis 的健康状态', async () => {

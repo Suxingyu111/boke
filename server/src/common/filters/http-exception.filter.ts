@@ -49,14 +49,12 @@ export class HttpExceptionFilter implements ExceptionFilter {
       }
     }
 
-    const logMessage = status >= HttpStatus.INTERNAL_SERVER_ERROR
-      ? `${request.method} ${request.url} -> ${status} InternalError`
-      : `${request.method} ${request.url} -> ${status} ${message}`;
+    const logMessage =
+      status >= HttpStatus.INTERNAL_SERVER_ERROR
+        ? `${request.method} ${request.url} -> ${status} InternalError`
+        : `${request.method} ${request.url} -> ${status} ${message}`;
 
-    this.logger.error(
-      logMessage,
-      exception instanceof Error ? exception.stack : '',
-    );
+    this.logger.error(logMessage, exception instanceof Error ? exception.stack : '');
 
     response.status(status).json({
       success: false,

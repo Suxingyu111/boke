@@ -264,20 +264,27 @@ async function saveArticle(intent: PublishIntent) {
   }
 }
 
-function editArticle(article: Article) {
+async function editArticle(article: Article) {
   activePanel.value = "articles";
   notice.value = "";
   articleError.value = "";
+  let detail = article;
+  try {
+    detail = await contentStore.loadAdminArticleDetail(article.id);
+  } catch (error) {
+    articleError.value = getApiErrorMessage(error, "文章详情加载失败");
+  }
+
   Object.assign(articleForm, {
-    id: article.id,
-    title: article.title,
-    excerpt: article.excerpt,
-    content: article.content,
-    coverImage: article.coverImage,
-    categoryId: article.category.id,
-    tagIds: article.tags.map((tag) => tag.id),
-    scheduledAt: article.scheduledAt
-      ? toLocalInputValue(article.scheduledAt)
+    id: detail.id,
+    title: detail.title,
+    excerpt: detail.excerpt,
+    content: detail.content,
+    coverImage: detail.coverImage,
+    categoryId: detail.category.id,
+    tagIds: detail.tags.map((tag) => tag.id),
+    scheduledAt: detail.scheduledAt
+      ? toLocalInputValue(detail.scheduledAt)
       : toLocalInputValue(new Date(Date.now() + 60 * 60 * 1000)),
   });
 }
@@ -329,10 +336,18 @@ function statusClass(status: ArticleStatus) {
   return "border-coral text-coral";
 }
 
-function editCategory(category: Category) {
+async function editCategory(category: Category) {
   activePanel.value = "categories";
-  Object.assign(categoryForm, category);
   categoryError.value = "";
+  try {
+    Object.assign(
+      categoryForm,
+      await contentStore.loadAdminCategoryDetail(category.id),
+    );
+  } catch (error) {
+    categoryError.value = getApiErrorMessage(error, "分类详情加载失败");
+    Object.assign(categoryForm, category);
+  }
 }
 
 function resetCategoryForm() {
@@ -380,10 +395,15 @@ async function removeCategory(category: Category) {
   }
 }
 
-function editTag(tag: Tag) {
+async function editTag(tag: Tag) {
   activePanel.value = "tags";
-  Object.assign(tagForm, tag);
   tagError.value = "";
+  try {
+    Object.assign(tagForm, await contentStore.loadAdminTagDetail(tag.id));
+  } catch (error) {
+    tagError.value = getApiErrorMessage(error, "标签详情加载失败");
+    Object.assign(tagForm, tag);
+  }
 }
 
 function resetTagForm() {

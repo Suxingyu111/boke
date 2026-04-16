@@ -38,6 +38,9 @@ export interface ArticlePayload {
   allowComment?: boolean;
   isTop?: boolean;
   sortOrder?: number;
+  seoTitle?: string;
+  seoDescription?: string;
+  seoKeywords?: string;
   scheduledAt?: string;
 }
 
@@ -73,6 +76,11 @@ export async function getAdminArticles(query: ArticleQuery = {}) {
     "/admin/articles",
     query,
   );
+  return response.data;
+}
+
+export async function getAdminArticle(id: string) {
+  const response = await request<unknown>(`/admin/articles/${id}`);
   return response.data;
 }
 
@@ -117,6 +125,11 @@ export async function getAdminCategories() {
   return response.data;
 }
 
+export async function getAdminCategory(id: string) {
+  const response = await request<unknown>(`/admin/categories/${id}`);
+  return response.data;
+}
+
 export async function createCategory(payload: CategoryPayload) {
   const response = await post<unknown, CategoryPayload>(
     "/admin/categories",
@@ -148,6 +161,11 @@ export async function getPublicTags() {
 
 export async function getAdminTags() {
   const response = await request<unknown[]>("/admin/tags");
+  return response.data;
+}
+
+export async function getAdminTag(id: string) {
+  const response = await request<unknown>(`/admin/tags/${id}`);
   return response.data;
 }
 

@@ -1,4 +1,14 @@
-import { IsBoolean, IsHexColor, IsInt, IsOptional, IsString, Length, Matches, MaxLength, Min } from 'class-validator';
+import {
+  IsBoolean,
+  IsHexColor,
+  IsInt,
+  IsOptional,
+  IsString,
+  Length,
+  Matches,
+  MaxLength,
+  Min,
+} from 'class-validator';
 
 export class UpdateCategoryDto {
   @IsOptional()

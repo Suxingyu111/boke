@@ -79,18 +79,17 @@ const createUserRepositoryMock = (): UserRepositoryMock => {
 
     const builder = {
       addSelect: jest.fn().mockReturnThis(),
-      where: jest.fn().mockImplementation(
-        (_query: string, params: { account: string; email: string }) => {
+      where: jest
+        .fn()
+        .mockImplementation((_query: string, params: { account: string; email: string }) => {
           state.account = params.account;
           state.email = params.email;
           return builder;
-        },
-      ),
+        }),
       getOne: jest.fn().mockImplementation(async () => {
         return (
           users.find(
-            user =>
-              user.username === state.account || user.email.toLowerCase() === state.email,
+            user => user.username === state.account || user.email.toLowerCase() === state.email,
           ) ?? null
         );
       }),

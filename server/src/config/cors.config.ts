@@ -9,9 +9,7 @@ export const buildCorsOptions = ({
   allowedOrigins,
   allowRequestsWithoutOrigin,
 }: BuildCorsOptionsInput): CorsOptions => {
-  const allowedOriginSet = new Set(
-    allowedOrigins.map(origin => origin.trim()).filter(Boolean),
-  );
+  const allowedOriginSet = new Set(allowedOrigins.map(origin => origin.trim()).filter(Boolean));
 
   return {
     credentials: true,

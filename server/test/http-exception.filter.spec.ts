@@ -1,8 +1,4 @@
-import {
-  ArgumentsHost,
-  HttpException,
-  HttpStatus,
-} from '@nestjs/common';
+import { ArgumentsHost, HttpException, HttpStatus } from '@nestjs/common';
 import { HttpExceptionFilter } from '../src/common/filters/http-exception.filter';
 
 const createHost = (json: jest.Mock, status: jest.Mock): ArgumentsHost =>
@@ -52,10 +48,7 @@ describe('HttpExceptionFilter', () => {
     const status = jest.fn().mockReturnValue({ json });
     const filter = new HttpExceptionFilter();
 
-    filter.catch(
-      new HttpException('参数错误', HttpStatus.BAD_REQUEST),
-      createHost(json, status),
-    );
+    filter.catch(new HttpException('参数错误', HttpStatus.BAD_REQUEST), createHost(json, status));
 
     expect(status).toHaveBeenCalledWith(HttpStatus.BAD_REQUEST);
     expect(json).toHaveBeenCalledWith(

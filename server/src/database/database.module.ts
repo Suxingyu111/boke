@@ -7,9 +7,7 @@ import { TypeOrmModuleOptions } from '@nestjs/typeorm';
   imports: [
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
-      useFactory: async (
-        configService: ConfigService,
-      ): Promise<TypeOrmModuleOptions> => {
+      useFactory: async (configService: ConfigService): Promise<TypeOrmModuleOptions> => {
         const databaseType = configService.get<string>('database.type', 'mysql');
 
         if (databaseType !== 'mysql') {

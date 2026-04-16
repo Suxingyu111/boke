@@ -1,7 +1,7 @@
 import axios from "axios";
 import type { ApiResponse } from "@/types/blog";
 
-const apiBaseUrl = import.meta.env.VITE_API_BASE_URL ?? "/api";
+const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || "/api";
 const tokenStorageKeys = ["blog_token", "blog_session_token"];
 
 export const http = axios.create({

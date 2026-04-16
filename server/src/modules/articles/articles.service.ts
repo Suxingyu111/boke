@@ -77,8 +77,14 @@ export class ArticlesService {
     });
 
     const savedArticle = await this.articleRepository.save(article);
-    await this.syncArticleTags(savedArticle.id, tags.map(tag => tag.id));
-    await this.refreshStatistics(savedArticle.categoryId, tags.map(tag => tag.id));
+    await this.syncArticleTags(
+      savedArticle.id,
+      tags.map(tag => tag.id),
+    );
+    await this.refreshStatistics(
+      savedArticle.categoryId,
+      tags.map(tag => tag.id),
+    );
 
     return this.buildArticleView(savedArticle);
   }
@@ -120,7 +126,11 @@ export class ArticlesService {
         .includes(keyword);
     });
 
-    const sortedItems = this.sortArticles(result, query.sortBy ?? 'updatedAt', query.order ?? 'DESC');
+    const sortedItems = this.sortArticles(
+      result,
+      query.sortBy ?? 'updatedAt',
+      query.order ?? 'DESC',
+    );
     return this.buildPaginatedResponse(sortedItems, query.page, query.pageSize);
   }
 
@@ -155,28 +165,37 @@ export class ArticlesService {
       ...article,
       title: dto.title?.trim() ?? article.title,
       slug: dto.slug?.trim() ?? article.slug,
-      excerpt: dto.excerpt !== undefined ? dto.excerpt?.trim() ?? null : article.excerpt,
+      excerpt: dto.excerpt !== undefined ? (dto.excerpt?.trim() ?? null) : article.excerpt,
       content: dto.content ?? article.content,
-      contentHtml: dto.contentHtml !== undefined ? dto.contentHtml?.trim() ?? null : article.contentHtml,
-      coverImage: dto.coverImage !== undefined ? dto.coverImage?.trim() ?? null : article.coverImage,
+      contentHtml:
+        dto.contentHtml !== undefined ? (dto.contentHtml?.trim() ?? null) : article.contentHtml,
+      coverImage:
+        dto.coverImage !== undefined ? (dto.coverImage?.trim() ?? null) : article.coverImage,
       categoryId: nextCategoryId,
       status: publication.status,
       visibility: dto.visibility ?? article.visibility,
       allowComment: dto.allowComment ?? article.allowComment,
       isTop: dto.isTop ?? article.isTop,
       sortOrder: dto.sortOrder ?? article.sortOrder,
-      seoTitle: dto.seoTitle !== undefined ? dto.seoTitle?.trim() ?? null : article.seoTitle,
-      seoDescription: dto.seoDescription !== undefined ? dto.seoDescription?.trim() ?? null : article.seoDescription,
-      seoKeywords: dto.seoKeywords !== undefined ? dto.seoKeywords?.trim() ?? null : article.seoKeywords,
+      seoTitle: dto.seoTitle !== undefined ? (dto.seoTitle?.trim() ?? null) : article.seoTitle,
+      seoDescription:
+        dto.seoDescription !== undefined
+          ? (dto.seoDescription?.trim() ?? null)
+          : article.seoDescription,
+      seoKeywords:
+        dto.seoKeywords !== undefined ? (dto.seoKeywords?.trim() ?? null) : article.seoKeywords,
       scheduledAt: publication.scheduledAt,
       publishedAt: publication.publishedAt,
-      deletedAt: nextStatus === 'archived' ? article.deletedAt ?? new Date() : null,
+      deletedAt: nextStatus === 'archived' ? (article.deletedAt ?? new Date()) : null,
       updatedAt: new Date(),
     };
 
     const savedArticle = await this.articleRepository.save(updatedArticle);
     if (dto.tagIds) {
-      await this.syncArticleTags(savedArticle.id, nextTags.map(tag => tag.id));
+      await this.syncArticleTags(
+        savedArticle.id,
+        nextTags.map(tag => tag.id),
+      );
     }
 
     await this.refreshStatistics(
@@ -199,7 +218,10 @@ export class ArticlesService {
       updatedAt: new Date(),
     });
 
-    await this.refreshStatistics(article.categoryId, tags.map(tag => tag.id));
+    await this.refreshStatistics(
+      article.categoryId,
+      tags.map(tag => tag.id),
+    );
     return { message: '文章删除成功' };
   }
 
@@ -209,7 +231,10 @@ export class ArticlesService {
 
     await this.articleTagRepository.delete({ articleId: article.id });
     await this.articleRepository.delete(article.id);
-    await this.refreshStatistics(article.categoryId, tags.map(tag => tag.id));
+    await this.refreshStatistics(
+      article.categoryId,
+      tags.map(tag => tag.id),
+    );
 
     return { message: '文章永久删除成功' };
   }
@@ -258,7 +283,11 @@ export class ArticlesService {
         .includes(keyword);
     });
 
-    const sortedItems = this.sortArticles(items, query.sortBy ?? 'publishedAt', query.order ?? 'DESC');
+    const sortedItems = this.sortArticles(
+      items,
+      query.sortBy ?? 'publishedAt',
+      query.order ?? 'DESC',
+    );
     return this.buildPaginatedResponse(
       sortedItems.map(article => this.toPublicListItem(article)),
       query.page,
@@ -469,7 +498,13 @@ export class ArticlesService {
     });
   }
 
-  private normalizeSortValue(value: Article['createdAt'] | Article['updatedAt'] | Article['publishedAt'] | Article['viewCount']): number {
+  private normalizeSortValue(
+    value:
+      | Article['createdAt']
+      | Article['updatedAt']
+      | Article['publishedAt']
+      | Article['viewCount'],
+  ): number {
     if (typeof value === 'number') {
       return value;
     }
@@ -561,7 +596,9 @@ export class ArticlesService {
     tagIds: string[],
     previousCategoryId?: string,
   ): Promise<void> {
-    const affectedCategoryIds = [...new Set([categoryId, previousCategoryId].filter(Boolean))] as string[];
+    const affectedCategoryIds = [
+      ...new Set([categoryId, previousCategoryId].filter(Boolean)),
+    ] as string[];
     for (const affectedCategoryId of affectedCategoryIds) {
       await this.refreshCategoryCount(affectedCategoryId);
     }

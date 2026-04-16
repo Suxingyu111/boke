@@ -109,10 +109,7 @@ export class AuthService {
     return user;
   }
 
-  private async ensureUserDoesNotExist(
-    email: string,
-    username: string,
-  ): Promise<void> {
+  private async ensureUserDoesNotExist(email: string, username: string): Promise<void> {
     const [existingEmailUser, existingUsernameUser] = await Promise.all([
       this.userRepository.findOne({ where: { email } }),
       this.userRepository.findOne({ where: { username } }),

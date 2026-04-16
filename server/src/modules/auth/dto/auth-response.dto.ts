@@ -6,11 +6,7 @@ export class AuthResponseDto {
   expiresIn: string;
   user: AuthUserDto;
 
-  constructor(params: {
-    accessToken: string;
-    expiresIn: string;
-    user: AuthUserDto;
-  }) {
+  constructor(params: { accessToken: string; expiresIn: string; user: AuthUserDto }) {
     this.accessToken = params.accessToken;
     this.tokenType = 'Bearer';
     this.expiresIn = params.expiresIn;

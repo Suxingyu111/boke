@@ -4,13 +4,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import request from 'supertest';
 import { ObjectLiteral, Repository } from 'typeorm';
-import {
-  Article,
-  ArticleTag,
-  Category,
-  Tag,
-  User,
-} from '../src/database/entities';
+import { Article, ArticleTag, Category, Tag, User } from '../src/database/entities';
 import { HttpExceptionFilter } from '../src/common/filters/http-exception.filter';
 import { ResponseInterceptor } from '../src/common/interceptors/response.interceptor';
 import { CategoriesController } from '../src/modules/categories/categories.controller';
@@ -62,9 +56,7 @@ const matchWhere = <T extends Record<string, unknown>>(
   );
 };
 
-const createRepositoryMock = <T extends ObjectLiteral>(
-  seed: T[] = [],
-): RepositoryMock<T> => {
+const createRepositoryMock = <T extends ObjectLiteral>(seed: T[] = []): RepositoryMock<T> => {
   const items = seed.map(item => cloneValue(item));
 
   return {
@@ -73,14 +65,18 @@ const createRepositoryMock = <T extends ObjectLiteral>(
       ...payload,
       id: (payload as { id?: string }).id ?? createMockUuid(items.length + 1),
     })),
-    find: jest.fn().mockImplementation(async (options?: { where?: Partial<T> | Array<Partial<T>> }) => {
-      return items.filter(item => matchWhere(item as Record<string, unknown>, options?.where));
-    }),
-    findOne: jest.fn().mockImplementation(async (options: { where: Partial<T> | Array<Partial<T>> }) => {
-      return (
-        items.find(item => matchWhere(item as Record<string, unknown>, options.where)) ?? null
-      );
-    }),
+    find: jest
+      .fn()
+      .mockImplementation(async (options?: { where?: Partial<T> | Array<Partial<T>> }) => {
+        return items.filter(item => matchWhere(item as Record<string, unknown>, options?.where));
+      }),
+    findOne: jest
+      .fn()
+      .mockImplementation(async (options: { where: Partial<T> | Array<Partial<T>> }) => {
+        return (
+          items.find(item => matchWhere(item as Record<string, unknown>, options.where)) ?? null
+        );
+      }),
     save: jest.fn().mockImplementation(async (entity: T) => {
       const entityWithId = entity as { id?: string };
       const canUpdateById = entityWithId.id !== undefined && entityWithId.id !== null;
@@ -102,9 +98,10 @@ const createRepositoryMock = <T extends ObjectLiteral>(
     }),
     remove: jest.fn().mockImplementation(async (entity: T) => {
       const entityWithId = entity as { id?: string };
-      const index = entityWithId.id !== undefined && entityWithId.id !== null
-        ? items.findIndex(item => (item as { id?: string }).id === entityWithId.id)
-        : items.findIndex(item => JSON.stringify(item) === JSON.stringify(entity));
+      const index =
+        entityWithId.id !== undefined && entityWithId.id !== null
+          ? items.findIndex(item => (item as { id?: string }).id === entityWithId.id)
+          : items.findIndex(item => JSON.stringify(item) === JSON.stringify(entity));
 
       if (index >= 0) {
         items.splice(index, 1);
@@ -121,16 +118,19 @@ const createRepositoryMock = <T extends ObjectLiteral>(
         .map(target => target.index)
         .sort((left, right) => right - left)
         .forEach(index => {
-        if (index >= 0) {
-          items.splice(index, 1);
-        }
-      });
+          if (index >= 0) {
+            items.splice(index, 1);
+          }
+        });
 
       return { affected: targets.length, raw: {} };
     }),
-    count: jest.fn().mockImplementation(async (options?: { where?: Partial<T> | Array<Partial<T>> }) => {
-      return items.filter(item => matchWhere(item as Record<string, unknown>, options?.where)).length;
-    }),
+    count: jest
+      .fn()
+      .mockImplementation(async (options?: { where?: Partial<T> | Array<Partial<T>> }) => {
+        return items.filter(item => matchWhere(item as Record<string, unknown>, options?.where))
+          .length;
+      }),
   };
 };
 
@@ -207,7 +207,9 @@ describe('Articles integration', () => {
           useValue: articleTagRepository,
         },
       ],
-    }).overrideGuard(JwtAuthGuard).useValue(new MockJwtAuthGuard());
+    })
+      .overrideGuard(JwtAuthGuard)
+      .useValue(new MockJwtAuthGuard());
 
     const moduleRef: TestingModule = await moduleBuilder.compile();
 
