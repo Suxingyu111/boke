@@ -1,10 +1,7 @@
 import { defineStore } from "pinia";
 import { getApiErrorMessage } from "@/api/auth";
 import * as contentApi from "@/api/content";
-import {
-  articles as mockArticles,
-  author,
-} from "@/data/mock";
+import { articles as mockArticles, author } from "@/data/mock";
 import type {
   Article,
   ArticleStatus,

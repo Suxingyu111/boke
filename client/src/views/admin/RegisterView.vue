@@ -70,11 +70,11 @@ async function handleRegister() {
 
 <template>
   <main
-    class="grid min-h-screen bg-paper text-ink lg:grid-cols-[460px_minmax(0,1fr)]"
+    class="grid min-h-screen bg-paper text-ink lg:grid-cols-[500px_minmax(0,1fr)]"
   >
     <section class="flex min-h-screen items-center p-5 md:p-8">
       <form
-        class="ui-surface w-full p-5 md:p-8"
+        class="ui-surface w-full p-6 md:p-9"
         @submit.prevent="handleRegister"
       >
         <RouterLink
@@ -85,7 +85,9 @@ async function handleRegister() {
         </RouterLink>
 
         <p class="eyebrow mt-8">Register</p>
-        <h1 class="mt-2 font-display text-5xl leading-none">开一个新账号</h1>
+        <h1 class="mt-2 font-display text-5xl leading-none text-brand">
+          开一个新账号
+        </h1>
         <p class="mt-4 text-sm leading-6 text-ink/60">
           注册成功后会自动登录。默认角色为普通用户，管理员权限由后端分配。
         </p>
@@ -99,7 +101,7 @@ async function handleRegister() {
 
         <div class="mt-6 grid gap-4">
           <label class="block">
-            <span class="text-sm text-ink/60">用户名</span>
+            <span class="text-sm font-semibold text-ink/60">用户名</span>
             <input
               v-model="username"
               autocomplete="username"
@@ -110,7 +112,7 @@ async function handleRegister() {
           </label>
 
           <label class="block">
-            <span class="text-sm text-ink/60">邮箱</span>
+            <span class="text-sm font-semibold text-ink/60">邮箱</span>
             <input
               v-model="email"
               autocomplete="email"
@@ -121,7 +123,7 @@ async function handleRegister() {
           </label>
 
           <label class="block">
-            <span class="text-sm text-ink/60">昵称</span>
+            <span class="text-sm font-semibold text-ink/60">昵称</span>
             <input
               v-model="nickname"
               autocomplete="nickname"
@@ -132,7 +134,7 @@ async function handleRegister() {
           </label>
 
           <label class="block">
-            <span class="text-sm text-ink/60">密码</span>
+            <span class="text-sm font-semibold text-ink/60">密码</span>
             <input
               v-model="password"
               autocomplete="new-password"
@@ -149,7 +151,7 @@ async function handleRegister() {
               class="rounded-md border px-2 py-1 text-xs"
               :class="
                 item.active
-                  ? 'border-moss bg-moss/10 text-moss'
+                  ? 'border-brand bg-brand/10 text-brand'
                   : 'border-line text-ink/45'
               "
             >
@@ -158,7 +160,7 @@ async function handleRegister() {
           </div>
 
           <label class="block">
-            <span class="text-sm text-ink/60">确认密码</span>
+            <span class="text-sm font-semibold text-ink/60">确认密码</span>
             <input
               v-model="confirmPassword"
               autocomplete="new-password"
@@ -179,7 +181,7 @@ async function handleRegister() {
         <p class="mt-6 text-sm text-ink/60">
           已有账号？
           <RouterLink
-            class="focus-ring rounded-md text-coral hover:text-moss"
+            class="focus-ring rounded-md text-coral hover:text-brand"
             to="/login"
           >
             去登录
@@ -188,21 +190,23 @@ async function handleRegister() {
       </form>
     </section>
 
-    <section
-      class="relative hidden min-h-screen overflow-hidden bg-ink text-paper lg:block"
-    >
+    <section class="relative hidden min-h-screen overflow-hidden lg:block">
       <img
         alt="桌面上的书、咖啡和笔记"
-        class="absolute inset-0 h-full w-full object-cover opacity-60 grayscale"
+        class="absolute inset-0 h-full w-full object-cover opacity-75"
         src="https://images.unsplash.com/photo-1456324504439-367cee3b3c32?auto=format&fit=crop&w=1600&q=80"
+        width="1600"
+        height="1200"
       />
       <div
-        class="absolute inset-0 bg-[linear-gradient(270deg,rgba(17,20,20,0.88),rgba(17,20,20,0.38))]"
+        class="absolute inset-0 bg-[linear-gradient(260deg,rgba(17,42,63,0.9),rgba(17,42,63,0.52))]"
       ></div>
 
-      <div class="relative flex min-h-screen flex-col justify-between p-12">
+      <div
+        class="relative flex min-h-screen flex-col justify-between p-12 text-white"
+      >
         <div
-          class="grid w-fit grid-cols-[44px_44px_44px] border border-white/20"
+          class="grid w-fit grid-cols-[44px_44px_44px] overflow-hidden rounded-md border border-white/22"
         >
           <span class="h-11 bg-citron"></span>
           <span class="h-11 bg-coral"></span>
@@ -210,24 +214,28 @@ async function handleRegister() {
         </div>
 
         <div class="ml-auto max-w-3xl text-right">
-          <p class="text-sm font-semibold uppercase text-citron">new author</p>
-          <h2 class="mt-5 font-display text-6xl leading-tight">
+          <p
+            class="text-sm font-semibold uppercase tracking-[0.15em] text-citron"
+          >
+            new author
+          </p>
+          <h2 class="mt-5 font-display text-7xl leading-[1.04]">
             写作账户，从第一枚铅字开始。
           </h2>
-          <p class="ml-auto mt-6 max-w-xl text-lg text-paper/75">
+          <p class="ml-auto mt-6 max-w-xl text-lg text-white/82">
             账号创建后可以参与登录态交互，后续接入用户中心、评论、收藏和多作者权限。
           </p>
         </div>
 
         <div
-          class="ml-auto grid max-w-xl grid-cols-2 border border-white/20 text-sm"
+          class="ml-auto grid max-w-xl grid-cols-2 overflow-hidden rounded-[14px] border border-white/22 text-sm backdrop-blur"
         >
-          <div class="p-4">
-            <p class="text-paper/50">Username</p>
+          <div class="bg-white/10 p-4">
+            <p class="text-white/55">Username</p>
             <p class="mt-1 text-citron">字母 / 数字 / 下划线</p>
           </div>
-          <div class="border-l border-white/20 p-4">
-            <p class="text-paper/50">Password</p>
+          <div class="border-l border-white/22 bg-white/10 p-4">
+            <p class="text-white/55">Password</p>
             <p class="mt-1 text-citron">字母 + 数字</p>
           </div>
         </div>

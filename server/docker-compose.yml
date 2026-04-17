@@ -28,6 +28,29 @@ services:
       - redis_data:/data
     command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD}
 
+  elasticsearch:
+    image: elasticsearch:8.13.4
+    container_name: blog_elasticsearch
+    restart: always
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - xpack.security.http.ssl.enabled=false
+      - ES_JAVA_OPTS=-Xms256m -Xmx512m
+    ports:
+      - "127.0.0.1:9200:9200"
+    volumes:
+      - es_data:/usr/share/elasticsearch/data
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:9200/_cluster/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
   blog-api:
     build: .
     container_name: blog_api
@@ -35,6 +58,7 @@ services:
     depends_on:
       - mysql
       - redis
+      - elasticsearch
     ports:
       - "3000:3000"
     environment:
@@ -59,6 +83,7 @@ services:
 volumes:
   mysql_data:
   redis_data:
+  es_data:
 
 networks:
   blog_network:

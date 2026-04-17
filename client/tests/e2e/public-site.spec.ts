@@ -1,22 +1,120 @@
 import { expect, test } from "@playwright/test";
 
+async function waitForPublicArticles(page: Parameters<typeof test>[0]["page"]) {
+  return page.waitForResponse(
+    (response) =>
+      response.url().includes("/api/articles") &&
+      response.request().method() === "GET",
+  );
+}
+
+async function getContrastRatio(
+  page: Parameters<typeof test>[0]["page"],
+  selector: string,
+) {
+  return page.locator(selector).first().evaluate((element) => {
+    const parseColor = (value: string) => {
+      const match = value.match(/rgba?\(([^)]+)\)/i);
+      if (!match) {
+        return null;
+      }
+
+      const [r, g, b, alpha = "1"] = match[1]
+        .split(",")
+        .map((item) => item.trim());
+      return {
+        r: Number.parseFloat(r),
+        g: Number.parseFloat(g),
+        b: Number.parseFloat(b),
+        a: Number.parseFloat(alpha),
+      };
+    };
+
+    const blend = (
+      foreground: { r: number; g: number; b: number; a: number },
+      background: { r: number; g: number; b: number; a: number },
+    ) => ({
+      r: foreground.r * foreground.a + background.r * (1 - foreground.a),
+      g: foreground.g * foreground.a + background.g * (1 - foreground.a),
+      b: foreground.b * foreground.a + background.b * (1 - foreground.a),
+      a: 1,
+    });
+
+    const getEffectiveBackground = (node: Element | null) => {
+      let current = node;
+      let background = { r: 247, g: 249, b: 248, a: 1 };
+
+      while (current) {
+        const styles = window.getComputedStyle(current);
+        const parsed = parseColor(styles.backgroundColor);
+        if (parsed && parsed.a > 0) {
+          background = blend(parsed, background);
+        }
+        current = current.parentElement;
+      }
+
+      return background;
+    };
+
+    const toLuminance = ({ r, g, b }: { r: number; g: number; b: number }) => {
+      const transform = (channel: number) => {
+        const normalized = channel / 255;
+        return normalized <= 0.03928
+          ? normalized / 12.92
+          : ((normalized + 0.055) / 1.055) ** 2.4;
+      };
+
+      return (
+        0.2126 * transform(r) +
+        0.7152 * transform(g) +
+        0.0722 * transform(b)
+      );
+    };
+
+    const styles = window.getComputedStyle(element);
+    const foreground = parseColor(styles.color);
+    if (!foreground) {
+      throw new Error("无法解析前景色");
+    }
+
+    const effectiveForeground = blend(
+      foreground,
+      getEffectiveBackground(element.parentElement),
+    );
+    const effectiveBackground = getEffectiveBackground(element);
+
+    const foregroundLuminance = toLuminance(effectiveForeground);
+    const backgroundLuminance = toLuminance(effectiveBackground);
+    const lighter = Math.max(foregroundLuminance, backgroundLuminance);
+    const darker = Math.min(foregroundLuminance, backgroundLuminance);
+
+    return Number(((lighter + 0.05) / (darker + 0.05)).toFixed(2));
+  });
+}
+
 test.describe("公开站点联调", () => {
   test("首页和搜索页应正确请求公开内容接口", async ({ page }) => {
-    const homeArticlesResponse = page.waitForResponse(
-      (response) =>
-        response.url().includes("/api/articles") &&
-        response.request().method() === "GET",
-    );
+    const homeArticlesResponse = waitForPublicArticles(page);
 
     await page.goto("/");
 
     const articlesResponse = await homeArticlesResponse;
     expect(articlesResponse.ok()).toBeTruthy();
-    await expect(page.getByRole("heading", { name: /最近更新|还没有公开文章/ })).toBeVisible();
+    const articlePayload = await articlesResponse.json();
+    const firstCoverImage = articlePayload?.data?.items?.[0]?.coverImage;
+    if (firstCoverImage) {
+      await expect(page.locator(".home-hero__image")).toHaveAttribute(
+        "src",
+        firstCoverImage,
+      );
+    }
+    await expect(
+      page.getByRole("heading", { name: /最近更新|还没有公开文章/ }),
+    ).toBeVisible();
 
     const searchResponsePromise = page.waitForResponse(
       (response) =>
-        response.url().includes("/api/articles") &&
+        response.url().includes("/api/search") &&
         response.url().includes("keyword=NestJS") &&
         response.request().method() === "GET",
     );
@@ -41,7 +139,9 @@ test.describe("公开站点联调", () => {
 
     const aboutResponse = await aboutResponsePromise;
     expect([200, 404]).toContain(aboutResponse.status());
-    await expect(page.getByRole("heading", { name: /关于|暂不可用/ }).first()).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: /关于|暂不可用/ }).first(),
+    ).toBeVisible();
 
     const linksResponsePromise = page.waitForResponse(
       (response) =>
@@ -55,5 +155,76 @@ test.describe("公开站点联调", () => {
     expect(linksResponse.ok()).toBeTruthy();
     await expect(page.getByRole("heading", { name: "友情链接" })).toBeVisible();
     await expect(page.getByRole("heading", { name: "申请友链" })).toBeVisible();
+  });
+
+  test("关键公开页面在主要断点下应保持核心区块可见", async ({ page }) => {
+    await page.goto("/");
+    await expect(page.getByRole("banner")).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: /最近更新|还没有公开文章/ }),
+    ).toBeVisible();
+
+    await page.goto("/categories");
+    await expect(page.getByRole("heading", { name: "文章分类" })).toBeVisible();
+
+    await page.goto("/tags");
+    await expect(page.getByRole("heading", { name: "标签索引" })).toBeVisible();
+
+    await page.goto("/search?q=NestJS");
+    await expect(page.getByRole("heading", { name: "搜索文章" })).toBeVisible();
+
+    await page.goto("/ecosystem");
+    await expect(page.getByRole("heading", { name: "内容生态" })).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: "按年月回看写作轨迹" }),
+    ).toBeVisible();
+
+    await page.goto("/links");
+    await expect(page.getByRole("heading", { name: "申请友链" })).toBeVisible();
+  });
+
+  test("搜索页次级说明文字应满足 WCAG AA 对比度", async ({ page }) => {
+    await page.goto("/search?q=NestJS");
+    await expect(page.getByRole("heading", { name: "搜索文章" })).toBeVisible();
+
+    const contrastRatio = await getContrastRatio(page, "form + div");
+    expect(contrastRatio).toBeGreaterThanOrEqual(4.5);
+  });
+
+  test("首页主内容视觉基线应稳定", async ({ page }, testInfo) => {
+    test.skip(
+      testInfo.project.name.includes("firefox"),
+      "Firefox 字体渲染差异较大，首轮仅保留结构验证。",
+    );
+
+    const responsePromise = waitForPublicArticles(page);
+    await page.goto("/");
+    const response = await responsePromise;
+    expect(response.ok()).toBeTruthy();
+
+    await expect(page.getByRole("banner")).toBeVisible();
+    await expect(page.locator(".home-hero")).toHaveScreenshot(
+      "home-hero-shell.png",
+      {
+        animations: "disabled",
+      },
+    );
+  });
+
+  test("详情页在公开内容存在时应显示阅读主区与侧栏", async ({ page }) => {
+    const articlesResponse = await page.request.get("/api/articles?limit=1");
+    test.skip(
+      !articlesResponse.ok(),
+      `当前环境公开文章接口不可用（status=${articlesResponse.status()}）。`,
+    );
+
+    const payload = await articlesResponse.json();
+    const firstArticle = payload?.data?.items?.[0] || payload?.data?.[0];
+    test.skip(!firstArticle?.slug, "当前环境没有可用于详情页验证的公开文章。");
+
+    await page.goto(`/articles/${firstArticle.slug}`);
+    await expect(page.getByRole("article")).toBeVisible();
+    await expect(page.locator(".markdown-body")).toBeVisible();
+    await expect(page.getByText("分类").first()).toBeVisible();
   });
 });

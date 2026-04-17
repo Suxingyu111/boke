@@ -1,8 +1,14 @@
 export { User } from './user.entity';
 export { Article } from './article.entity';
 export { ArticleTag } from './article-tag.entity';
+export { ArticlePurchase } from './article-purchase.entity';
 export { Category } from './category.entity';
+export { DraftCollaborator } from './draft-collaborator.entity';
+export { DraftEditLog } from './draft-edit-log.entity';
+export { EmailNotification } from './email-notification.entity';
+export { EmailSubscriber } from './email-subscriber.entity';
 export { FriendLink } from './friend-link.entity';
 export { Page } from './page.entity';
+export { PaidContent } from './paid-content.entity';
 export { SiteSetting } from './site-setting.entity';
 export { Tag } from './tag.entity';

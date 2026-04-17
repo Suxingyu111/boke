@@ -10,7 +10,9 @@ export class UpsertSettingDto {
   settingValue: unknown;
 
   @IsOptional()
-  @IsEnum(['string', 'number', 'boolean', 'json'], { message: 'valueType 必须为 string/number/boolean/json' })
+  @IsEnum(['string', 'number', 'boolean', 'json'], {
+    message: 'valueType 必须为 string/number/boolean/json',
+  })
   valueType?: 'string' | 'number' | 'boolean' | 'json';
 
   @IsOptional()

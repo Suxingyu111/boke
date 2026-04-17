@@ -54,4 +54,16 @@ export const validationSchema = Joi.object({
     then: Joi.string().min(12).invalid('admin123456', 'change_me_admin_password_strong').required(),
     otherwise: Joi.string().optional(),
   }),
+
+  // Elasticsearch（可选）
+  ES_NODE: Joi.string().uri().optional().default('http://localhost:9200'),
+  ES_USERNAME: Joi.string().allow('').optional().default(''),
+  ES_PASSWORD: Joi.string().allow('').optional().default(''),
+
+  // SMTP 邮件（可选）
+  SMTP_HOST: Joi.string().allow('').optional().default(''),
+  SMTP_PORT: Joi.number().optional().default(587),
+  SMTP_USER: Joi.string().allow('').optional().default(''),
+  SMTP_PASS: Joi.string().allow('').optional().default(''),
+  SMTP_FROM: Joi.string().allow('').optional().default(''),
 });

@@ -96,7 +96,16 @@ export class DashboardService {
       where: { deletedAt: IsNull() },
       order: { createdAt: 'DESC' },
       take: limit,
-      select: ['id', 'title', 'slug', 'status', 'viewCount', 'commentCount', 'publishedAt', 'createdAt'],
+      select: [
+        'id',
+        'title',
+        'slug',
+        'status',
+        'viewCount',
+        'commentCount',
+        'publishedAt',
+        'createdAt',
+      ],
     });
 
     return articles.map(a => ({

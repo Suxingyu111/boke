@@ -18,12 +18,30 @@ const applicationForm = reactive<FriendLinkApplicationPayload>({
   applicantName: "",
 });
 
-onMounted(() => {
-  void pagesStore.loadPublicFriendLinks().catch(() => undefined);
+onMounted(async () => {
+  try {
+    await pagesStore.loadPublicFriendLinks();
+  } catch (error) {
+    applicationError.value = getApiErrorMessage(error, "友情链接加载失败");
+  }
 });
 
 function getInitials(value: string) {
   return value.trim().slice(0, 2).toUpperCase();
+}
+
+function sanitizeUrl(url: string) {
+  const value = url.trim();
+  if (!value) {
+    return "#";
+  }
+
+  try {
+    const parsedUrl = new URL(value);
+    return ["http:", "https:"].includes(parsedUrl.protocol) ? value : "#";
+  } catch {
+    return "#";
+  }
 }
 
 function resetApplicationForm() {
@@ -72,12 +90,16 @@ async function submitApplication() {
 </script>
 
 <template>
-  <section class="content-shell py-12">
-    <p class="eyebrow">Friends</p>
-    <h1 class="mt-2 font-display text-5xl">友情链接</h1>
-    <p class="mt-4 max-w-2xl leading-7 text-ink/65">
-      一些值得长期阅读的站点和工具。所有链接会在新标签页打开。
-    </p>
+  <section class="content-shell py-10 md:py-14">
+    <div>
+      <p class="eyebrow">Friends</p>
+      <h1 class="mt-2 font-display text-5xl text-brand md:text-6xl">
+        友情链接
+      </h1>
+      <p class="mt-4 max-w-2xl leading-7 text-ink/66">
+        一些值得长期阅读的站点和工具。所有链接会在新标签页打开。
+      </p>
+    </div>
 
     <p
       v-if="pagesStore.errorMessage"
@@ -98,8 +120,8 @@ async function submitApplication() {
         v-for="link in pagesStore.approvedLinks"
         :key="link.id"
         class="focus-ring ui-surface ui-hover-lift grid gap-4 p-5"
-        :href="link.siteUrl"
-        rel="noreferrer"
+        :href="sanitizeUrl(link.siteUrl)"
+        rel="noreferrer noopener"
         target="_blank"
       >
         <div class="flex items-start gap-4">
@@ -108,19 +130,21 @@ async function submitApplication() {
             class="h-14 w-14 rounded-md border border-line object-cover"
             :alt="`${link.siteName} 标识`"
             :src="link.logoUrl"
+            width="56"
+            height="56"
           />
           <div
             v-else
-            class="grid h-14 w-14 place-items-center rounded-md border border-line bg-paper font-mono text-sm font-semibold text-moss"
+            class="grid h-14 w-14 place-items-center rounded-md border border-line bg-paper font-mono text-sm font-semibold text-brand"
             aria-hidden="true"
           >
             {{ getInitials(link.siteName) }}
           </div>
           <div class="min-w-0">
-            <h2 class="font-display text-3xl">{{ link.siteName }}</h2>
-            <p class="mt-1 break-all text-sm text-ink/50">
-              {{ link.siteUrl }}
-            </p>
+            <h2 class="font-display text-3xl text-brand">
+              {{ link.siteName }}
+            </h2>
+            <p class="mt-1 break-all text-sm text-ink/50">{{ link.siteUrl }}</p>
           </div>
         </div>
         <p class="leading-7 text-ink/65">
@@ -129,15 +153,15 @@ async function submitApplication() {
       </a>
     </div>
 
-    <div v-else class="ui-surface mt-8 p-6">
-      <h2 class="font-display text-3xl">暂无友链</h2>
+    <div v-else-if="!pagesStore.loading" class="ui-surface mt-8 p-6">
+      <h2 class="font-display text-3xl text-brand">暂无友链</h2>
       <p class="mt-3 text-ink/65">通过后台添加并审核后，会在这里展示。</p>
     </div>
 
-    <section class="mt-12 grid gap-6 lg:grid-cols-[minmax(0,0.75fr)_1fr]">
+    <section class="mt-12 grid gap-6 lg:grid-cols-[minmax(0,0.78fr)_1fr]">
       <div>
         <p class="eyebrow">Apply</p>
-        <h2 class="mt-2 font-display text-4xl">申请友链</h2>
+        <h2 class="mt-2 font-display text-4xl text-brand">申请友链</h2>
         <p class="mt-4 leading-7 text-ink/65">
           提交后会进入待审核状态。通过后，你的站点会出现在这里。
         </p>
@@ -149,7 +173,7 @@ async function submitApplication() {
       >
         <div class="grid gap-4 md:grid-cols-2">
           <label>
-            <span class="text-sm text-ink/60">站点名称</span>
+            <span class="text-sm font-semibold text-ink/60">站点名称</span>
             <input
               v-model="applicationForm.siteName"
               class="focus-ring mt-2 w-full rounded-md border border-line px-3 py-2"
@@ -158,7 +182,7 @@ async function submitApplication() {
             />
           </label>
           <label>
-            <span class="text-sm text-ink/60">站点链接</span>
+            <span class="text-sm font-semibold text-ink/60">站点链接</span>
             <input
               v-model="applicationForm.siteUrl"
               class="focus-ring mt-2 w-full rounded-md border border-line px-3 py-2"
@@ -170,7 +194,7 @@ async function submitApplication() {
         </div>
 
         <label>
-          <span class="text-sm text-ink/60">站点简介</span>
+          <span class="text-sm font-semibold text-ink/60">站点简介</span>
           <textarea
             v-model="applicationForm.description"
             class="focus-ring mt-2 min-h-24 w-full resize-y rounded-md border border-line px-3 py-2"
@@ -180,7 +204,7 @@ async function submitApplication() {
 
         <div class="grid gap-4 md:grid-cols-2">
           <label>
-            <span class="text-sm text-ink/60">申请人</span>
+            <span class="text-sm font-semibold text-ink/60">申请人</span>
             <input
               v-model="applicationForm.applicantName"
               class="focus-ring mt-2 w-full rounded-md border border-line px-3 py-2"
@@ -189,7 +213,7 @@ async function submitApplication() {
             />
           </label>
           <label>
-            <span class="text-sm text-ink/60">联系邮箱</span>
+            <span class="text-sm font-semibold text-ink/60">联系邮箱</span>
             <input
               v-model="applicationForm.contactEmail"
               class="focus-ring mt-2 w-full rounded-md border border-line px-3 py-2"
@@ -210,7 +234,7 @@ async function submitApplication() {
         </p>
 
         <button
-          class="focus-ring ui-button-primary w-fit px-5 py-3"
+          class="focus-ring ui-button-primary w-fit px-5 py-3 disabled:cursor-not-allowed disabled:opacity-60"
           :disabled="applicationLoading"
           type="submit"
         >

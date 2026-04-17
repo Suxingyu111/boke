@@ -452,7 +452,7 @@ async function removeTag(tag: Tag) {
     <div class="flex flex-wrap items-end justify-between gap-4">
       <div>
         <p class="eyebrow">Editorial Desk</p>
-        <h1 class="mt-2 font-display text-5xl">文章管理</h1>
+        <h1 class="mt-2 font-display text-5xl text-brand">文章管理</h1>
         <p class="mt-3 max-w-2xl text-ink/65">
           发布、草稿、定时、分类与标签都在这里收束。
         </p>
@@ -474,7 +474,7 @@ async function removeTag(tag: Tag) {
         :class="
           activePanel === panel.key
             ? 'border-ink bg-ink text-paper shadow-lifted'
-            : 'border-line bg-white text-ink/70 hover:border-coral hover:text-coral hover:shadow-insetline'
+            : 'border-line bg-white text-ink/70 hover:border-brand hover:text-brand hover:shadow-insetline'
         "
         type="button"
         @click="activePanel = panel.key"
@@ -494,7 +494,7 @@ async function removeTag(tag: Tag) {
       v-if="activePanel === 'articles'"
       class="mt-8 grid gap-6 xl:grid-cols-[minmax(0,1.05fr)_minmax(420px,0.95fr)]"
     >
-      <form class="ui-surface grid gap-4 p-5" @submit.prevent>
+      <form class="ui-surface grid gap-5 p-6" @submit.prevent>
         <div class="grid gap-4 md:grid-cols-2">
           <label class="block">
             <span class="text-sm text-ink/60">标题</span>
@@ -551,7 +551,7 @@ async function removeTag(tag: Tag) {
               >
                 <input
                   v-model="articleForm.tagIds"
-                  class="accent-coral"
+                  class="accent-brand"
                   type="checkbox"
                   :value="tag.id"
                 />
@@ -617,23 +617,23 @@ async function removeTag(tag: Tag) {
 
       <div class="grid gap-5">
         <div class="grid gap-3 sm:grid-cols-4">
-          <div class="ui-surface-soft p-4">
+          <div class="ui-surface-soft p-5">
             <p class="text-sm text-ink/55">已发布</p>
             <p class="mt-2 font-display text-3xl">
               {{ articleStats.published }}
             </p>
           </div>
-          <div class="ui-surface-soft p-4">
+          <div class="ui-surface-soft p-5">
             <p class="text-sm text-ink/55">草稿</p>
             <p class="mt-2 font-display text-3xl">{{ articleStats.drafts }}</p>
           </div>
-          <div class="ui-surface-soft p-4">
+          <div class="ui-surface-soft p-5">
             <p class="text-sm text-ink/55">定时</p>
             <p class="mt-2 font-display text-3xl">
               {{ articleStats.scheduled }}
             </p>
           </div>
-          <div class="ui-surface-soft p-4">
+          <div class="ui-surface-soft p-5">
             <p class="text-sm text-ink/55">回收站</p>
             <p class="mt-2 font-display text-3xl">
               {{ articleStats.archived }}
@@ -666,9 +666,9 @@ async function removeTag(tag: Tag) {
           </label>
         </div>
 
-        <div class="ui-surface overflow-x-auto">
+        <div class="ui-surface overflow-x-auto rounded-[16px]">
           <table class="w-full min-w-[760px] border-collapse text-left text-sm">
-            <thead class="bg-paper text-ink/60">
+            <thead class="bg-wash/80 text-ink/66">
               <tr>
                 <th class="p-4 font-medium">标题</th>
                 <th class="p-4 font-medium">分类/标签</th>
@@ -682,7 +682,7 @@ async function removeTag(tag: Tag) {
               <tr
                 v-for="article in pagedArticles"
                 :key="article.id"
-                class="transition-colors duration-200 hover:bg-paper"
+                class="transition-colors duration-200 hover:bg-white/90"
               >
                 <td class="p-4">
                   <p class="font-semibold">{{ article.title }}</p>
@@ -733,7 +733,7 @@ async function removeTag(tag: Tag) {
                     </button>
                     <button
                       v-if="article.status !== 'archived'"
-                      class="focus-ring min-h-9 rounded-md border border-line px-2 py-1 hover:border-coral hover:text-coral"
+                      class="focus-ring min-h-9 rounded-md border border-line px-2 py-1 hover:border-brand hover:text-brand"
                       type="button"
                       @click="archiveArticle(article)"
                     >
@@ -794,7 +794,7 @@ async function removeTag(tag: Tag) {
       class="mt-8 grid gap-6 lg:grid-cols-[360px_minmax(0,1fr)]"
     >
       <form
-        class="ui-surface grid h-fit gap-4 p-5"
+        class="ui-surface grid h-fit gap-5 p-6"
         @submit.prevent="submitCategory"
       >
         <h2 class="font-display text-3xl">
@@ -853,7 +853,7 @@ async function removeTag(tag: Tag) {
         <article
           v-for="category in contentStore.categories"
           :key="category.id"
-          class="ui-surface ui-hover-lift p-5"
+          class="ui-surface ui-hover-lift p-6"
         >
           <div
             class="h-1 w-16"
@@ -886,7 +886,7 @@ async function removeTag(tag: Tag) {
     </section>
 
     <section v-else class="mt-8 grid gap-6 lg:grid-cols-[360px_minmax(0,1fr)]">
-      <form class="ui-surface grid h-fit gap-4 p-5" @submit.prevent="submitTag">
+      <form class="ui-surface grid h-fit gap-5 p-6" @submit.prevent="submitTag">
         <h2 class="font-display text-3xl">
           {{ tagForm.id ? "编辑标签" : "新建标签" }}
         </h2>
@@ -922,7 +922,7 @@ async function removeTag(tag: Tag) {
         </div>
       </form>
 
-      <div class="ui-surface p-5">
+      <div class="ui-surface p-6">
         <h2 class="font-display text-3xl">标签云</h2>
         <div class="mt-5 flex flex-wrap gap-3">
           <button

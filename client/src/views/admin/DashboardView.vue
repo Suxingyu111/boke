@@ -27,21 +27,23 @@ const articles = computed(() =>
         })),
 );
 
-onMounted(() => {
-  void contentStore.loadAdminContent().catch(() => undefined);
-  void siteStore.loadDashboardStats();
-  void siteStore.loadRecentArticles(5);
+onMounted(async () => {
+  await Promise.all([
+    contentStore.loadAdminContent(),
+    siteStore.loadDashboardStats(),
+    siteStore.loadRecentArticles(5),
+  ]);
 });
 </script>
 
 <template>
   <div>
     <p class="eyebrow">Dashboard</p>
-    <h1 class="mt-2 font-display text-5xl">数据概览</h1>
+    <h1 class="mt-2 font-display text-5xl text-brand">数据概览</h1>
 
     <p
       v-if="siteStore.statsError"
-      class="mt-5 rounded-md border border-coral/25 bg-coral/10 px-3 py-2 text-sm text-coral"
+      class="mt-5 rounded-md border border-coral/30 bg-coral/10 px-3 py-2 text-sm text-coral"
     >
       {{ siteStore.statsError }}
     </p>
@@ -52,40 +54,40 @@ onMounted(() => {
       <StatPill label="评论总数" :value="siteStore.stats.comments" />
     </div>
 
-    <p v-if="siteStore.statsLoading" class="mt-4 text-sm text-ink/55">
+    <p v-if="siteStore.statsLoading" class="mt-4 text-sm text-ink/56">
       正在同步后台统计...
     </p>
     <p
       v-if="siteStore.recentArticlesError"
-      class="mt-3 rounded-md border border-coral/25 bg-coral/10 px-3 py-2 text-sm text-coral"
+      class="mt-3 rounded-md border border-coral/30 bg-coral/10 px-3 py-2 text-sm text-coral"
     >
       {{ siteStore.recentArticlesError }}
     </p>
 
-    <section class="ui-surface mt-8 overflow-hidden">
-      <div class="border-b border-line p-5">
-        <h2 class="font-display text-3xl">最近文章</h2>
+    <section class="ui-surface mt-8 overflow-hidden rounded-[16px]">
+      <div class="border-b border-line p-6">
+        <h2 class="font-display text-3xl text-brand">最近文章</h2>
       </div>
       <div class="divide-y divide-line">
         <div
           v-for="article in articles"
           :key="article.id"
-          class="grid gap-2 p-5 transition-colors duration-200 hover:bg-paper md:grid-cols-[1fr_auto]"
+          class="grid gap-2 p-6 transition-colors duration-200 hover:bg-white/90 md:grid-cols-[1fr_auto]"
         >
           <div>
-            <p class="font-semibold">{{ article.title }}</p>
-            <p class="mt-1 text-sm text-ink/55">
+            <p class="font-semibold text-ink">{{ article.title }}</p>
+            <p class="mt-1 text-sm text-ink/58">
               {{ article.status }} · {{ article.commentCount }} 评论
             </p>
           </div>
-          <p class="font-mono text-sm text-ink/55">
+          <p class="font-mono text-sm text-ink/58">
             {{ article.viewCount }} 阅读
           </p>
         </div>
       </div>
       <p
         v-if="siteStore.recentArticlesLoading"
-        class="border-t border-line p-5 text-sm text-ink/55"
+        class="border-t border-line p-6 text-sm text-ink/56"
       >
         正在同步最近文章...
       </p>

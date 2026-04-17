@@ -60,6 +60,18 @@ export const configuration = (): {
     origins: string[];
     allowRequestsWithoutOrigin: boolean;
   };
+  elasticsearch: {
+    node: string;
+    username: string;
+    password: string;
+  };
+  email: {
+    host: string;
+    port: number;
+    user: string;
+    pass: string;
+    from: string;
+  };
 } => ({
   nodeEnv: process.env.NODE_ENV || 'development',
   port: parseNumber(process.env.PORT, 3000),
@@ -98,5 +110,17 @@ export const configuration = (): {
   cors: {
     origins: parseCorsOrigins(process.env.CORS_ORIGINS, process.env.NODE_ENV || 'development'),
     allowRequestsWithoutOrigin: (process.env.NODE_ENV || 'development') !== 'production',
+  },
+  elasticsearch: {
+    node: process.env.ES_NODE || 'http://localhost:9200',
+    username: process.env.ES_USERNAME || '',
+    password: process.env.ES_PASSWORD || '',
+  },
+  email: {
+    host: process.env.SMTP_HOST || '',
+    port: parseNumber(process.env.SMTP_PORT, 587),
+    user: process.env.SMTP_USER || '',
+    pass: process.env.SMTP_PASS || '',
+    from: process.env.SMTP_FROM || process.env.SMTP_USER || 'noreply@blog.local',
   },
 });

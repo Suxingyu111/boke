@@ -14,6 +14,11 @@ import { ArticlesModule } from './modules/articles/articles.module';
 import { PagesModule } from './modules/pages/pages.module';
 import { SettingsModule } from './modules/settings/settings.module';
 import { DashboardModule } from './modules/dashboard/dashboard.module';
+import { ArchivesModule } from './modules/archives/archives.module';
+import { SearchModule } from './modules/search/search.module';
+import { CollaborationModule } from './modules/collaboration/collaboration.module';
+import { PaidContentModule } from './modules/paid-content/paid-content.module';
+import { NotificationsModule } from './modules/notifications/notifications.module';
 
 @Module({
   imports: [
@@ -70,6 +75,21 @@ import { DashboardModule } from './modules/dashboard/dashboard.module';
 
     // 仪表盘模块
     DashboardModule,
+
+    // 文章归档模块
+    ArchivesModule,
+
+    // 全文搜索模块 (Elasticsearch)
+    SearchModule,
+
+    // 草稿协作模块
+    CollaborationModule,
+
+    // 付费内容模块
+    PaidContentModule,
+
+    // 邮件通知模块
+    NotificationsModule,
   ],
   controllers: [],
   providers: [

@@ -360,7 +360,7 @@ async function removeFriendLink(link: FriendLink) {
     <div class="flex flex-wrap items-end justify-between gap-4">
       <div>
         <p class="eyebrow">Pages</p>
-        <h1 class="mt-2 font-display text-5xl">页面管理</h1>
+        <h1 class="mt-2 font-display text-5xl text-brand">页面管理</h1>
         <p class="mt-3 max-w-2xl text-ink/65">
           管理关于我、作品集、项目介绍和友情链接。
         </p>
@@ -384,7 +384,7 @@ async function removeFriendLink(link: FriendLink) {
         :class="
           activePanel === panel.key
             ? 'border-ink bg-ink text-paper shadow-lifted'
-            : 'border-line bg-white text-ink/70 hover:border-coral hover:text-coral hover:shadow-insetline'
+            : 'border-line bg-white text-ink/70 hover:border-brand hover:text-brand hover:shadow-insetline'
         "
         type="button"
         @click="activePanel = panel.key"
@@ -404,7 +404,7 @@ async function removeFriendLink(link: FriendLink) {
       v-if="activePanel === 'pages'"
       class="mt-8 grid gap-6 xl:grid-cols-[minmax(0,1.05fr)_minmax(360px,0.95fr)]"
     >
-      <form class="ui-surface grid gap-4 p-5" @submit.prevent="submitPage">
+      <form class="ui-surface grid gap-5 p-6" @submit.prevent="submitPage">
         <div class="grid gap-4 md:grid-cols-2">
           <label>
             <span class="text-sm text-ink/60">标题</span>
@@ -456,7 +456,7 @@ async function removeFriendLink(link: FriendLink) {
           >
             <input
               v-model="pageForm.isHomeVisible"
-              class="accent-coral"
+              class="accent-brand"
               type="checkbox"
             />
             在首页/导航推荐
@@ -524,21 +524,21 @@ async function removeFriendLink(link: FriendLink) {
 
       <div class="grid gap-5">
         <div class="grid gap-3 sm:grid-cols-3">
-          <div class="ui-surface-soft p-4">
+          <div class="ui-surface-soft p-5">
             <p class="text-sm text-ink/55">已发布</p>
             <p class="mt-2 font-display text-3xl">{{ pageStats.published }}</p>
           </div>
-          <div class="ui-surface-soft p-4">
+          <div class="ui-surface-soft p-5">
             <p class="text-sm text-ink/55">草稿</p>
             <p class="mt-2 font-display text-3xl">{{ pageStats.drafts }}</p>
           </div>
-          <div class="ui-surface-soft p-4">
+          <div class="ui-surface-soft p-5">
             <p class="text-sm text-ink/55">推荐页</p>
             <p class="mt-2 font-display text-3xl">{{ pageStats.visible }}</p>
           </div>
         </div>
 
-        <div class="ui-surface overflow-hidden">
+        <div class="ui-surface overflow-hidden rounded-[16px]">
           <article
             v-for="page in pagesStore.adminPages"
             :key="page.id"
@@ -567,7 +567,7 @@ async function removeFriendLink(link: FriendLink) {
             <div class="flex flex-wrap items-start gap-2 md:justify-end">
               <RouterLink
                 v-if="page.status === 'published'"
-                class="focus-ring min-h-9 rounded-md border border-line px-3 py-2 text-sm hover:border-coral hover:text-coral"
+                class="focus-ring min-h-9 rounded-md border border-line px-3 py-2 text-sm hover:border-brand hover:text-brand"
                 :to="
                   page.pageType === 'about' ? '/about' : `/pages/${page.slug}`
                 "
@@ -596,7 +596,7 @@ async function removeFriendLink(link: FriendLink) {
 
     <section v-else class="mt-8 grid gap-6 xl:grid-cols-[380px_minmax(0,1fr)]">
       <form
-        class="ui-surface grid h-fit gap-4 p-5"
+        class="ui-surface grid h-fit gap-5 p-6"
         @submit.prevent="submitFriendLink"
       >
         <h2 class="font-display text-3xl">
@@ -694,15 +694,15 @@ async function removeFriendLink(link: FriendLink) {
 
       <div class="grid gap-5">
         <div class="grid gap-3 sm:grid-cols-3">
-          <div class="ui-surface-soft p-4">
+          <div class="ui-surface-soft p-5">
             <p class="text-sm text-ink/55">已通过</p>
             <p class="mt-2 font-display text-3xl">{{ linkStats.approved }}</p>
           </div>
-          <div class="ui-surface-soft p-4">
+          <div class="ui-surface-soft p-5">
             <p class="text-sm text-ink/55">待审核</p>
             <p class="mt-2 font-display text-3xl">{{ linkStats.pending }}</p>
           </div>
-          <div class="ui-surface-soft p-4">
+          <div class="ui-surface-soft p-5">
             <p class="text-sm text-ink/55">已下线</p>
             <p class="mt-2 font-display text-3xl">{{ linkStats.offline }}</p>
           </div>
@@ -712,7 +712,7 @@ async function removeFriendLink(link: FriendLink) {
           <article
             v-for="link in pagesStore.adminFriendLinks"
             :key="link.id"
-            class="ui-surface p-5"
+            class="ui-surface p-6"
           >
             <div class="flex items-start gap-4">
               <img

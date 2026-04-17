@@ -1,176 +1,235 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from "vue";
+import { computed, onMounted } from "vue";
 import ArticleCard from "@/components/ArticleCard.vue";
 import StatPill from "@/components/StatPill.vue";
 import { useContentStore } from "@/stores/content";
 import { useSiteStore } from "@/stores/site";
+import type { Article } from "@/types/blog";
 
 const siteStore = useSiteStore();
 const contentStore = useContentStore();
-const currentPage = ref(1);
-const pageSize = 4;
 const allArticles = computed(() => contentStore.publishedArticles);
-const featuredArticle = computed(() => allArticles.value[0]);
-const latestArticles = computed(() => allArticles.value.slice(1));
-const totalPages = computed(() =>
-  Math.max(1, Math.ceil(latestArticles.value.length / pageSize)),
-);
-const pagedArticles = computed(() => {
-  const start = (currentPage.value - 1) * pageSize;
-  return latestArticles.value.slice(start, start + pageSize);
-});
-const popularTags = computed(() => contentStore.tagCloud);
+const heroArticle = computed(() => allArticles.value[0]);
+const storyArticles = computed(() => {
+  const selected: Article[] = [];
+  const seenImages = new Set<string>();
 
-watch(totalPages, (pages) => {
-  if (currentPage.value > pages) {
-    currentPage.value = pages;
+  if (heroArticle.value?.coverImage) {
+    seenImages.add(heroArticle.value.coverImage);
   }
-});
 
-onMounted(() => {
-  void contentStore.loadPublicContent().catch(() => undefined);
+  for (const article of allArticles.value.slice(1)) {
+    if (!article.coverImage || seenImages.has(article.coverImage)) {
+      continue;
+    }
+
+    selected.push(article);
+    seenImages.add(article.coverImage);
+
+    if (selected.length === 5) {
+      break;
+    }
+  }
+
+  return selected;
+});
+const storyArticleIds = computed(
+  () => new Set(storyArticles.value.map((article) => article.id)),
+);
+const feedArticles = computed(() =>
+  allArticles.value
+    .slice(1)
+    .filter((article) => !storyArticleIds.value.has(article.id)),
+);
+const popularTags = computed(() => contentStore.tagCloud);
+const highlightTags = computed(() => popularTags.value.slice(0, 14));
+
+function formatDate(value: string) {
+  return new Date(value).toLocaleDateString("zh-CN", {
+    month: "long",
+    day: "numeric",
+  });
+}
+
+onMounted(async () => {
+  await contentStore.loadPublicContent();
 });
 </script>
 
 <template>
-  <section v-if="featuredArticle" class="border-b border-line/80 bg-white/72">
-    <div
-      class="content-shell grid gap-8 py-8 lg:grid-cols-[minmax(0,1fr)_420px] lg:items-stretch"
-    >
-      <div
-        class="relative flex min-h-[460px] flex-col justify-end overflow-hidden rounded-md bg-ink p-6 text-paper shadow-editorial md:p-10"
-      >
-        <div
-          class="absolute left-0 top-0 h-1 w-full bg-[linear-gradient(90deg,#f0c808,#c6283f,#185c52)]"
-        ></div>
-        <p class="text-sm font-semibold text-citron">
-          {{ siteStore.settings.subtitle }}
-        </p>
-        <h1
-          class="mt-5 max-w-3xl font-display text-5xl leading-tight md:text-7xl"
-        >
-          {{ featuredArticle.title }}
-        </h1>
-        <p class="mt-5 max-w-2xl text-lg text-paper/75">
-          {{ featuredArticle.excerpt }}
-        </p>
+  <section
+    v-if="heroArticle"
+    class="home-screen home-hero"
+    aria-labelledby="home-hero-title"
+  >
+    <img
+      class="home-hero__image"
+      :alt="heroArticle.title"
+      :src="heroArticle.coverImage"
+      width="1800"
+      height="1200"
+      fetchpriority="high"
+    />
+    <div class="home-hero__shade"></div>
+    <div class="content-shell home-hero__content">
+      <p class="home-kicker">{{ siteStore.settings.subtitle }}</p>
+      <p class="home-meta">
+        {{ heroArticle.category.name }} /
+        {{ formatDate(heroArticle.publishedAt) }}
+      </p>
+      <h1 id="home-hero-title" class="home-hero__title">
+        {{ heroArticle.title }}
+      </h1>
+      <p class="home-hero__excerpt">{{ heroArticle.excerpt }}</p>
+      <div class="home-actions">
         <RouterLink
-          class="focus-ring mt-8 min-h-11 w-fit rounded-md bg-citron px-5 py-3 font-semibold text-ink shadow-lifted hover:bg-paper hover:-translate-y-0.5"
-          :to="`/articles/${featuredArticle.slug}`"
+          class="focus-ring home-button home-button--light"
+          :to="`/articles/${heroArticle.slug}`"
         >
           阅读最新文章
         </RouterLink>
+        <a class="focus-ring home-button home-button--ghost" href="#home-feed">
+          继续向下
+        </a>
       </div>
-
-      <RouterLink
-        class="focus-ring ui-hover-lift block min-h-[320px] overflow-hidden rounded-md shadow-lifted"
-        :to="`/articles/${featuredArticle.slug}`"
-      >
-        <img
-          class="h-full w-full object-cover"
-          :alt="featuredArticle.title"
-          :src="featuredArticle.coverImage"
-        />
-      </RouterLink>
     </div>
   </section>
 
-  <section
-    v-else-if="contentStore.loading"
-    class="border-b border-line/80 bg-white/72"
-  >
-    <div class="content-shell grid gap-8 py-8 lg:grid-cols-[minmax(0,1fr)_420px]">
-      <div class="ui-surface min-h-[460px] animate-pulse bg-line/40"></div>
-      <div class="ui-surface min-h-[320px] animate-pulse bg-line/40"></div>
+  <section v-else-if="contentStore.loading" class="home-loading">
+    <div class="content-shell home-loading__grid">
+      <div class="home-loading__block animate-pulse"></div>
+      <div class="home-loading__line animate-pulse"></div>
+      <div
+        class="home-loading__line home-loading__line--short animate-pulse"
+      ></div>
     </div>
   </section>
 
-  <section v-else class="border-b border-line/80 bg-white/72">
-    <div class="content-shell py-12">
+  <section v-else class="home-empty">
+    <div class="content-shell">
       <div class="ui-surface p-6 md:p-8">
         <p class="eyebrow">Content</p>
         <h1 class="mt-2 font-display text-5xl">还没有公开文章</h1>
-        <p class="mt-4 max-w-2xl text-ink/65">
+        <p class="mt-4 max-w-2xl text-ink/66">
           文章发布后会出现在这里。若你刚完成部署，请先确认公开文章接口和发布状态。
         </p>
       </div>
     </div>
   </section>
 
-  <section class="content-shell grid gap-4 py-8 md:grid-cols-3">
-    <StatPill label="文章" :value="siteStore.stats.articles" />
-    <StatPill label="阅读" :value="siteStore.stats.views" />
-    <StatPill label="评论" :value="siteStore.stats.comments" />
-  </section>
-
   <section v-if="contentStore.errorMessage" class="content-shell pb-2">
     <p
-      class="rounded-md border border-coral/25 bg-coral/10 px-4 py-3 text-sm text-coral"
+      class="rounded-md border border-coral/30 bg-coral/10 px-4 py-3 text-sm text-coral"
     >
       {{ contentStore.errorMessage }}
     </p>
   </section>
 
   <section
-    class="content-shell grid gap-8 py-10 lg:grid-cols-[minmax(0,1fr)_280px]"
+    v-if="storyArticles.length"
+    class="home-stories"
+    aria-label="精选文章"
   >
-    <div class="grid gap-5">
-      <div>
-        <p class="eyebrow">Latest</p>
-        <h2 class="mt-2 font-display text-4xl">最近更新</h2>
-      </div>
-      <ArticleCard
-        v-for="article in pagedArticles"
-        :key="article.id"
-        :article="article"
-      />
-      <div v-if="!contentStore.loading && !pagedArticles.length" class="ui-surface p-6">
-        <h2 class="font-display text-3xl">暂无更多文章</h2>
-        <p class="mt-3 leading-7 text-ink/65">
-          当前公开文章数量不足以填满列表，发布更多文章后这里会继续更新。
-        </p>
-      </div>
-      <div
-        v-if="totalPages > 1"
-        class="ui-surface-soft flex flex-wrap items-center justify-between gap-3 p-4"
+    <article
+      v-for="(article, index) in storyArticles"
+      :key="article.id"
+      class="home-screen home-story"
+      :class="{ 'home-story--reverse': index % 2 === 1 }"
+    >
+      <RouterLink
+        class="focus-ring home-story__media"
+        :to="`/articles/${article.slug}`"
       >
-        <p class="text-sm text-ink/55">
-          第 {{ currentPage }} / {{ totalPages }} 页，按发布时间倒序
+        <img
+          class="home-story__image"
+          :alt="article.title"
+          :src="article.coverImage"
+          width="1500"
+          height="1000"
+          loading="lazy"
+        />
+      </RouterLink>
+      <div class="content-shell home-story__content">
+        <p class="home-kicker">
+          Scroll Essay {{ String(index + 1).padStart(2, "0") }}
         </p>
-        <div class="flex gap-2">
-          <button
-            class="focus-ring ui-button-secondary px-3 py-2 text-sm disabled:cursor-not-allowed disabled:opacity-50"
-            :disabled="currentPage === 1"
-            type="button"
-            @click="currentPage -= 1"
-          >
-            上一页
-          </button>
-          <button
-            class="focus-ring ui-button-primary px-3 py-2 text-sm disabled:cursor-not-allowed disabled:opacity-50"
-            :disabled="currentPage === totalPages"
-            type="button"
-            @click="currentPage += 1"
-          >
-            下一页
-          </button>
+        <p class="home-story__meta">
+          {{ article.category.name }} / {{ formatDate(article.publishedAt) }} /
+          {{ article.viewCount }} 阅读
+        </p>
+        <RouterLink
+          class="focus-ring rounded-md"
+          :to="`/articles/${article.slug}`"
+        >
+          <h2 class="home-story__title">{{ article.title }}</h2>
+        </RouterLink>
+        <p class="home-story__excerpt">{{ article.excerpt }}</p>
+        <RouterLink
+          class="focus-ring home-button home-button--ink"
+          :to="`/articles/${article.slug}`"
+        >
+          进入这一篇
+        </RouterLink>
+      </div>
+    </article>
+  </section>
+
+  <section id="home-feed" class="home-feed">
+    <div class="content-shell home-feed__layout">
+      <div class="home-feed__intro">
+        <p class="eyebrow">Latest</p>
+        <h2 class="mt-2 font-display text-5xl leading-tight">最近更新</h2>
+        <p class="mt-4 max-w-xl leading-7 text-ink/72">
+          按发布时间继续往下读。真实封面来自文章数据库，新的公开文章会自动进入这条时间线。
+        </p>
+      </div>
+
+      <div class="home-feed__list">
+        <ArticleCard
+          v-for="article in feedArticles"
+          :key="article.id"
+          :article="article"
+        />
+        <div
+          v-if="!contentStore.loading && !feedArticles.length"
+          class="ui-surface p-6"
+        >
+          <h2 class="font-display text-3xl">暂无更多文章</h2>
+          <p class="mt-3 leading-7 text-ink/65">
+            当前公开文章数量不足以填满列表，发布更多文章后这里会继续更新。
+          </p>
         </div>
       </div>
     </div>
+  </section>
 
-    <aside class="ui-surface h-fit p-5">
-      <h2 class="font-display text-3xl">标签云</h2>
-      <div v-if="popularTags.length" class="mt-4 flex flex-wrap gap-2">
+  <section class="home-index">
+    <div class="content-shell home-index__layout">
+      <div>
+        <p class="eyebrow">Index</p>
+        <h2 class="mt-2 font-display text-5xl leading-tight">继续探索</h2>
+        <p class="mt-4 max-w-2xl leading-7 text-ink/70">
+          标签和数据留在页面末尾，像一张索引卡，帮你从文章流里换一个方向进入。
+        </p>
+      </div>
+
+      <div class="grid gap-4 md:grid-cols-3">
+        <StatPill label="文章" :value="siteStore.stats.articles" />
+        <StatPill label="阅读" :value="siteStore.stats.views" />
+        <StatPill label="评论" :value="siteStore.stats.comments" />
+      </div>
+
+      <div v-if="highlightTags.length" class="home-tags">
         <RouterLink
-          v-for="tag in popularTags"
+          v-for="tag in highlightTags"
           :key="tag.id"
-          class="focus-ring min-h-11 rounded-md border border-line bg-paper px-3 py-2 text-sm hover:border-coral hover:bg-white hover:text-coral"
+          class="focus-ring home-tag"
           :to="`/tags?tag=${tag.slug}`"
         >
           #{{ tag.name }} {{ tag.articleCount }}
         </RouterLink>
       </div>
-      <p v-else class="mt-4 text-sm text-ink/55">暂无标签数据</p>
-    </aside>
+      <p v-else class="text-sm text-ink/58">暂无标签数据</p>
+    </div>
   </section>
 </template>

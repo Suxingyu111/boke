@@ -77,4 +77,42 @@ test.describe("后台联调", () => {
     expect(saveResponse.ok()).toBeTruthy();
     await expect(page.getByText("设置已保存")).toBeVisible();
   });
+
+  test("后台核心页面在主要断点下应保持可操作", async ({ page }) => {
+    await loginAsAdmin(page);
+
+    await page.goto("/admin");
+    await expect(page.getByRole("heading", { name: "数据概览" })).toBeVisible();
+    await expect(page.getByRole("link", { name: "文章管理" })).toBeVisible();
+
+    await page.goto("/admin/articles");
+    await expect(page.getByRole("heading", { name: "文章管理" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "新建文章" })).toBeVisible();
+
+    await page.goto("/admin/pages");
+    await expect(page.getByRole("heading", { name: "页面管理" })).toBeVisible();
+    await expect(page.getByRole("button", { name: /新建页面|新建友链/ })).toBeVisible();
+
+    await page.goto("/admin/settings");
+    await expect(page.getByRole("heading", { name: "系统设置" })).toBeVisible();
+    await expect(page.getByRole("button", { name: /保存设置|正在读取|正在保存/ })).toBeVisible();
+  });
+
+  test("后台文章管理页主工作区视觉基线应稳定", async ({ page }, testInfo) => {
+    test.skip(
+      testInfo.project.name.includes("firefox"),
+      "Firefox 字体渲染差异较大，首轮仅保留结构验证。",
+    );
+
+    await loginAsAdmin(page);
+    await page.goto("/admin/articles");
+
+    await expect(page.getByRole("heading", { name: "文章管理" })).toBeVisible();
+    await expect(page.locator("section").first()).toHaveScreenshot(
+      "admin-articles-workspace.png",
+      {
+        animations: "disabled",
+      },
+    );
+  });
 });

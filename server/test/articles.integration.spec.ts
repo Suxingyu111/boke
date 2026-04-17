@@ -171,12 +171,14 @@ describe('Articles integration', () => {
   let categoryRepository: RepositoryMock<Category>;
   let tagRepository: RepositoryMock<Tag>;
   let articleTagRepository: RepositoryMock<ArticleTag>;
+  let userRepository: RepositoryMock<User>;
 
   beforeAll(async () => {
     articleRepository = createRepositoryMock<Article>();
     categoryRepository = createRepositoryMock<Category>();
     tagRepository = createRepositoryMock<Tag>();
     articleTagRepository = createRepositoryMock<ArticleTag>();
+    userRepository = createRepositoryMock<User>();
 
     const moduleBuilder = Test.createTestingModule({
       controllers: [
@@ -205,6 +207,10 @@ describe('Articles integration', () => {
         {
           provide: getRepositoryToken(ArticleTag),
           useValue: articleTagRepository,
+        },
+        {
+          provide: getRepositoryToken(User),
+          useValue: userRepository,
         },
       ],
     })

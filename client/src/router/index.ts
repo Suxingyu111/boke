@@ -15,12 +15,15 @@ import AboutView from "@/views/AboutView.vue";
 import LinksView from "@/views/LinksView.vue";
 import PageDetailView from "@/views/PageDetailView.vue";
 import SearchView from "@/views/SearchView.vue";
+import ContentEcosystemView from "@/views/ContentEcosystemView.vue";
+import SubscriptionStatusView from "@/views/SubscriptionStatusView.vue";
 import LoginView from "@/views/admin/LoginView.vue";
 import RegisterView from "@/views/admin/RegisterView.vue";
 import DashboardView from "@/views/admin/DashboardView.vue";
 import ArticleManageView from "@/views/admin/ArticleManageView.vue";
 import PageManageView from "@/views/admin/PageManageView.vue";
 import SettingsView from "@/views/admin/SettingsView.vue";
+import ContentEcosystemManageView from "@/views/admin/ContentEcosystemManageView.vue";
 
 const routes: RouteRecordRaw[] = [
   {
@@ -39,6 +42,21 @@ const routes: RouteRecordRaw[] = [
       { path: "links", name: "links", component: LinksView },
       { path: "pages/:slug", name: "page-detail", component: PageDetailView },
       { path: "search", name: "search", component: SearchView },
+      {
+        path: "ecosystem",
+        name: "content-ecosystem",
+        component: ContentEcosystemView,
+      },
+      {
+        path: "subscriptions/confirm/:token",
+        name: "subscription-confirm",
+        component: SubscriptionStatusView,
+      },
+      {
+        path: "unsubscribe",
+        name: "subscription-unsubscribe",
+        component: SubscriptionStatusView,
+      },
     ],
   },
   { path: "/login", name: "login", component: LoginView },
@@ -58,6 +76,11 @@ const routes: RouteRecordRaw[] = [
         path: "pages",
         name: "admin-pages",
         component: PageManageView,
+      },
+      {
+        path: "ecosystem",
+        name: "admin-content-ecosystem",
+        component: ContentEcosystemManageView,
       },
       { path: "settings", name: "admin-settings", component: SettingsView },
     ],

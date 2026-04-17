@@ -12,6 +12,7 @@ const searchTerm = ref("");
 
 const navItems = [
   { label: "首页", to: "/" },
+  { label: "内容生态", to: "/ecosystem" },
   { label: "分类", to: "/categories" },
   { label: "标签", to: "/tags" },
   { label: "关于", to: "/about" },
@@ -27,9 +28,9 @@ function logout() {
   closeMenu();
 }
 
-function submitSearch() {
+async function submitSearch() {
   const keyword = searchTerm.value.trim();
-  void router.push({
+  await router.push({
     name: "search",
     query: keyword ? { q: keyword } : {},
   });
@@ -40,24 +41,27 @@ function submitSearch() {
 
 <template>
   <a
-    class="focus-ring sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 focus:rounded-md focus:bg-ink focus:px-4 focus:py-3 focus:text-paper"
+    class="focus-ring sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 focus:rounded-md focus:bg-brand focus:px-4 focus:py-3 focus:text-white"
     href="#main-content"
   >
     跳到正文
   </a>
   <header
-    class="sticky top-0 z-20 border-b border-line/80 bg-paper/88 backdrop-blur-xl"
+    class="sticky top-0 z-20 border-b border-line/70 bg-surface/80 backdrop-blur-xl"
   >
     <div class="content-shell flex min-h-20 items-center justify-between gap-4">
-      <RouterLink
-        class="focus-ring group rounded-md font-display text-3xl leading-none"
-        to="/"
-      >
-        <span
-          class="inline-block transition-transform duration-200 group-hover:-translate-y-0.5"
-        >
-          {{ siteStore.settings.title }}
-        </span>
+      <RouterLink class="focus-ring group rounded-md" to="/">
+        <div class="relative">
+          <span class="block font-display text-4xl leading-none text-ink">
+            {{ siteStore.settings.title }}
+          </span>
+          <span class="mt-1 block text-xs tracking-[0.16em] text-brand/70">
+            CODE / ESSAY / NOTES
+          </span>
+          <span
+            class="absolute -bottom-1 left-0 h-0.5 w-0 bg-gradient-to-r from-brand to-coral transition-all duration-300 group-hover:w-full"
+          ></span>
+        </div>
       </RouterLink>
 
       <button
@@ -74,8 +78,8 @@ function submitSearch() {
         <RouterLink
           v-for="item in navItems"
           :key="item.to"
-          class="focus-ring rounded-md px-3 py-2 text-sm font-medium text-ink/68 hover:bg-white hover:text-ink"
-          active-class="bg-white text-ink shadow-insetline"
+          class="focus-ring rounded-md px-3 py-2 text-sm font-semibold text-ink/70 hover:bg-white/80 hover:text-brand"
+          active-class="bg-white text-brand shadow-insetline"
           :to="item.to"
         >
           {{ item.label }}
@@ -89,7 +93,7 @@ function submitSearch() {
           <input
             id="site-search"
             v-model="searchTerm"
-            class="focus-ring min-h-11 w-40 rounded-md border border-line bg-white px-3 py-2 text-sm xl:w-52"
+            class="focus-ring min-h-11 w-44 rounded-md border border-line bg-white/92 px-3 py-2 text-sm xl:w-56"
             placeholder="搜索标题或正文"
             type="search"
           />
@@ -134,13 +138,13 @@ function submitSearch() {
 
     <nav
       v-if="isOpen"
-      class="content-shell grid gap-2 border-t border-line/80 py-3 md:hidden"
+      class="content-shell grid gap-2 border-t border-line/70 py-3 md:hidden"
       aria-label="移动端导航"
     >
       <RouterLink
         v-for="item in navItems"
         :key="item.to"
-        class="focus-ring min-h-11 rounded-md px-3 py-2 font-medium hover:bg-white"
+        class="focus-ring min-h-11 rounded-md px-3 py-2 font-medium hover:bg-white/80"
         active-class="bg-white shadow-insetline"
         :to="item.to"
         @click="isOpen = false"
@@ -148,14 +152,14 @@ function submitSearch() {
         {{ item.label }}
       </RouterLink>
       <form class="grid gap-2" role="search" @submit.prevent="submitSearch">
-        <label class="text-sm font-medium text-ink/60" for="mobile-site-search">
+        <label class="text-sm font-medium text-ink/65" for="mobile-site-search">
           搜索文章
         </label>
         <div class="grid gap-2 sm:grid-cols-[minmax(0,1fr)_auto]">
           <input
             id="mobile-site-search"
             v-model="searchTerm"
-            class="focus-ring min-h-11 w-full rounded-md border border-line bg-white px-3 py-2"
+            class="focus-ring min-h-11 w-full rounded-md border border-line bg-white/92 px-3 py-2"
             placeholder="输入标题或正文关键词"
             type="search"
           />

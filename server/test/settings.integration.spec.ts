@@ -27,30 +27,26 @@ const createRepositoryMock = <T extends ObjectLiteral>(seed: T[] = []): Reposito
       ...payload,
       id: (payload as { id?: number }).id ?? items.length + 1,
     })),
-    find: jest
-      .fn()
-      .mockImplementation(async (options?: { where?: Partial<T> }) => {
-        if (!options?.where) {
-          return items;
-        }
+    find: jest.fn().mockImplementation(async (options?: { where?: Partial<T> }) => {
+      if (!options?.where) {
+        return items;
+      }
 
-        return items.filter(item => {
-          return Object.entries(options.where ?? {}).every(([key, expectedValue]) => {
+      return items.filter(item => {
+        return Object.entries(options.where ?? {}).every(([key, expectedValue]) => {
+          return (item as Record<string, unknown>)[key] === expectedValue;
+        });
+      });
+    }),
+    findOne: jest.fn().mockImplementation(async (options: { where: Partial<T> }) => {
+      return (
+        items.find(item => {
+          return Object.entries(options.where).every(([key, expectedValue]) => {
             return (item as Record<string, unknown>)[key] === expectedValue;
           });
-        });
-      }),
-    findOne: jest
-      .fn()
-      .mockImplementation(async (options: { where: Partial<T> }) => {
-        return (
-          items.find(item => {
-            return Object.entries(options.where).every(([key, expectedValue]) => {
-              return (item as Record<string, unknown>)[key] === expectedValue;
-            });
-          }) ?? null
-        );
-      }),
+        }) ?? null
+      );
+    }),
     save: jest.fn().mockImplementation(async (entity: T) => {
       const entityWithId = entity as { id?: number };
       const index = items.findIndex(item => (item as { id?: number }).id === entityWithId.id);
@@ -68,7 +64,9 @@ const createRepositoryMock = <T extends ObjectLiteral>(seed: T[] = []): Reposito
       return savedEntity;
     }),
     remove: jest.fn().mockImplementation(async (entity: T) => {
-      const index = items.findIndex(item => (item as { id?: number }).id === (entity as { id?: number }).id);
+      const index = items.findIndex(
+        item => (item as { id?: number }).id === (entity as { id?: number }).id,
+      );
       if (index >= 0) {
         items.splice(index, 1);
       }
