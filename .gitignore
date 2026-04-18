@@ -1,0 +1,30 @@
+# Dependencies
+node_modules/
+
+# Logs
+*.log
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Test output
+*-test.out.log
+*-test.err.log
+*-result.json
+playwright-report/
+test-results/
+*-snapshots/
+coverage/
+
+# Session/planning artifacts
+findings.md
+progress.md
+task_plan.md
+
+# Large binaries
+*.zip

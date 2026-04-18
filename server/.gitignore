@@ -39,3 +39,5 @@ coverage/
 # Temporary
 tmp/
 temp/
+
+elasticsearch-8.13.4/

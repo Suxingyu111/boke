@@ -4,30 +4,34 @@ import {
   type RouteRecordRaw,
 } from "vue-router";
 import BlogLayout from "@/layouts/BlogLayout.vue";
-import AdminLayout from "@/layouts/AdminLayout.vue";
 import { getApiStatusCode } from "@/api/auth";
 import { useAuthStore } from "@/stores/auth";
 import HomeView from "@/views/HomeView.vue";
-import ArticleDetailView from "@/views/ArticleDetailView.vue";
-import CategoriesView from "@/views/CategoriesView.vue";
-import TagsView from "@/views/TagsView.vue";
-import AboutView from "@/views/AboutView.vue";
-import LinksView from "@/views/LinksView.vue";
-import GuestbookView from "@/views/GuestbookView.vue";
-import ArchivesView from "@/views/ArchivesView.vue";
-import PageDetailView from "@/views/PageDetailView.vue";
-import ProfileView from "@/views/ProfileView.vue";
-import SearchView from "@/views/SearchView.vue";
-import ContentEcosystemView from "@/views/ContentEcosystemView.vue";
-import SubscriptionStatusView from "@/views/SubscriptionStatusView.vue";
-import LoginView from "@/views/admin/LoginView.vue";
-import RegisterView from "@/views/admin/RegisterView.vue";
-import DashboardView from "@/views/admin/DashboardView.vue";
-import ArticleManageView from "@/views/admin/ArticleManageView.vue";
-import PageManageView from "@/views/admin/PageManageView.vue";
-import SettingsView from "@/views/admin/SettingsView.vue";
-import ContentEcosystemManageView from "@/views/admin/ContentEcosystemManageView.vue";
-import TechnicalView from "@/views/admin/TechnicalView.vue";
+
+// 懒加载：非首屏路由按需加载，减少首屏 JS 体积
+const AdminLayout = () => import("@/layouts/AdminLayout.vue");
+const ArticleDetailView = () => import("@/views/ArticleDetailView.vue");
+const CategoriesView = () => import("@/views/CategoriesView.vue");
+const TagsView = () => import("@/views/TagsView.vue");
+const AboutView = () => import("@/views/AboutView.vue");
+const LinksView = () => import("@/views/LinksView.vue");
+const GuestbookView = () => import("@/views/GuestbookView.vue");
+const ArchivesView = () => import("@/views/ArchivesView.vue");
+const PageDetailView = () => import("@/views/PageDetailView.vue");
+const ProfileView = () => import("@/views/ProfileView.vue");
+const SearchView = () => import("@/views/SearchView.vue");
+const ContentEcosystemView = () => import("@/views/ContentEcosystemView.vue");
+const SubscriptionStatusView = () =>
+  import("@/views/SubscriptionStatusView.vue");
+const LoginView = () => import("@/views/admin/LoginView.vue");
+const RegisterView = () => import("@/views/admin/RegisterView.vue");
+const DashboardView = () => import("@/views/admin/DashboardView.vue");
+const ArticleManageView = () => import("@/views/admin/ArticleManageView.vue");
+const PageManageView = () => import("@/views/admin/PageManageView.vue");
+const SettingsView = () => import("@/views/admin/SettingsView.vue");
+const ContentEcosystemManageView = () =>
+  import("@/views/admin/ContentEcosystemManageView.vue");
+const TechnicalView = () => import("@/views/admin/TechnicalView.vue");
 
 const routes: RouteRecordRaw[] = [
   {
