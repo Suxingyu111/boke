@@ -101,11 +101,18 @@ test.describe("公开站点联调", () => {
     const articlesResponse = await homeArticlesResponse;
     expect(articlesResponse.ok()).toBeTruthy();
     const articlePayload = await articlesResponse.json();
-    const firstCoverImage = articlePayload?.data?.items?.[0]?.coverImage;
-    if (firstCoverImage) {
+    const heroArticle = [...(articlePayload?.data?.items ?? [])]
+      .filter((article) => typeof article?.publishedAt === "string")
+      .sort(
+        (left, right) =>
+          new Date(right.publishedAt).getTime() -
+          new Date(left.publishedAt).getTime(),
+      )[0];
+
+    if (heroArticle?.coverImage) {
       await expect(page.locator(".home-hero__image")).toHaveAttribute(
         "src",
-        firstCoverImage,
+        heroArticle.coverImage,
       );
     }
     await expect(
@@ -128,7 +135,7 @@ test.describe("公开站点联调", () => {
     await expect(page.getByRole("heading", { name: "搜索文章" })).toBeVisible();
   });
 
-  test("搜索页应展示命中的文章结果", async ({ page }) => {
+  test("搜索页应展示命中的文章结果 @search-smoke", async ({ page }) => {
     const searchResponsePromise = page.waitForResponse(
       (response) =>
         response.url().includes("/api/search") &&

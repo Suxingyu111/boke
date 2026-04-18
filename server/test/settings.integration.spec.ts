@@ -215,4 +215,52 @@ describe('Settings integration', () => {
       }),
     );
   });
+
+  it('应允许可选站点设置保存为空字符串', async () => {
+    await request(app.getHttpServer())
+      .put('/api/admin/settings/batch')
+      .set('x-test-role', 'admin')
+      .send({
+        settings: [
+          {
+            settingKey: 'site_author',
+            settingValue: '',
+            valueType: 'string',
+            groupName: 'general',
+            description: '站点作者',
+            isPublic: true,
+          },
+          {
+            settingKey: 'site_keywords',
+            settingValue: '',
+            valueType: 'string',
+            groupName: 'general',
+            description: 'SEO 关键词',
+            isPublic: true,
+          },
+          {
+            settingKey: 'og_image',
+            settingValue: '',
+            valueType: 'string',
+            groupName: 'general',
+            description: '社交分享图',
+            isPublic: true,
+          },
+        ],
+      })
+      .expect(200);
+
+    const adminResponse = await request(app.getHttpServer())
+      .get('/api/admin/settings')
+      .set('x-test-role', 'admin')
+      .expect(200);
+
+    expect(adminResponse.body.data).toEqual(
+      expect.objectContaining({
+        site_author: '',
+        site_keywords: '',
+        og_image: '',
+      }),
+    );
+  });
 });

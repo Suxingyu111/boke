@@ -1,4 +1,12 @@
-import { IsString, IsOptional, IsEnum, IsBoolean, MaxLength, IsNotEmpty } from 'class-validator';
+import {
+  IsString,
+  IsOptional,
+  IsEnum,
+  IsBoolean,
+  MaxLength,
+  IsNotEmpty,
+  IsDefined,
+} from 'class-validator';
 
 export class UpsertSettingDto {
   @IsString()
@@ -6,7 +14,7 @@ export class UpsertSettingDto {
   @MaxLength(100)
   settingKey: string;
 
-  @IsNotEmpty({ message: 'settingValue 不能为空' })
+  @IsDefined({ message: 'settingValue 不能为空' })
   settingValue: unknown;
 
   @IsOptional()
