@@ -8,7 +8,6 @@ import { ObjectLiteral, Repository } from 'typeorm';
 import {
   Article,
   ArticleTag,
-  ArticleVersion,
   Category,
   OperationLog,
   Tag,

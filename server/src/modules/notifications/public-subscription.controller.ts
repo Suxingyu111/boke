@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Post, Query } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post } from '@nestjs/common';
 import { SubscriptionService } from './subscription.service';
 import { SubscribeDto } from './dto/subscribe.dto';
 

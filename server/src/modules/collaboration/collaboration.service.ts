@@ -26,7 +26,7 @@ export class CollaborationService {
 
   /** 添加协作者到草稿 */
   async addCollaborator(articleId: string, dto: AddCollaboratorDto, currentUser: User) {
-    const article = await this.ensureDraftOwner(articleId, currentUser);
+    await this.ensureDraftOwner(articleId, currentUser);
 
     if (dto.userId === currentUser.id) {
       throw new BadRequestException('不能将自己添加为协作者');

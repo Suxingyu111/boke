@@ -9,7 +9,6 @@ import {
   JoinColumn,
 } from 'typeorm';
 import { Article } from './article.entity';
-import { User } from './user.entity';
 
 @Entity('paid_contents')
 @Index('idx_paid_article', ['articleId'], { unique: true })

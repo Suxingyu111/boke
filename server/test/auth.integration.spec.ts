@@ -74,7 +74,7 @@ const createUserRepositoryMock = (): UserRepositoryMock => {
     return { affected: 1, raw: {}, generatedMaps: [] };
   });
 
-  const createQueryBuilder = jest.fn().mockImplementation((_alias: string) => {
+  const createQueryBuilder = jest.fn().mockImplementation(() => {
     const state: { account?: string; email?: string } = {};
 
     const builder = {
