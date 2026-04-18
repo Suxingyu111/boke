@@ -32,10 +32,11 @@ onMounted(async () => {
       <div class="ui-surface ui-hover-lift overflow-hidden p-2">
         <img
           alt="书桌与笔记本"
-          class="h-full min-h-80 w-full rounded-[12px] object-cover"
+          class="h-full min-h-80 w-full rounded-md object-cover"
           src="https://images.unsplash.com/photo-1486312338219-ce68d2c6f44d?auto=format&fit=crop&w=1200&q=80"
           width="780"
           height="1040"
+          loading="lazy"
         />
       </div>
 

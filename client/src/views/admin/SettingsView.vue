@@ -81,6 +81,49 @@ function removeSocialLink(index: number) {
           class="focus-ring mt-2 min-h-28 w-full rounded-md border border-line bg-white/92 px-3 py-3"
         ></textarea>
       </label>
+      <div class="grid gap-4 md:grid-cols-2">
+        <label class="block">
+          <span class="text-sm font-semibold text-ink/60">SEO 关键词</span>
+          <input
+            v-model="settings.keywords"
+            class="focus-ring mt-2 w-full rounded-md border border-line bg-white/92 px-3 py-3"
+            placeholder="个人博客,Vue,NestJS"
+          />
+        </label>
+        <label class="block">
+          <span class="text-sm font-semibold text-ink/60">站点作者</span>
+          <input
+            v-model="settings.author"
+            class="focus-ring mt-2 w-full rounded-md border border-line bg-white/92 px-3 py-3"
+          />
+        </label>
+      </div>
+      <div class="grid gap-4 md:grid-cols-3">
+        <label class="block">
+          <span class="text-sm font-semibold text-ink/60">Logo URL</span>
+          <input
+            v-model="settings.logo"
+            class="focus-ring mt-2 w-full rounded-md border border-line bg-white/92 px-3 py-3"
+            placeholder="/favicon.svg"
+          />
+        </label>
+        <label class="block">
+          <span class="text-sm font-semibold text-ink/60">Favicon URL</span>
+          <input
+            v-model="settings.favicon"
+            class="focus-ring mt-2 w-full rounded-md border border-line bg-white/92 px-3 py-3"
+            placeholder="/favicon.svg"
+          />
+        </label>
+        <label class="block">
+          <span class="text-sm font-semibold text-ink/60">社交分享图</span>
+          <input
+            v-model="settings.ogImage"
+            class="focus-ring mt-2 w-full rounded-md border border-line bg-white/92 px-3 py-3"
+            placeholder="https://..."
+          />
+        </label>
+      </div>
       <label class="block">
         <span class="text-sm font-semibold text-ink/60">备案信息</span>
         <input

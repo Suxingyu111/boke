@@ -128,6 +128,37 @@ test.describe("公开站点联调", () => {
     await expect(page.getByRole("heading", { name: "搜索文章" })).toBeVisible();
   });
 
+  test("搜索页应展示命中的文章结果", async ({ page }) => {
+    const searchResponsePromise = page.waitForResponse(
+      (response) =>
+        response.url().includes("/api/search") &&
+        response.url().includes("keyword=Vue") &&
+        response.request().method() === "GET",
+    );
+
+    await page.goto("/search?q=Vue");
+
+    const searchResponse = await searchResponsePromise;
+    expect(searchResponse.ok()).toBeTruthy();
+
+    const payload = await searchResponse.json();
+    expect(payload?.data?.total).toBeGreaterThan(0);
+
+    await expect(page.getByRole("heading", { name: "搜索文章" })).toBeVisible();
+    await expect(page.getByText(/找到 [1-9]\d* 篇文章/)).toBeVisible();
+
+    const resultLinks = page.locator('a[href^="/articles/"]');
+    await expect(resultLinks.first()).toBeVisible();
+
+    const vueResult = resultLinks.filter({ hasText: /Vue/i });
+    await expect(vueResult.first()).toBeVisible();
+
+    const highlightedKeyword = page.locator("mark").filter({ hasText: /Vue/i });
+    if ((await highlightedKeyword.count()) > 0) {
+      await expect(highlightedKeyword.first()).toBeVisible();
+    }
+  });
+
   test("关于页和友情链接页应正确处理公开页面接口", async ({ page }) => {
     const aboutResponsePromise = page.waitForResponse(
       (response) =>

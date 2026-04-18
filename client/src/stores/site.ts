@@ -1,8 +1,8 @@
 import { defineStore } from "pinia";
 import * as dashboardApi from "@/api/dashboard";
+import * as seoApi from "@/api/seo";
 import * as settingsApi from "@/api/settings";
 import { getApiErrorMessage } from "@/api/auth";
-import { getSiteSettings } from "@/services/blog";
 import { useContentStore } from "@/stores/content";
 import type {
   ArticleStatus,
@@ -12,6 +12,19 @@ import type {
 } from "@/types/blog";
 
 const localSettingsKey = "blog_site_settings";
+const defaultSiteSettings: SiteSettings = {
+  title: "",
+  subtitle: "",
+  description: "",
+  keywords: "",
+  author: "",
+  logo: "/favicon.svg",
+  favicon: "/favicon.svg",
+  ogImage: "",
+  icp: "",
+  copyright: "",
+  socialLinks: [],
+};
 
 function readLocalSettings(): Partial<SiteSettings> {
   const value = localStorage.getItem(localSettingsKey);
@@ -20,7 +33,7 @@ function readLocalSettings(): Partial<SiteSettings> {
   }
 
   try {
-    return normalizeSettings(JSON.parse(value), getSiteSettings());
+    return normalizeSettings(JSON.parse(value), defaultSiteSettings);
   } catch {
     return {};
   }
@@ -122,6 +135,31 @@ function normalizeSettings(
       ["site_description", "description", "siteDescription"],
       fallback.description,
     ),
+    keywords: getStringSetting(
+      source,
+      ["site_keywords", "keywords", "seoKeywords", "siteKeywords"],
+      fallback.keywords,
+    ),
+    author: getStringSetting(
+      source,
+      ["site_author", "author", "siteAuthor"],
+      fallback.author,
+    ),
+    logo: getStringSetting(
+      source,
+      ["site_logo", "logo", "siteLogo"],
+      fallback.logo,
+    ),
+    favicon: getStringSetting(
+      source,
+      ["site_favicon", "favicon", "siteFavicon"],
+      fallback.favicon,
+    ),
+    ogImage: getStringSetting(
+      source,
+      ["og_image", "ogImage", "siteOgImage"],
+      fallback.ogImage,
+    ),
     icp: getStringSetting(
       source,
       ["site_icp", "icp", "icpNumber", "beian"],
@@ -161,7 +199,7 @@ export interface DashboardRecentArticle {
 export const useSiteStore = defineStore("site", {
   state: () => ({
     settings: {
-      ...getSiteSettings(),
+      ...defaultSiteSettings,
       ...readLocalSettings(),
     },
     dashboardStats: null as SiteStats | null,
@@ -188,10 +226,15 @@ export const useSiteStore = defineStore("site", {
       this.settingsLoading = true;
       this.settingsError = "";
       try {
-        const settings = normalizeSettings(
-          await settingsApi.getPublicSettings(),
-          this.settings,
-        );
+        const [publicSettings, siteSeoSettings] = await Promise.allSettled([
+          settingsApi.getPublicSettings(),
+          seoApi.getSiteSeoSettings(),
+        ]);
+        const mergedSettings = {
+          ...(publicSettings.status === "fulfilled" ? publicSettings.value : {}),
+          ...(siteSeoSettings.status === "fulfilled" ? siteSeoSettings.value : {}),
+        };
+        const settings = normalizeSettings(mergedSettings, this.settings);
         this.applySettings(settings);
       } catch (error) {
         this.settingsError = getApiErrorMessage(

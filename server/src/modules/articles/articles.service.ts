@@ -8,6 +8,7 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { IsNull, Repository } from 'typeorm';
 import { Article, ArticleTag, Category, Tag, User } from '@database/entities';
+import { ArticleVersionsService } from './article-versions.service';
 import { CreateArticleDto } from './dto/create-article.dto';
 import { UpdateArticleDto } from './dto/update-article.dto';
 import { ListArticlesDto } from './dto/list-articles.dto';
@@ -43,6 +44,7 @@ export class ArticlesService {
     private readonly articleTagRepository: Repository<ArticleTag>,
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
+    private readonly articleVersionsService: ArticleVersionsService,
   ) {}
 
   async create(dto: CreateArticleDto, currentUser: User): Promise<ArticleView> {
@@ -88,6 +90,7 @@ export class ArticlesService {
       savedArticle.categoryId,
       tags.map(tag => tag.id),
     );
+    await this.articleVersionsService.recordVersion(savedArticle, currentUser.id, '创建文章');
 
     return this.buildArticleView(savedArticle);
   }
@@ -140,6 +143,43 @@ export class ArticlesService {
   async findAdminDetail(id: string, currentUser: User): Promise<ArticleView> {
     const article = await this.findManagedArticle(id, currentUser);
     return this.buildArticleView(article);
+  }
+
+  async exportArticle(
+    id: string,
+    format: 'markdown' | 'json',
+    currentUser: User,
+  ): Promise<{ fileName: string; contentType: string; content: string }> {
+    const article = await this.findManagedArticle(id, currentUser);
+    const articleView = await this.buildArticleView(article);
+
+    if (format === 'json') {
+      return {
+        fileName: `${article.slug}.json`,
+        contentType: 'application/json; charset=utf-8',
+        content: JSON.stringify(articleView, null, 2),
+      };
+    }
+
+    const markdown = [
+      '---',
+      `title: ${article.title}`,
+      `slug: ${article.slug}`,
+      `status: ${article.status}`,
+      `visibility: ${article.visibility}`,
+      `category: ${articleView.category.name}`,
+      `tags: ${articleView.tags.map(tag => tag.name).join(', ')}`,
+      `publishedAt: ${this.formatExportDate(article.publishedAt)}`,
+      '---',
+      '',
+      article.content,
+    ].join('\n');
+
+    return {
+      fileName: `${article.slug}.md`,
+      contentType: 'text/markdown; charset=utf-8',
+      content: markdown,
+    };
   }
 
   async update(id: string, dto: UpdateArticleDto, currentUser: User): Promise<ArticleView> {
@@ -206,15 +246,33 @@ export class ArticlesService {
       [...previousTags.map(tag => tag.id), ...nextTags.map(tag => tag.id)],
       article.categoryId,
     );
+    await this.articleVersionsService.recordVersion(
+      savedArticle,
+      currentUser.id,
+      dto.changeNote ?? '更新文章',
+    );
 
     return this.buildArticleView(savedArticle);
+  }
+
+  private formatExportDate(value: Date | string | null | undefined): string {
+    if (!value) {
+      return '';
+    }
+
+    if (value instanceof Date) {
+      return value.toISOString();
+    }
+
+    const parsedDate = new Date(value);
+    return Number.isNaN(parsedDate.getTime()) ? String(value) : parsedDate.toISOString();
   }
 
   async remove(id: string, currentUser: User): Promise<{ message: string }> {
     const article = await this.findManagedArticle(id, currentUser);
     const tags = await this.findArticleTags(article.id);
 
-    await this.articleRepository.save({
+    const archivedArticle = await this.articleRepository.save({
       ...article,
       status: 'archived',
       deletedAt: new Date(),
@@ -225,6 +283,7 @@ export class ArticlesService {
       article.categoryId,
       tags.map(tag => tag.id),
     );
+    await this.articleVersionsService.recordVersion(archivedArticle, currentUser.id, '归档文章');
     return { message: '文章删除成功' };
   }
 

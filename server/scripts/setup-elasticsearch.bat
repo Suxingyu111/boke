@@ -4,12 +4,13 @@ REM  博客系统 - Elasticsearch 初始配置
 REM  首次解压后运行一次即可
 REM ========================================
 
-set ES_HOME=%~dp0..\elasticsearch-8.13.4
+set SCRIPT_DIR=%~dp0
+set ES_HOME=%SCRIPT_DIR%..\elasticsearch-8.13.4
 set ES_CONFIG=%ES_HOME%\config\elasticsearch.yml
 
 if not exist "%ES_CONFIG%" (
     echo [错误] 未找到 ES 配置文件: %ES_CONFIG%
-    echo 请先解压 ES 到 server 同级目录
+    echo 请先解压 ES 到 server 目录
     pause
     exit /b 1
 )

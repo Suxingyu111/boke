@@ -12,12 +12,16 @@ type PublishIntent = "draft" | "publish" | "schedule";
 interface ArticleForm {
   id: string;
   title: string;
+  slug: string;
   excerpt: string;
   content: string;
   coverImage: string;
   categoryId: string;
   tagIds: string[];
   scheduledAt: string;
+  seoTitle: string;
+  seoDescription: string;
+  seoKeywords: string;
 }
 
 const defaultCover =
@@ -143,6 +147,7 @@ function createArticleForm(): ArticleForm {
   return {
     id: "",
     title: "",
+    slug: "",
     excerpt: "",
     content:
       "# 新文章标题\n\n写下第一段。支持 **加粗**、`代码`、列表和引用。\n\n- 一个清晰观点\n- 一个可执行结论",
@@ -150,6 +155,9 @@ function createArticleForm(): ArticleForm {
     categoryId: contentStore.categories[0]?.id ?? "",
     tagIds: [],
     scheduledAt: toLocalInputValue(new Date(Date.now() + 60 * 60 * 1000)),
+    seoTitle: "",
+    seoDescription: "",
+    seoKeywords: "",
   };
 }
 
@@ -226,6 +234,7 @@ function buildArticlePayload(
   return {
     id: articleForm.id || undefined,
     title,
+    slug: articleForm.slug.trim(),
     excerpt: excerpt || content.replace(/[#>*`-]/g, "").slice(0, 120),
     content,
     coverImage: articleForm.coverImage.trim() || defaultCover,
@@ -234,6 +243,9 @@ function buildArticlePayload(
     status,
     publishedAt: status === "published" ? new Date().toISOString() : undefined,
     scheduledAt,
+    seoTitle: articleForm.seoTitle.trim(),
+    seoDescription: articleForm.seoDescription.trim(),
+    seoKeywords: articleForm.seoKeywords.trim(),
   };
 }
 
@@ -278,6 +290,7 @@ async function editArticle(article: Article) {
   Object.assign(articleForm, {
     id: detail.id,
     title: detail.title,
+    slug: detail.slug,
     excerpt: detail.excerpt,
     content: detail.content,
     coverImage: detail.coverImage,
@@ -286,6 +299,9 @@ async function editArticle(article: Article) {
     scheduledAt: detail.scheduledAt
       ? toLocalInputValue(detail.scheduledAt)
       : toLocalInputValue(new Date(Date.now() + 60 * 60 * 1000)),
+    seoTitle: detail.seoTitle ?? "",
+    seoDescription: detail.seoDescription ?? "",
+    seoKeywords: detail.seoKeywords ?? "",
   });
 }
 
@@ -506,6 +522,18 @@ async function removeTag(tag: Tag) {
             />
           </label>
           <label class="block">
+            <span class="text-sm text-ink/60">URL 别名</span>
+            <input
+              v-model="articleForm.slug"
+              class="focus-ring mt-2 w-full rounded-md border border-line px-3 py-2"
+              placeholder="留空按标题生成"
+              type="text"
+            />
+          </label>
+        </div>
+
+        <div class="grid gap-4 md:grid-cols-2">
+          <label class="block">
             <span class="text-sm text-ink/60">封面图 URL</span>
             <input
               v-model="articleForm.coverImage"
@@ -514,15 +542,44 @@ async function removeTag(tag: Tag) {
               type="url"
             />
           </label>
+          <label class="block">
+            <span class="text-sm text-ink/60">SEO 标题</span>
+            <input
+              v-model="articleForm.seoTitle"
+              class="focus-ring mt-2 w-full rounded-md border border-line px-3 py-2"
+              placeholder="留空使用文章标题"
+              type="text"
+            />
+          </label>
+        </div>
+
+        <div class="grid gap-4 md:grid-cols-2">
+          <label class="block">
+            <span class="text-sm text-ink/60">摘要</span>
+            <textarea
+              v-model="articleForm.excerpt"
+              class="focus-ring mt-2 min-h-24 w-full resize-y rounded-md border border-line px-3 py-2"
+              placeholder="用于列表页和详情页头部"
+            ></textarea>
+          </label>
+          <label class="block">
+            <span class="text-sm text-ink/60">SEO 描述</span>
+            <textarea
+              v-model="articleForm.seoDescription"
+              class="focus-ring mt-2 min-h-24 w-full resize-y rounded-md border border-line px-3 py-2"
+              placeholder="留空使用摘要"
+            ></textarea>
+          </label>
         </div>
 
         <label class="block">
-          <span class="text-sm text-ink/60">摘要</span>
-          <textarea
-            v-model="articleForm.excerpt"
-            class="focus-ring mt-2 min-h-20 w-full resize-y rounded-md border border-line px-3 py-2"
-            placeholder="用于列表页和详情页头部"
-          ></textarea>
+          <span class="text-sm text-ink/60">SEO 关键词</span>
+          <input
+            v-model="articleForm.seoKeywords"
+            class="focus-ring mt-2 w-full rounded-md border border-line px-3 py-2"
+            placeholder="用英文逗号或中文逗号分隔"
+            type="text"
+          />
         </label>
 
         <div class="grid gap-4 md:grid-cols-[1fr_1.2fr]">

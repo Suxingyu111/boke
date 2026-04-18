@@ -172,6 +172,7 @@ npm run start:prod
 # 开发
 npm run start:dev          # 启动开发服务器（热重载）
 npm run start:debug        # 启动调试模式
+npm run search:refresh-local # 导入演示内容并重建 Elasticsearch 索引
 
 # 构建和生产
 npm run build              # 构建项目
@@ -185,11 +186,15 @@ npm run test:cov           # 生成覆盖率报告
 
 # 数据库
 npm run db:init            # 自动创建数据库和全部表
+npm run db:seed-content    # 填充基础演示内容
 npm run typeorm            # 运行 TypeORM CLI
 npm run migration:generate # 生成迁移文件
 npm run migration:run      # 执行迁移
 npm run migration:revert   # 回滚迁移
 ```
+
+当本地 Elasticsearch、MySQL 和 Redis 都已启动后，可以执行 `npm run search:refresh-local`。
+这个命令会先导入内容种子数据，再直接调用后端 SearchService 完成全文索引重建，适合联调前快速恢复可搜索数据。
 
 ## 🔐 认证
 

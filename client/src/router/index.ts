@@ -13,7 +13,10 @@ import CategoriesView from "@/views/CategoriesView.vue";
 import TagsView from "@/views/TagsView.vue";
 import AboutView from "@/views/AboutView.vue";
 import LinksView from "@/views/LinksView.vue";
+import GuestbookView from "@/views/GuestbookView.vue";
+import ArchivesView from "@/views/ArchivesView.vue";
 import PageDetailView from "@/views/PageDetailView.vue";
+import ProfileView from "@/views/ProfileView.vue";
 import SearchView from "@/views/SearchView.vue";
 import ContentEcosystemView from "@/views/ContentEcosystemView.vue";
 import SubscriptionStatusView from "@/views/SubscriptionStatusView.vue";
@@ -24,28 +27,47 @@ import ArticleManageView from "@/views/admin/ArticleManageView.vue";
 import PageManageView from "@/views/admin/PageManageView.vue";
 import SettingsView from "@/views/admin/SettingsView.vue";
 import ContentEcosystemManageView from "@/views/admin/ContentEcosystemManageView.vue";
+import TechnicalView from "@/views/admin/TechnicalView.vue";
 
 const routes: RouteRecordRaw[] = [
   {
     path: "/",
     component: BlogLayout,
     children: [
-      { path: "", name: "home", component: HomeView },
+      { path: "", name: "home", component: HomeView, meta: { title: "首页" } },
       {
         path: "articles/:slug",
         name: "article-detail",
         component: ArticleDetailView,
       },
-      { path: "categories", name: "categories", component: CategoriesView },
-      { path: "tags", name: "tags", component: TagsView },
-      { path: "about", name: "about", component: AboutView },
-      { path: "links", name: "links", component: LinksView },
+      {
+        path: "categories",
+        name: "categories",
+        component: CategoriesView,
+        meta: { title: "文章分类" },
+      },
+      { path: "tags", name: "tags", component: TagsView, meta: { title: "标签索引" } },
+      { path: "about", name: "about", component: AboutView, meta: { title: "关于我" } },
+      { path: "links", name: "links", component: LinksView, meta: { title: "友情链接" } },
+      {
+        path: "guestbook",
+        name: "guestbook",
+        component: GuestbookView,
+        meta: { title: "留言板" },
+      },
+      {
+        path: "archives",
+        name: "archives",
+        component: ArchivesView,
+        meta: { title: "文章归档" },
+      },
       { path: "pages/:slug", name: "page-detail", component: PageDetailView },
-      { path: "search", name: "search", component: SearchView },
+      { path: "search", name: "search", component: SearchView, meta: { title: "搜索文章" } },
       {
         path: "ecosystem",
         name: "content-ecosystem",
         component: ContentEcosystemView,
+        meta: { title: "内容生态" },
       },
       {
         path: "subscriptions/confirm/:token",
@@ -61,6 +83,12 @@ const routes: RouteRecordRaw[] = [
   },
   { path: "/login", name: "login", component: LoginView },
   { path: "/register", name: "register", component: RegisterView },
+  {
+    path: "/profile",
+    name: "profile",
+    component: ProfileView,
+    meta: { requiresAuth: true, title: "个人中心" },
+  },
   {
     path: "/admin",
     component: AdminLayout,
@@ -83,6 +111,11 @@ const routes: RouteRecordRaw[] = [
         component: ContentEcosystemManageView,
       },
       { path: "settings", name: "admin-settings", component: SettingsView },
+      {
+        path: "technical",
+        name: "admin-technical",
+        component: TechnicalView,
+      },
     ],
   },
 ];

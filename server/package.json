@@ -10,6 +10,7 @@
     "db:init": "node ./node_modules/ts-node/dist/bin.js --project tsconfig.json scripts/init-db.ts",
     "db:seed-content": "node ./node_modules/ts-node/dist/bin.js --project tsconfig.json scripts/seed-content.ts",
     "db:seed-bulk": "node ./node_modules/ts-node/dist/bin.js --project tsconfig.json scripts/seed-bulk-articles.ts",
+    "search:refresh-local": "node -r tsconfig-paths/register ./node_modules/ts-node/dist/bin.js --project tsconfig.json scripts/seed-and-reindex.ts",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
     "start": "nest start",
     "start:dev": "nest start --watch",
@@ -26,13 +27,14 @@
     "migration:revert": "typeorm migration:revert"
   },
   "dependencies": {
-    "@elastic/elasticsearch": "^9.3.4",
+    "@elastic/elasticsearch": "^8.13.1",
     "@nestjs/common": "^10.2.0",
     "@nestjs/config": "^3.1.0",
     "@nestjs/core": "^10.2.0",
     "@nestjs/jwt": "^11.0.0",
     "@nestjs/passport": "^10.0.0",
     "@nestjs/platform-express": "^10.4.22",
+    "@nestjs/swagger": "^7.4.2",
     "@nestjs/throttler": "^5.0.0",
     "@nestjs/typeorm": "^10.0.2",
     "axios": "^1.6.0",
@@ -50,6 +52,7 @@
     "redis": "^4.6.10",
     "reflect-metadata": "^0.1.13",
     "rxjs": "^7.8.0",
+    "swagger-ui-express": "^5.0.1",
     "typeorm": "^0.3.17"
   },
   "devDependencies": {

@@ -4,11 +4,12 @@ REM  博客系统 - Elasticsearch 启动脚本
 REM  使用方式: 双击运行或在 cmd 中执行
 REM ========================================
 
-set ES_HOME=%~dp0elasticsearch-8.13.4
+set SCRIPT_DIR=%~dp0
+set ES_HOME=%SCRIPT_DIR%..\elasticsearch-8.13.4
 
 if not exist "%ES_HOME%" (
     echo [错误] 未找到 Elasticsearch 目录: %ES_HOME%
-    echo 请先解压 elasticsearch-8.13.4-windows-x86_64.zip 到当前目录
+    echo 请先解压 elasticsearch-8.13.4-windows-x86_64.zip 到 server 目录
     pause
     exit /b 1
 )

@@ -7,17 +7,20 @@ import {
   Patch,
   Post,
   Query,
+  Res,
   UseGuards,
 } from '@nestjs/common';
-import { ArticlesService } from './articles.service';
+import { Response } from 'express';
+import { User } from '@database/entities';
+import { CurrentUser } from '../auth/decorators/current-user.decorator';
+import { Roles } from '../auth/decorators/roles.decorator';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
-import { Roles } from '../auth/decorators/roles.decorator';
-import { CurrentUser } from '../auth/decorators/current-user.decorator';
-import { User } from '@database/entities';
+import { ArticlesService } from './articles.service';
 import { CreateArticleDto } from './dto/create-article.dto';
-import { UpdateArticleDto } from './dto/update-article.dto';
+import { ExportArticleDto } from './dto/export-article.dto';
 import { ListArticlesDto } from './dto/list-articles.dto';
+import { UpdateArticleDto } from './dto/update-article.dto';
 
 @Controller('admin/articles')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -38,6 +41,19 @@ export class AdminArticlesController {
   @Get(':id')
   findDetail(@Param('id') id: string, @CurrentUser() currentUser: User) {
     return this.articlesService.findAdminDetail(id, currentUser);
+  }
+
+  @Get(':id/export')
+  async exportArticle(
+    @Param('id') id: string,
+    @Query() query: ExportArticleDto,
+    @CurrentUser() currentUser: User,
+    @Res() response: Response,
+  ) {
+    const exported = await this.articlesService.exportArticle(id, query.format ?? 'markdown', currentUser);
+    response.setHeader('Content-Type', exported.contentType);
+    response.setHeader('Content-Disposition', `attachment; filename="${exported.fileName}"`);
+    return response.send(exported.content);
   }
 
   @Delete(':id/permanent')

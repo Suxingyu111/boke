@@ -1,10 +1,6 @@
 import { defineStore } from "pinia";
 import { getApiErrorMessage } from "@/api/auth";
 import * as pagesApi from "@/api/pages";
-import {
-  friendLinks as mockFriendLinks,
-  pages as mockPages,
-} from "@/data/mock";
 import type {
   CustomPage,
   FriendLink,
@@ -117,7 +113,22 @@ function normalizeFriendLinkStatus(value: unknown): FriendLinkStatus {
 
 function mapPage(raw: unknown): CustomPage {
   if (!isRecord(raw)) {
-    return mockPages[0];
+    return {
+      id: "page-unknown",
+      title: "未命名页面",
+      slug: "untitled",
+      pageType: "custom",
+      content: "",
+      contentHtml: null,
+      summary: null,
+      isHomeVisible: false,
+      status: "draft",
+      seoTitle: null,
+      seoDescription: null,
+      publishedAt: null,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
   }
 
   const createdAt = getDateString(raw, "createdAt", new Date().toISOString());
@@ -143,7 +154,20 @@ function mapPage(raw: unknown): CustomPage {
 
 function mapFriendLink(raw: unknown): FriendLink {
   if (!isRecord(raw)) {
-    return mockFriendLinks[0];
+    return {
+      id: "link-unknown",
+      siteName: "未命名站点",
+      siteUrl: "#",
+      logoUrl: null,
+      description: null,
+      contactEmail: null,
+      applicantName: null,
+      sortOrder: 0,
+      status: "pending",
+      approvedAt: null,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
   }
 
   const createdAt = getDateString(raw, "createdAt", new Date().toISOString());

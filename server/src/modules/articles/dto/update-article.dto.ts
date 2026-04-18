@@ -98,4 +98,9 @@ export class UpdateArticleDto {
   @IsOptional()
   @IsISO8601({}, { message: '定时发布时间格式不正确' })
   scheduledAt?: string;
+
+  @IsOptional()
+  @IsString({ message: '版本备注必须为字符串' })
+  @MaxLength(255, { message: '版本备注不能超过 255 个字符' })
+  changeNote?: string;
 }

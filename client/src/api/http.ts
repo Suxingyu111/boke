@@ -3,6 +3,24 @@ import type { ApiResponse } from "@/types/blog";
 
 const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || "/api";
 const tokenStorageKeys = ["blog_token", "blog_session_token"];
+const pageCacheTtl = Number(import.meta.env.VITE_PAGE_CACHE_TTL || 60000);
+const csrfStorageKey = "blog_csrf_token";
+const getCache = new Map<string, { expiresAt: number; value: ApiResponse<unknown> }>();
+
+function getCsrfToken() {
+  const existing = sessionStorage.getItem(csrfStorageKey);
+  if (existing) {
+    return existing;
+  }
+
+  const token = crypto.randomUUID();
+  sessionStorage.setItem(csrfStorageKey, token);
+  return token;
+}
+
+function getCacheKey(url: string, params?: object) {
+  return `${url}?${JSON.stringify(params ?? {})}`;
+}
 
 export const http = axios.create({
   baseURL: apiBaseUrl,
@@ -14,8 +32,14 @@ http.interceptors.request.use((config) => {
     .map((key) => localStorage.getItem(key) ?? sessionStorage.getItem(key))
     .find(Boolean);
 
+  config.headers["X-Requested-With"] = "XMLHttpRequest";
+
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
+  }
+
+  if (!["get", "head", "options"].includes(config.method ?? "get")) {
+    config.headers["X-CSRF-Token"] = getCsrfToken();
   }
 
   return config;
@@ -39,7 +63,21 @@ export async function request<T>(
   url: string,
   params?: object,
 ): Promise<ApiResponse<T>> {
-  return http.get<unknown, ApiResponse<T>>(url, { params });
+  const cacheKey = getCacheKey(url, params);
+  const cached = getCache.get(cacheKey);
+
+  if (cached && cached.expiresAt > Date.now()) {
+    return cached.value as ApiResponse<T>;
+  }
+
+  const response = await http.get<unknown, ApiResponse<T>>(url, { params });
+  if (pageCacheTtl > 0) {
+    getCache.set(cacheKey, {
+      expiresAt: Date.now() + pageCacheTtl,
+      value: response as ApiResponse<unknown>,
+    });
+  }
+  return response;
 }
 
 export async function post<T, D = unknown>(

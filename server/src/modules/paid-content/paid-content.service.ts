@@ -5,7 +5,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { In, Repository } from 'typeorm';
 import { Article, ArticlePurchase, PaidContent, User } from '@database/entities';
 import { SetPaidContentDto } from './dto/set-paid-content.dto';
 import { PurchaseArticleDto } from './dto/purchase-article.dto';
@@ -193,15 +193,22 @@ export class PaidContentService {
   async getPurchaseRecords(articleId: string) {
     const purchases = await this.purchaseRepository.find({
       where: { articleId },
-      relations: ['user'],
       order: { purchasedAt: 'DESC' },
     });
+
+    if (!purchases.length) {
+      return [];
+    }
+
+    const userIds = [...new Set(purchases.map(p => p.userId))];
+    const users = await this.userRepository.findBy({ id: In(userIds) });
+    const userMap = new Map(users.map(user => [user.id, user.username]));
 
     return purchases.map(p => ({
       id: p.id,
       userId: p.userId,
-      username: p.user?.username,
-      paidAmount: p.paidAmount,
+      username: userMap.get(p.userId),
+      paidAmount: Number(p.paidAmount),
       paymentMethod: p.paymentMethod,
       purchasedAt: p.purchasedAt,
     }));
@@ -211,16 +218,24 @@ export class PaidContentService {
   async getUserPurchases(userId: string) {
     const purchases = await this.purchaseRepository.find({
       where: { userId },
-      relations: ['article'],
       order: { purchasedAt: 'DESC' },
     });
+
+    if (!purchases.length) {
+      return [];
+    }
+
+    const articleIds = [...new Set(purchases.map(p => p.articleId))];
+    const articles = await this.articleRepository.findBy({ id: In(articleIds) });
+    const articleMap = new Map(articles.map(article => [article.id, article]));
 
     return purchases.map(p => ({
       id: p.id,
       articleId: p.articleId,
-      articleTitle: p.article?.title,
-      articleSlug: p.article?.slug,
-      paidAmount: p.paidAmount,
+      articleTitle: articleMap.get(p.articleId)?.title,
+      articleSlug: articleMap.get(p.articleId)?.slug,
+      paidAmount: Number(p.paidAmount),
+      paymentMethod: p.paymentMethod,
       purchasedAt: p.purchasedAt,
     }));
   }

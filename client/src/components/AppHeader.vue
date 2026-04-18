@@ -1,22 +1,28 @@
 <script setup lang="ts">
-import { ref } from "vue";
+import { onMounted, ref, watch } from "vue";
 import { useRouter } from "vue-router";
 import { useSiteStore } from "@/stores/site";
 import { useAuthStore } from "@/stores/auth";
+import { useI18nStore } from "@/stores/i18n";
+import { useUserStore } from "@/stores/user";
 
 const siteStore = useSiteStore();
 const authStore = useAuthStore();
+const i18nStore = useI18nStore();
+const userStore = useUserStore();
 const router = useRouter();
 const isOpen = ref(false);
 const searchTerm = ref("");
 
 const navItems = [
-  { label: "首页", to: "/" },
-  { label: "内容生态", to: "/ecosystem" },
-  { label: "分类", to: "/categories" },
-  { label: "标签", to: "/tags" },
-  { label: "关于", to: "/about" },
-  { label: "友情链接", to: "/links" },
+  { labelKey: "site.home", to: "/" },
+  { labelKey: "site.ecosystem", to: "/ecosystem" },
+  { labelKey: "site.categories", to: "/categories" },
+  { labelKey: "site.tags", to: "/tags" },
+  { labelKey: "site.archives", to: "/archives" },
+  { labelKey: "site.about", to: "/about" },
+  { labelKey: "site.links", to: "/links" },
+  { labelKey: "site.guestbook", to: "/guestbook" },
 ];
 
 function closeMenu() {
@@ -37,6 +43,27 @@ async function submitSearch() {
   searchTerm.value = "";
   closeMenu();
 }
+
+async function switchLocale() {
+  await i18nStore.switchLocale(
+    i18nStore.locale === "zh-CN" ? "en-US" : "zh-CN",
+  );
+}
+
+onMounted(() => {
+  if (authStore.isAuthenticated) {
+    void userStore.loadUnreadCount();
+  }
+});
+
+watch(
+  () => authStore.isAuthenticated,
+  (isAuthenticated) => {
+    if (isAuthenticated) {
+      void userStore.loadUnreadCount();
+    }
+  },
+);
 </script>
 
 <template>
@@ -82,7 +109,7 @@ async function submitSearch() {
           active-class="bg-white text-brand shadow-insetline"
           :to="item.to"
         >
-          {{ item.label }}
+          {{ i18nStore.t(item.labelKey) }}
         </RouterLink>
         <form
           class="hidden items-center gap-2 lg:flex"
@@ -101,29 +128,45 @@ async function submitSearch() {
             class="focus-ring ui-button-secondary px-3 py-2 text-sm"
             type="submit"
           >
-            搜索
+            {{ i18nStore.t("site.search") }}
           </button>
         </form>
+        <button
+          class="focus-ring ui-button-secondary px-3 py-2 text-sm"
+          type="button"
+          @click="switchLocale"
+        >
+          {{ i18nStore.locale === "zh-CN" ? "EN" : "中文" }}
+        </button>
         <RouterLink
           v-if="!authStore.isAuthenticated"
           class="focus-ring ui-button-secondary ml-2 px-4 py-2 text-sm"
           to="/login"
         >
-          登录
+          {{ i18nStore.t("site.login") }}
         </RouterLink>
         <RouterLink
           v-if="!authStore.isAuthenticated"
           class="focus-ring ui-button-primary px-4 py-2 text-sm"
           to="/register"
         >
-          注册
+          {{ i18nStore.t("site.register") }}
+        </RouterLink>
+        <RouterLink
+          v-if="authStore.isAuthenticated"
+          class="focus-ring ui-button-secondary ml-2 px-4 py-2 text-sm"
+          to="/profile"
+          @mouseenter="userStore.loadUnreadCount()"
+        >
+          {{ i18nStore.t("site.profile") }}
+          <span v-if="userStore.unreadCount">({{ userStore.unreadCount }})</span>
         </RouterLink>
         <RouterLink
           v-if="authStore.canAccessAdmin"
           class="focus-ring ui-button-primary ml-2 px-4 py-2 text-sm"
           to="/admin"
         >
-          后台
+          {{ i18nStore.t("site.admin") }}
         </RouterLink>
         <button
           v-if="authStore.isAuthenticated"
@@ -131,7 +174,7 @@ async function submitSearch() {
           type="button"
           @click="logout"
         >
-          {{ authStore.displayName }} · 退出
+          {{ authStore.displayName }} · {{ i18nStore.t("site.logout") }}
         </button>
       </nav>
     </div>
@@ -149,7 +192,7 @@ async function submitSearch() {
         :to="item.to"
         @click="isOpen = false"
       >
-        {{ item.label }}
+        {{ i18nStore.t(item.labelKey) }}
       </RouterLink>
       <form class="grid gap-2" role="search" @submit.prevent="submitSearch">
         <label class="text-sm font-medium text-ink/65" for="mobile-site-search">
@@ -171,13 +214,20 @@ async function submitSearch() {
           </button>
         </div>
       </form>
+      <button
+        class="focus-ring ui-button-secondary px-3 py-2 text-left"
+        type="button"
+        @click="switchLocale"
+      >
+        {{ i18nStore.locale === "zh-CN" ? "English" : "中文" }}
+      </button>
       <RouterLink
         v-if="!authStore.isAuthenticated"
         class="focus-ring ui-button-secondary px-3 py-2"
         to="/login"
         @click="closeMenu"
       >
-        登录
+        {{ i18nStore.t("site.login") }}
       </RouterLink>
       <RouterLink
         v-if="!authStore.isAuthenticated"
@@ -185,7 +235,16 @@ async function submitSearch() {
         to="/register"
         @click="closeMenu"
       >
-        注册
+        {{ i18nStore.t("site.register") }}
+      </RouterLink>
+      <RouterLink
+        v-if="authStore.isAuthenticated"
+        class="focus-ring ui-button-secondary px-3 py-2"
+        to="/profile"
+        @click="closeMenu"
+      >
+        {{ i18nStore.t("site.profile") }}
+        <span v-if="userStore.unreadCount">({{ userStore.unreadCount }})</span>
       </RouterLink>
       <RouterLink
         v-if="authStore.canAccessAdmin"
@@ -193,7 +252,7 @@ async function submitSearch() {
         to="/admin"
         @click="closeMenu"
       >
-        后台
+        {{ i18nStore.t("site.admin") }}
       </RouterLink>
       <button
         v-if="authStore.isAuthenticated"
@@ -201,7 +260,7 @@ async function submitSearch() {
         type="button"
         @click="logout"
       >
-        {{ authStore.displayName }} · 退出
+        {{ authStore.displayName }} · {{ i18nStore.t("site.logout") }}
       </button>
     </nav>
   </header>

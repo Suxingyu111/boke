@@ -1,5 +1,5 @@
 import { Module } from '@nestjs/common';
-import { APP_GUARD } from '@nestjs/core';
+import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { configuration } from './config/configuration';
@@ -19,6 +19,21 @@ import { SearchModule } from './modules/search/search.module';
 import { CollaborationModule } from './modules/collaboration/collaboration.module';
 import { PaidContentModule } from './modules/paid-content/paid-content.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
+import { SeoModule } from './modules/seo/seo.module';
+import { BackupModule } from './modules/backup/backup.module';
+import { I18nModule } from './modules/i18n/i18n.module';
+import { UsersModule } from './modules/users/users.module';
+import { FavoritesModule } from './modules/favorites/favorites.module';
+import { UserNotificationsModule } from './modules/user-notifications/user-notifications.module';
+import { VisitorStatsModule } from './modules/visitor-stats/visitor-stats.module';
+import { GuestbookModule } from './modules/guestbook/guestbook.module';
+import { FriendLinksModule } from './modules/friend-links/friend-links.module';
+import { AnnouncementsModule } from './modules/announcements/announcements.module';
+import { CommentsModule } from './modules/comments/comments.module';
+import { MediaAssetsModule } from './modules/media-assets/media-assets.module';
+import { ArticleSeriesModule } from './modules/article-series/article-series.module';
+import { OperationLogsModule } from './modules/operation-logs/operation-logs.module';
+import { OperationLogInterceptor } from './modules/operation-logs/operation-log.interceptor';
 
 @Module({
   imports: [
@@ -90,12 +105,58 @@ import { NotificationsModule } from './modules/notifications/notifications.modul
 
     // 邮件通知模块
     NotificationsModule,
+
+    // SEO 优化模块
+    SeoModule,
+
+    // 备份与恢复模块
+    BackupModule,
+
+    // 多语言支持模块
+    I18nModule,
+
+    // 用户中心模块
+    UsersModule,
+
+    // 文章收藏模块
+    FavoritesModule,
+
+    // 站内通知模块
+    UserNotificationsModule,
+
+    // 访客统计模块
+    VisitorStatsModule,
+
+    // 留言板模块
+    GuestbookModule,
+
+    // 评论模块
+    CommentsModule,
+
+    // 媒体库模块
+    MediaAssetsModule,
+
+    // 系列文章模块
+    ArticleSeriesModule,
+
+    // 操作日志模块
+    OperationLogsModule,
+
+    // 友情链接模块
+    FriendLinksModule,
+
+    // 公告栏模块
+    AnnouncementsModule,
   ],
   controllers: [],
   providers: [
     {
       provide: APP_GUARD,
       useClass: ThrottlerGuard,
+    },
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: OperationLogInterceptor,
     },
   ],
 })

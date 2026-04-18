@@ -7,6 +7,7 @@ export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '')
   const apiBasePath = env.VITE_API_BASE_URL || '/api'
   const apiProxyTarget = env.VITE_API_PROXY_TARGET || 'http://localhost:3000'
+  const assetCdn = env.VITE_ASSET_CDN || '/'
   const proxy =
     apiBasePath.startsWith('/') && apiProxyTarget
       ? {
@@ -18,6 +19,7 @@ export default defineConfig(({ mode }) => {
       : undefined
 
   return {
+    base: assetCdn,
     plugins: [vue()],
     resolve: {
       alias: {

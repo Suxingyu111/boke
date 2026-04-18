@@ -2,12 +2,14 @@
 import { computed, onMounted } from "vue";
 import ArticleCard from "@/components/ArticleCard.vue";
 import StatPill from "@/components/StatPill.vue";
+import { useCommunityStore } from "@/stores/community";
 import { useContentStore } from "@/stores/content";
 import { useSiteStore } from "@/stores/site";
 import type { Article } from "@/types/blog";
 
 const siteStore = useSiteStore();
 const contentStore = useContentStore();
+const communityStore = useCommunityStore();
 const allArticles = computed(() => contentStore.publishedArticles);
 const heroArticle = computed(() => allArticles.value[0]);
 const storyArticles = computed(() => {
@@ -43,6 +45,11 @@ const feedArticles = computed(() =>
 );
 const popularTags = computed(() => contentStore.tagCloud);
 const highlightTags = computed(() => popularTags.value.slice(0, 14));
+const popularArticles = computed(() =>
+  [...allArticles.value]
+    .sort((left, right) => right.viewCount - left.viewCount)
+    .slice(0, 4),
+);
 
 function formatDate(value: string) {
   return new Date(value).toLocaleDateString("zh-CN", {
@@ -52,7 +59,10 @@ function formatDate(value: string) {
 }
 
 onMounted(async () => {
-  await contentStore.loadPublicContent();
+  await Promise.all([
+    contentStore.loadPublicContent(),
+    communityStore.loadPublicCommunity(),
+  ]);
 });
 </script>
 
@@ -123,6 +133,34 @@ onMounted(async () => {
     >
       {{ contentStore.errorMessage }}
     </p>
+  </section>
+
+  <section
+    v-if="communityStore.announcements.length"
+    class="content-shell py-6"
+    aria-label="站点公告"
+  >
+    <div class="grid gap-4 lg:grid-cols-[0.7fr_1fr]">
+      <div>
+        <p class="eyebrow">Notice</p>
+        <h2 class="mt-2 font-display text-4xl text-brand">公告栏</h2>
+      </div>
+      <div class="grid gap-3">
+        <article
+          v-for="announcement in communityStore.announcements"
+          :key="announcement.id"
+          class="ui-surface-soft rounded-md p-4"
+        >
+          <div class="flex flex-wrap items-center justify-between gap-3">
+            <h3 class="font-semibold text-brand">{{ announcement.title }}</h3>
+            <span class="text-xs text-ink/48">
+              {{ new Date(announcement.publishedAt).toLocaleDateString("zh-CN") }}
+            </span>
+          </div>
+          <p class="mt-2 leading-7 text-ink/65">{{ announcement.content }}</p>
+        </article>
+      </div>
+    </div>
   </section>
 
   <section
@@ -219,6 +257,24 @@ onMounted(async () => {
         <StatPill label="评论" :value="siteStore.stats.comments" />
       </div>
 
+      <div
+        v-if="communityStore.visitorStats"
+        class="grid gap-4 md:grid-cols-3"
+      >
+        <StatPill
+          label="访问量"
+          :value="communityStore.visitorStats.totalViews"
+        />
+        <StatPill
+          label="访客"
+          :value="communityStore.visitorStats.uniqueVisitors"
+        />
+        <StatPill
+          label="平均停留"
+          :value="`${communityStore.visitorStats.avgStaySeconds}s`"
+        />
+      </div>
+
       <div v-if="highlightTags.length" class="home-tags">
         <RouterLink
           v-for="tag in highlightTags"
@@ -230,6 +286,39 @@ onMounted(async () => {
         </RouterLink>
       </div>
       <p v-else class="text-sm text-ink/58">暂无标签数据</p>
+
+      <div class="home-popular">
+        <div class="flex flex-wrap items-end justify-between gap-4">
+          <div>
+            <p class="eyebrow">Popular</p>
+            <h3 class="mt-2 font-display text-4xl leading-tight text-brand">
+              热门文章
+            </h3>
+          </div>
+          <RouterLink class="focus-ring ui-button-secondary px-4 py-2" to="/archives">
+            查看归档
+          </RouterLink>
+        </div>
+
+        <div v-if="popularArticles.length" class="mt-5 grid gap-3 md:grid-cols-2">
+          <RouterLink
+            v-for="article in popularArticles"
+            :key="article.id"
+            class="focus-ring ui-surface-soft grid gap-2 p-4 hover:border-brand/30 hover:bg-white/90"
+            :to="`/articles/${article.slug}`"
+          >
+            <div class="flex flex-wrap items-center gap-2 text-xs text-ink/48">
+              <span>{{ article.viewCount }} 阅读</span>
+              <span>{{ article.commentCount }} 评论</span>
+              <span>{{ formatDate(article.publishedAt) }}</span>
+            </div>
+            <h3 class="font-display text-3xl leading-tight text-ink">
+              {{ article.title }}
+            </h3>
+            <p class="line-clamp-2 leading-7 text-ink/66">{{ article.excerpt }}</p>
+          </RouterLink>
+        </div>
+      </div>
     </div>
   </section>
 </template>

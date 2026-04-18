@@ -7,7 +7,7 @@ import { ELASTICSEARCH_CLIENT } from './elasticsearch.provider';
 import { SearchArticlesDto } from './dto/search-articles.dto';
 
 const INDEX_NAME = 'blog_articles';
-
+const ES_RECOVERY_COOLDOWN_MS = 10000;
 interface EsArticleDoc {
   id: string;
   title: string;
@@ -32,6 +32,8 @@ interface SearchHit {
 export class SearchService implements OnModuleInit {
   private readonly logger = new Logger(SearchService.name);
   private esAvailable = false;
+  private nextRecoveryAttemptAt = 0;
+  private recoveryPromise?: Promise<boolean>;
 
   constructor(
     @Inject(ELASTICSEARCH_CLIENT)
@@ -41,14 +43,57 @@ export class SearchService implements OnModuleInit {
   ) {}
 
   async onModuleInit() {
-    try {
-      await this.ensureIndex();
-      this.esAvailable = true;
-      this.logger.log('Elasticsearch 索引就绪');
-    } catch {
-      this.esAvailable = false;
+    const available = await this.ensureElasticsearchAvailable(true);
+
+    if (!available) {
       this.logger.warn('Elasticsearch 不可用，搜索将回退到数据库模糊查询');
     }
+  }
+
+  private async ensureElasticsearchAvailable(force = false): Promise<boolean> {
+    if (this.esAvailable && !force) {
+      return true;
+    }
+
+    if (this.recoveryPromise) {
+      return this.recoveryPromise;
+    }
+
+    if (!force && Date.now() < this.nextRecoveryAttemptAt) {
+      return false;
+    }
+
+    this.recoveryPromise = this.connectElasticsearch(force).finally(() => {
+      this.recoveryPromise = undefined;
+    });
+
+    return this.recoveryPromise;
+  }
+
+  private async connectElasticsearch(force = false): Promise<boolean> {
+    try {
+      await this.ensureIndex();
+
+      if (!this.esAvailable) {
+        this.logger.log('Elasticsearch 索引就绪');
+      }
+
+      this.esAvailable = true;
+      this.nextRecoveryAttemptAt = 0;
+      return true;
+    } catch (error) {
+      this.markElasticsearchUnavailable(
+        `Elasticsearch 初始化失败: ${(error as Error).message}`,
+        force ? 0 : ES_RECOVERY_COOLDOWN_MS,
+      );
+      return false;
+    }
+  }
+
+  private markElasticsearchUnavailable(message: string, retryAfterMs = ES_RECOVERY_COOLDOWN_MS) {
+    this.esAvailable = false;
+    this.nextRecoveryAttemptAt = retryAfterMs > 0 ? Date.now() + retryAfterMs : 0;
+    this.logger.warn(message);
   }
 
   /** 创建或确认索引映射 */
@@ -74,9 +119,9 @@ export class SearchService implements OnModuleInit {
       mappings: {
         properties: {
           id: { type: 'keyword' },
-          title: { type: 'text', analyzer: 'blog_analyzer', boost: 3 },
+          title: { type: 'text', analyzer: 'blog_analyzer' },
           slug: { type: 'keyword' },
-          excerpt: { type: 'text', analyzer: 'blog_analyzer', boost: 2 },
+          excerpt: { type: 'text', analyzer: 'blog_analyzer' },
           content: { type: 'text', analyzer: 'blog_analyzer' },
           categoryId: { type: 'keyword' },
           userId: { type: 'keyword' },
@@ -91,14 +136,14 @@ export class SearchService implements OnModuleInit {
   /** 全文搜索文章 */
   async searchArticles(dto: SearchArticlesDto) {
     // ES 不可用时回退到数据库
-    if (!this.esAvailable) {
+    if (!(await this.ensureElasticsearchAvailable())) {
       return this.fallbackDatabaseSearch(dto);
     }
 
     try {
       return await this.esSearch(dto);
     } catch (err) {
-      this.logger.warn(`ES 搜索失败，回退数据库: ${(err as Error).message}`);
+      this.markElasticsearchUnavailable(`ES 搜索失败，回退数据库: ${(err as Error).message}`);
       return this.fallbackDatabaseSearch(dto);
     }
   }
@@ -215,7 +260,7 @@ export class SearchService implements OnModuleInit {
 
   /** 索引单篇文章到 ES */
   async indexArticle(article: Article, tagNames?: string[]): Promise<void> {
-    if (!this.esAvailable) return;
+    if (!(await this.ensureElasticsearchAvailable())) return;
 
     try {
       await this.esClient.index({
@@ -235,24 +280,24 @@ export class SearchService implements OnModuleInit {
         },
       });
     } catch (err) {
-      this.logger.warn(`索引文章失败 [${article.id}]: ${(err as Error).message}`);
+      this.markElasticsearchUnavailable(`索引文章失败 [${article.id}]: ${(err as Error).message}`);
     }
   }
 
   /** 从 ES 删除文章 */
   async removeArticle(articleId: string): Promise<void> {
-    if (!this.esAvailable) return;
+    if (!(await this.ensureElasticsearchAvailable())) return;
 
     try {
       await this.esClient.delete({ index: INDEX_NAME, id: articleId });
     } catch (err) {
-      this.logger.warn(`删除索引失败 [${articleId}]: ${(err as Error).message}`);
+      this.markElasticsearchUnavailable(`删除索引失败 [${articleId}]: ${(err as Error).message}`);
     }
   }
 
   /** 全量重建索引（后台管理用） */
   async rebuildIndex(): Promise<{ indexed: number; failed: number }> {
-    if (!this.esAvailable) {
+    if (!(await this.ensureElasticsearchAvailable())) {
       throw new Error('Elasticsearch 不可用，无法重建索引');
     }
 

@@ -1,10 +1,10 @@
 import { defineStore } from "pinia";
 import { getApiErrorMessage } from "@/api/auth";
 import * as contentApi from "@/api/content";
-import { articles as mockArticles, author } from "@/data/mock";
 import type {
   Article,
   ArticleStatus,
+  Author,
   Category,
   SiteStats,
   Tag,
@@ -17,6 +17,7 @@ const defaultCover =
 export interface ArticleMutationPayload {
   id?: string;
   title: string;
+  slug?: string;
   excerpt: string;
   content: string;
   coverImage: string;
@@ -25,6 +26,9 @@ export interface ArticleMutationPayload {
   status: ArticleStatus;
   publishedAt?: string;
   scheduledAt?: string;
+  seoTitle?: string;
+  seoDescription?: string;
+  seoKeywords?: string;
 }
 
 export interface CategoryMutationPayload {
@@ -162,7 +166,25 @@ function mapTag(raw: unknown): Tag {
 
 function mapArticle(raw: unknown): Article {
   if (!isRecord(raw)) {
-    return mockArticles[0];
+    return {
+      id: "article-unknown",
+      title: "未命名文章",
+      slug: "untitled",
+      excerpt: "",
+      content: "",
+      contentHtml: "",
+      coverImage: defaultCover,
+      status: "draft",
+      viewCount: 0,
+      likes: 0,
+      commentCount: 0,
+      author: fallbackAuthor(),
+      category: fallbackCategory(),
+      tags: [],
+      publishedAt: "",
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
   }
 
   const category = mapCategory(raw.category);
@@ -185,14 +207,50 @@ function mapArticle(raw: unknown): Article {
     viewCount: getNumber(raw, "viewCount"),
     likes: getNumber(raw, "likes"),
     commentCount: getNumber(raw, "commentCount"),
-    author,
+    author: mapAuthor(raw.author),
     category,
     tags,
     publishedAt,
     scheduledAt: scheduledAt || undefined,
     deletedAt: deletedAt || undefined,
+    seoTitle: getString(raw, "seoTitle", "") || null,
+    seoDescription: getString(raw, "seoDescription", "") || null,
+    seoKeywords: getString(raw, "seoKeywords", "") || null,
     createdAt,
     updatedAt,
+  };
+}
+
+function fallbackAuthor(): Author {
+  return {
+    id: "author-unknown",
+    username: "unknown",
+    nickname: "作者",
+    avatar: undefined,
+    bio: undefined,
+    role: "author",
+  };
+}
+
+function mapAuthor(raw: unknown): Author {
+  if (!isRecord(raw)) {
+    return fallbackAuthor();
+  }
+
+  const role = raw.role;
+  return {
+    id: getString(raw, "id", "author-unknown"),
+    username: getString(raw, "username", "unknown"),
+    nickname: getString(raw, "nickname", getString(raw, "username", "作者")),
+    avatar: getString(raw, "avatar", "") || undefined,
+    bio: getString(raw, "bio", "") || undefined,
+    role:
+      role === "super_admin" ||
+      role === "admin" ||
+      role === "author" ||
+      role === "user"
+        ? role
+        : "author",
   };
 }
 
@@ -210,7 +268,7 @@ function buildArticleRequest(
 ): contentApi.ArticlePayload {
   const slug = uniqueSlug(
     createSlug(
-      payload.title,
+      payload.slug || payload.title,
       payload.id || `article-${Date.now().toString(36)}`,
     ),
     articles,
@@ -231,6 +289,9 @@ function buildArticleRequest(
     allowComment: true,
     isTop: false,
     sortOrder: 0,
+    seoTitle: payload.seoTitle,
+    seoDescription: payload.seoDescription,
+    seoKeywords: payload.seoKeywords,
     scheduledAt:
       payload.status === "scheduled" ? payload.scheduledAt : undefined,
   };

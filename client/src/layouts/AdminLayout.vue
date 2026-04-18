@@ -19,7 +19,7 @@ async function logout() {
       class="content-shell grid gap-6 py-6 lg:grid-cols-[260px_minmax(0,1fr)]"
     >
       <aside
-        class="h-fit rounded-[16px] border border-white/15 bg-white/[0.08] p-4 shadow-editorial backdrop-blur-xl lg:sticky lg:top-6"
+        class="h-fit rounded-md border border-white/15 bg-white/[0.08] p-4 shadow-editorial backdrop-blur-xl lg:sticky lg:top-6"
       >
         <RouterLink class="block font-display text-3xl text-white" to="/">
           纸上码头
@@ -64,6 +64,13 @@ async function logout() {
           >
             系统设置
           </RouterLink>
+          <RouterLink
+            class="focus-ring min-h-11 rounded-md px-3 py-2 font-medium text-white/78 hover:bg-white/12 hover:text-white"
+            active-class="bg-white text-brand"
+            to="/admin/technical"
+          >
+            技术增强
+          </RouterLink>
         </nav>
 
         <button
@@ -76,7 +83,7 @@ async function logout() {
       </aside>
 
       <section
-        class="min-w-0 rounded-[16px] border border-white/20 bg-paper/96 p-5 text-ink shadow-editorial md:p-8"
+        class="min-w-0 rounded-md border border-white/20 bg-paper/96 p-5 text-ink shadow-editorial md:p-8"
       >
         <RouterView />
       </section>

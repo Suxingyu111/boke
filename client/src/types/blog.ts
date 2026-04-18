@@ -53,6 +53,9 @@ export interface Article {
   publishedAt: string;
   scheduledAt?: string;
   deletedAt?: string;
+  seoTitle?: string | null;
+  seoDescription?: string | null;
+  seoKeywords?: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -115,6 +118,11 @@ export interface SiteSettings {
   title: string;
   subtitle: string;
   description: string;
+  keywords: string;
+  author: string;
+  logo: string;
+  favicon: string;
+  ogImage: string;
   icp: string;
   copyright: string;
   socialLinks: SocialLink[];
@@ -151,4 +159,78 @@ export interface RegisterPayload {
   email: string;
   password: string;
   nickname?: string;
+}
+
+export interface UserProfile {
+  id: string;
+  username: string;
+  email: string;
+  nickname: string | null;
+  avatar: string | null;
+  bio: string | null;
+  role: UserRole;
+  createdAt: string;
+  favoriteCount: number;
+  commentCount: number;
+}
+
+export interface FavoriteArticle {
+  id: string;
+  favoritedAt: string;
+  article: Pick<
+    Article,
+    | "id"
+    | "title"
+    | "slug"
+    | "excerpt"
+    | "coverImage"
+    | "publishedAt"
+    | "viewCount"
+    | "category"
+    | "author"
+  >;
+}
+
+export type NotificationType = "reply" | "like" | "system";
+
+export interface UserNotification {
+  id: string;
+  userId?: string;
+  type: NotificationType;
+  title: string;
+  content: string | null;
+  relatedId?: string | null;
+  relatedType?: string | null;
+  isRead: boolean;
+  readAt?: string | null;
+  createdAt: string;
+}
+
+export interface GuestbookMessage {
+  id: string;
+  nickname: string;
+  email: string;
+  content: string;
+  createdAt: string;
+  status: "published" | "pending";
+}
+
+export interface Announcement {
+  id: string;
+  title: string;
+  content: string;
+  level: "info" | "warning" | "success";
+  publishedAt: string;
+  isActive: boolean;
+  status?: "draft" | "published";
+  isPinned?: boolean;
+  createdAt?: string;
+}
+
+export interface VisitorStats {
+  totalViews: number;
+  uniqueVisitors: number;
+  avgStaySeconds: number;
+  topSources: Array<{ source: string; count: number }>;
+  topPages: Array<{ path: string; title: string; views: number }>;
 }

@@ -97,7 +97,7 @@ async function handleLogin() {
         </div>
 
         <div
-          class="grid grid-cols-3 overflow-hidden rounded-[14px] border border-white/22 text-sm backdrop-blur"
+          class="grid grid-cols-3 overflow-hidden rounded-md border border-white/22 text-sm backdrop-blur"
         >
           <div class="bg-white/10 p-4">
             <p class="text-white/55">Auth</p>
@@ -177,6 +177,21 @@ async function handleLogin() {
         >
           {{ authStore.loading ? "正在登录..." : "登录" }}
         </button>
+
+        <div class="mt-5 grid gap-3 sm:grid-cols-2">
+          <a
+            class="focus-ring min-h-11 rounded-md border border-line bg-white px-4 py-2 text-center text-sm font-semibold hover:border-brand hover:text-brand"
+            href="/api/auth/github"
+          >
+            GitHub 登录
+          </a>
+          <a
+            class="focus-ring min-h-11 rounded-md border border-line bg-white px-4 py-2 text-center text-sm font-semibold hover:border-brand hover:text-brand"
+            href="/api/auth/google"
+          >
+            Google 登录
+          </a>
+        </div>
 
         <div
           class="mt-6 flex flex-wrap items-center justify-between gap-3 text-sm"

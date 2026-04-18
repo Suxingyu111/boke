@@ -4,14 +4,23 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import request from 'supertest';
 import { ObjectLiteral, Repository } from 'typeorm';
-import { Article, ArticleTag, Category, Tag, User } from '../src/database/entities';
+import {
+  Article,
+  ArticleTag,
+  ArticleVersion,
+  Category,
+  Tag,
+  User,
+} from '../src/database/entities';
 import { HttpExceptionFilter } from '../src/common/filters/http-exception.filter';
 import { ResponseInterceptor } from '../src/common/interceptors/response.interceptor';
 import { CategoriesController } from '../src/modules/categories/categories.controller';
 import { CategoriesService } from '../src/modules/categories/categories.service';
 import { TagsController } from '../src/modules/tags/tags.controller';
 import { TagsService } from '../src/modules/tags/tags.service';
+import { AdminArticleVersionsController } from '../src/modules/articles/admin-article-versions.controller';
 import { AdminArticlesController } from '../src/modules/articles/admin-articles.controller';
+import { ArticleVersionsService } from '../src/modules/articles/article-versions.service';
 import { PublicArticlesController } from '../src/modules/articles/public-articles.controller';
 import { ArticlesService } from '../src/modules/articles/articles.service';
 import { JwtAuthGuard } from '../src/modules/auth/guards/jwt-auth.guard';
@@ -56,6 +65,43 @@ const matchWhere = <T extends Record<string, unknown>>(
   );
 };
 
+const applyOrder = <T extends Record<string, unknown>>(
+  items: T[],
+  order?: Partial<Record<string, 'ASC' | 'DESC'>>,
+): T[] => {
+  if (!order) {
+    return items;
+  }
+
+  const [orderField, orderDirection] = Object.entries(order)[0] as [string, 'ASC' | 'DESC'];
+
+  return [...items].sort((left, right) => {
+    const leftValue = left[orderField] as string | number | Date | null;
+    const rightValue = right[orderField] as string | number | Date | null;
+
+    if (leftValue === rightValue) {
+      return 0;
+    }
+
+    if (leftValue === null || leftValue === undefined) {
+      return 1;
+    }
+
+    if (rightValue === null || rightValue === undefined) {
+      return -1;
+    }
+
+    const leftComparable = leftValue instanceof Date ? leftValue.getTime() : leftValue;
+    const rightComparable = rightValue instanceof Date ? rightValue.getTime() : rightValue;
+
+    if (leftComparable < rightComparable) {
+      return orderDirection === 'ASC' ? -1 : 1;
+    }
+
+    return orderDirection === 'ASC' ? 1 : -1;
+  });
+};
+
 const createRepositoryMock = <T extends ObjectLiteral>(seed: T[] = []): RepositoryMock<T> => {
   const items = seed.map(item => cloneValue(item));
 
@@ -67,9 +113,35 @@ const createRepositoryMock = <T extends ObjectLiteral>(seed: T[] = []): Reposito
     })),
     find: jest
       .fn()
-      .mockImplementation(async (options?: { where?: Partial<T> | Array<Partial<T>> }) => {
-        return items.filter(item => matchWhere(item as Record<string, unknown>, options?.where));
-      }),
+      .mockImplementation(
+        async (options?: {
+          where?: Partial<T> | Array<Partial<T>>;
+          order?: Partial<Record<string, 'ASC' | 'DESC'>>;
+        }) => {
+          const matched = items.filter(item =>
+            matchWhere(item as Record<string, unknown>, options?.where),
+          );
+
+          return applyOrder(matched, options?.order);
+        },
+      ),
+    findAndCount: jest.fn().mockImplementation(
+      async (options?: {
+        where?: Partial<T> | Array<Partial<T>>;
+        order?: Partial<Record<string, 'ASC' | 'DESC'>>;
+        skip?: number;
+        take?: number;
+      }) => {
+        const matched = applyOrder(
+          items.filter(item => matchWhere(item as Record<string, unknown>, options?.where)),
+          options?.order,
+        );
+        const skip = options?.skip ?? 0;
+        const take = options?.take ?? matched.length;
+
+        return [matched.slice(skip, skip + take), matched.length];
+      },
+    ),
     findOne: jest
       .fn()
       .mockImplementation(async (options: { where: Partial<T> | Array<Partial<T>> }) => {
@@ -171,6 +243,7 @@ describe('Articles integration', () => {
   let categoryRepository: RepositoryMock<Category>;
   let tagRepository: RepositoryMock<Tag>;
   let articleTagRepository: RepositoryMock<ArticleTag>;
+  let articleVersionRepository: RepositoryMock<ArticleVersion>;
   let userRepository: RepositoryMock<User>;
 
   beforeAll(async () => {
@@ -178,6 +251,7 @@ describe('Articles integration', () => {
     categoryRepository = createRepositoryMock<Category>();
     tagRepository = createRepositoryMock<Tag>();
     articleTagRepository = createRepositoryMock<ArticleTag>();
+    articleVersionRepository = createRepositoryMock<ArticleVersion>();
     userRepository = createRepositoryMock<User>();
 
     const moduleBuilder = Test.createTestingModule({
@@ -185,12 +259,14 @@ describe('Articles integration', () => {
         CategoriesController,
         TagsController,
         AdminArticlesController,
+        AdminArticleVersionsController,
         PublicArticlesController,
       ],
       providers: [
         CategoriesService,
         TagsService,
         ArticlesService,
+        ArticleVersionsService,
         RolesGuard,
         {
           provide: getRepositoryToken(Category),
@@ -207,6 +283,10 @@ describe('Articles integration', () => {
         {
           provide: getRepositoryToken(ArticleTag),
           useValue: articleTagRepository,
+        },
+        {
+          provide: getRepositoryToken(ArticleVersion),
+          useValue: articleVersionRepository,
         },
         {
           provide: getRepositoryToken(User),
@@ -452,6 +532,97 @@ describe('Articles integration', () => {
     expect(
       contentMatchedResponse.body.data.items.map((item: { slug: string }) => item.slug),
     ).toEqual(expect.arrayContaining(['nestjs-search-practice', 'cache-design-notes']));
+  });
+
+  it('应记录文章版本历史，并支持查看版本详情与恢复历史版本', async () => {
+    const categoryResponse = await request(app.getHttpServer())
+      .post('/api/admin/categories')
+      .set('x-test-role', 'admin')
+      .send({
+        name: '版本管理',
+        slug: 'version-management',
+      })
+      .expect(201);
+
+    const articleResponse = await request(app.getHttpServer())
+      .post('/api/admin/articles')
+      .set('x-test-role', 'admin')
+      .set('x-test-user-id', 'author-version')
+      .send({
+        title: '第一版标题',
+        slug: 'article-version-demo',
+        content: '# 第一版内容',
+        excerpt: '第一版摘要',
+        categoryId: categoryResponse.body.data.id,
+        status: 'draft',
+      })
+      .expect(201);
+
+    await request(app.getHttpServer())
+      .patch(`/api/admin/articles/${articleResponse.body.data.id}`)
+      .set('x-test-role', 'admin')
+      .set('x-test-user-id', 'author-version')
+      .send({
+        title: '第二版标题',
+        content: '# 第二版内容',
+        excerpt: '第二版摘要',
+        changeNote: '完善正文结构',
+      })
+      .expect(200);
+
+    const versionsResponse = await request(app.getHttpServer())
+      .get(`/api/admin/articles/${articleResponse.body.data.id}/versions?page=1&pageSize=10`)
+      .set('x-test-role', 'admin')
+      .set('x-test-user-id', 'author-version')
+      .expect(200);
+
+    expect(versionsResponse.body.data.items).toHaveLength(2);
+    expect(versionsResponse.body.data.meta.total).toBe(2);
+    expect(versionsResponse.body.data.items[0]).toEqual(
+      expect.objectContaining({
+        versionNo: 2,
+        title: '第二版标题',
+        changeNote: '完善正文结构',
+      }),
+    );
+
+    const initialVersionId = versionsResponse.body.data.items[1].id as string;
+    const versionDetailResponse = await request(app.getHttpServer())
+      .get(`/api/admin/articles/${articleResponse.body.data.id}/versions/${initialVersionId}`)
+      .set('x-test-role', 'admin')
+      .set('x-test-user-id', 'author-version')
+      .expect(200);
+
+    expect(versionDetailResponse.body.data).toEqual(
+      expect.objectContaining({
+        versionNo: 1,
+        title: '第一版标题',
+        content: '# 第一版内容',
+      }),
+    );
+
+    await request(app.getHttpServer())
+      .post(`/api/admin/articles/${articleResponse.body.data.id}/versions/${initialVersionId}/restore`)
+      .set('x-test-role', 'admin')
+      .set('x-test-user-id', 'author-version')
+      .send({
+        changeNote: '回滚到第一版',
+      })
+      .expect(201);
+
+    const restoredArticleResponse = await request(app.getHttpServer())
+      .get(`/api/admin/articles/${articleResponse.body.data.id}`)
+      .set('x-test-role', 'admin')
+      .set('x-test-user-id', 'author-version')
+      .expect(200);
+
+    expect(restoredArticleResponse.body.data).toEqual(
+      expect.objectContaining({
+        title: '第一版标题',
+        content: '# 第一版内容',
+        excerpt: '第一版摘要',
+      }),
+    );
   });
 
   it('公开文章列表不应接受 status 过滤参数', async () => {
