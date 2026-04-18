@@ -92,7 +92,7 @@ watch(
       </RouterLink>
 
       <button
-        class="focus-ring ui-button-secondary px-4 py-2 text-sm md:hidden"
+        class="focus-ring ui-button-secondary px-4 py-2 text-sm lg:hidden"
         :aria-expanded="isOpen"
         aria-label="打开或关闭导航菜单"
         type="button"
@@ -101,7 +101,7 @@ watch(
         菜单
       </button>
 
-      <nav class="hidden items-center gap-1 md:flex">
+      <nav class="hidden items-center gap-1 lg:flex">
         <RouterLink
           v-for="item in navItems"
           :key="item.to"
@@ -181,7 +181,7 @@ watch(
 
     <nav
       v-if="isOpen"
-      class="content-shell grid gap-2 border-t border-line/70 py-3 md:hidden"
+      class="content-shell grid gap-2 border-t border-line/70 py-3 lg:hidden"
       aria-label="移动端导航"
     >
       <RouterLink

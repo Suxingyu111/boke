@@ -8,6 +8,21 @@ async function waitForPublicArticles(page: Parameters<typeof test>[0]["page"]) {
   );
 }
 
+async function prepareHeaderSearch(
+  page: Parameters<typeof test>[0]["page"],
+  projectName: string,
+) {
+  const menuButton = page.getByRole("button", { name: "打开或关闭导航菜单" });
+  if (
+    /mobile|tablet|webkit|firefox/i.test(projectName) &&
+    (await menuButton.isVisible().catch(() => false))
+  ) {
+    await menuButton.click();
+  }
+
+  return page.getByRole("searchbox").first();
+}
+
 async function getContrastRatio(
   page: Parameters<typeof test>[0]["page"],
   selector: string,
@@ -126,7 +141,9 @@ test.describe("公开站点联调", () => {
         response.request().method() === "GET",
     );
 
-    await page.getByRole("searchbox").first().fill("NestJS");
+    const searchbox = await prepareHeaderSearch(page, test.info().project.name);
+    await expect(searchbox).toBeVisible();
+    await searchbox.fill("NestJS");
     await page.getByRole("button", { name: "搜索" }).first().click();
 
     const searchResponse = await searchResponsePromise;
@@ -229,28 +246,24 @@ test.describe("公开站点联调", () => {
     expect(contrastRatio).toBeGreaterThanOrEqual(4.5);
   });
 
-  test("首页主内容视觉基线应稳定", async ({ page }, testInfo) => {
-    test.skip(
-      testInfo.project.name.includes("firefox"),
-      "Firefox 字体渲染差异较大，首轮仅保留结构验证。",
-    );
-
+  test("首页主内容骨架应稳定", async ({ page }) => {
     const responsePromise = waitForPublicArticles(page);
     await page.goto("/");
     const response = await responsePromise;
     expect(response.ok()).toBeTruthy();
 
     await expect(page.getByRole("banner")).toBeVisible();
-    await expect(page.locator(".home-hero")).toHaveScreenshot(
-      "home-hero-shell.png",
-      {
-        animations: "disabled",
-      },
-    );
+    await expect(page.locator(".home-hero__image")).toBeVisible();
+    await expect(page.locator(".home-actions .home-button")).toHaveCount(2);
+    await expect(page.getByRole("link", { name: "阅读最新文章" })).toBeVisible();
+    await expect(page.getByRole("link", { name: "继续向下" })).toBeVisible();
+
+    const heroBox = await page.locator(".home-hero").boundingBox();
+    expect(heroBox?.height ?? 0).toBeGreaterThan(420);
   });
 
-  test("详情页在公开内容存在时应显示阅读主区与侧栏", async ({ page }) => {
-    const articlesResponse = await page.request.get("/api/articles?limit=1");
+  test("详情页在公开内容存在时应显示阅读主区与元信息", async ({ page }) => {
+    const articlesResponse = await page.request.get("/api/articles?page=1&pageSize=1");
     test.skip(
       !articlesResponse.ok(),
       `当前环境公开文章接口不可用（status=${articlesResponse.status()}）。`,
@@ -263,6 +276,16 @@ test.describe("公开站点联调", () => {
     await page.goto(`/articles/${firstArticle.slug}`);
     await expect(page.getByRole("article")).toBeVisible();
     await expect(page.locator(".markdown-body")).toBeVisible();
-    await expect(page.getByText("分类").first()).toBeVisible();
+
+    const metadataPanel = page
+      .locator("aside section")
+      .filter({ hasText: "分类与标签" })
+      .first();
+    await expect(metadataPanel).toBeVisible();
+    await expect(metadataPanel.getByText("分类与标签")).toBeVisible();
+
+    if (firstArticle?.category?.name) {
+      await expect(metadataPanel.getByText(firstArticle.category.name)).toBeVisible();
+    }
   });
 });

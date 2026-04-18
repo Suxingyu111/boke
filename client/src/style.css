@@ -773,6 +773,10 @@ img {
     padding-block: 3.5rem;
   }
 
+  .app-backtop {
+    display: none;
+  }
+
   .article-toc {
     position: static;
   }

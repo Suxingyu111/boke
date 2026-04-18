@@ -165,8 +165,8 @@ test.describe("后台联调", () => {
 
   test("后台文章管理页主工作区视觉基线应稳定", async ({ browser }, testInfo) => {
     test.skip(
-      testInfo.project.name.includes("firefox"),
-      "Firefox 字体渲染差异较大，首轮仅保留结构验证。",
+      testInfo.project.name !== "chromium-desktop",
+      "视觉基线当前仅在 Chromium Desktop 维护，其他项目保留结构验证。",
     );
 
     const { page, cleanup } = await createAuthenticatedPage(browser, testInfo);

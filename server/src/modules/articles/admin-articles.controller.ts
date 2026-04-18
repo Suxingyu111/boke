@@ -9,9 +9,11 @@ import {
   Query,
   Res,
   UseGuards,
+  UsePipes,
 } from '@nestjs/common';
 import { Response } from 'express';
 import { User } from '@database/entities';
+import { SanitizePipe } from '../../common/pipes/sanitize.pipe';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -25,6 +27,7 @@ import { UpdateArticleDto } from './dto/update-article.dto';
 @Controller('admin/articles')
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles('author')
+@UsePipes(SanitizePipe)
 export class AdminArticlesController {
   constructor(private readonly articlesService: ArticlesService) {}
 
