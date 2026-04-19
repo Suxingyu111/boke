@@ -1,9 +1,11 @@
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { IsEmail, IsOptional, IsString, Length, Matches } from 'class-validator';
 
 const USERNAME_PATTERN = /^[a-zA-Z0-9_]+$/;
 const PASSWORD_PATTERN = /^(?=.*[A-Za-z])(?=.*\d).+$/;
 
 export class RegisterDto {
+  @ApiProperty({ description: '用户名', example: 'coder_su' })
   @IsString()
   @Length(3, 50)
   @Matches(USERNAME_PATTERN, {
@@ -11,9 +13,11 @@ export class RegisterDto {
   })
   username: string;
 
+  @ApiProperty({ description: '邮箱地址', example: 'coder@example.com' })
   @IsEmail({}, { message: '邮箱格式不正确' })
   email: string;
 
+  @ApiProperty({ description: '登录密码，必须包含字母和数字', example: 'Pass123456' })
   @IsString()
   @Length(8, 64)
   @Matches(PASSWORD_PATTERN, {
@@ -21,6 +25,7 @@ export class RegisterDto {
   })
   password: string;
 
+  @ApiPropertyOptional({ description: '昵称', example: '苏同学' })
   @IsOptional()
   @IsString()
   @Length(2, 100)
