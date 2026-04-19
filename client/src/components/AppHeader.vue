@@ -17,6 +17,11 @@ const searchOpen = ref(false);
 const searchInputRef = ref<HTMLInputElement | null>(null);
 const userMenuOpen = ref(false);
 const userMenuRef = ref<HTMLElement | null>(null);
+const scrolled = ref(false);
+
+function handleScroll() {
+  scrolled.value = window.scrollY > 6;
+}
 
 const primaryNavItems = [
   { labelKey: "site.home", to: "/" },
@@ -80,10 +85,12 @@ onMounted(() => {
     void userStore.loadUnreadCount();
   }
   document.addEventListener("click", handleClickOutside);
+  window.addEventListener("scroll", handleScroll, { passive: true });
 });
 
 onUnmounted(() => {
   document.removeEventListener("click", handleClickOutside);
+  window.removeEventListener("scroll", handleScroll);
 });
 
 watch(
@@ -103,7 +110,16 @@ watch(
   >
     跳到正文
   </a>
-  <header class="sticky top-0 z-20 border-b border-line/70 bg-surface/80 backdrop-blur-xl">
+  <header
+    :class="[
+      'sticky top-0 z-20 backdrop-blur-xl transition-[border-color,box-shadow,background-color] duration-250',
+      scrolled
+        ? 'border-b border-line/90 bg-surface/97 shadow-[0_4px_24px_rgba(16,20,26,0.09)]'
+        : 'border-b border-line/60 bg-surface/82'
+    ]"
+  >
+    <!-- Top accent stripe -->
+    <div class="h-[2px] bg-gradient-to-r from-brand/0 via-brand to-coral/80" aria-hidden="true"></div>
     <!-- Desktop / full-width bar -->
     <div class="header-bar flex min-h-16 w-full items-center gap-2 px-4 xl:px-6">
       <!-- Logo -->
@@ -126,8 +142,8 @@ watch(
         <RouterLink
           v-for="item in allNavItems"
           :key="item.to"
-          class="focus-ring flex-shrink-0 whitespace-nowrap rounded-md px-2.5 py-1.5 text-sm font-semibold text-ink/70 hover:bg-white/80 hover:text-brand"
-          active-class="bg-white text-brand shadow-insetline"
+          class="nav-link focus-ring flex-shrink-0 whitespace-nowrap rounded-md px-3 py-1.5 text-sm font-semibold text-ink/65 hover:text-brand"
+          active-class="nav-link--active"
           :to="item.to"
         >
           {{ i18nStore.t(item.labelKey) }}
@@ -395,6 +411,32 @@ watch(
 }
 .nav-scroll::-webkit-scrollbar {
   display: none;
+}
+
+/* Animated nav underline indicator */
+.nav-link {
+  position: relative;
+  transition: color 150ms ease;
+}
+.nav-link::after {
+  content: '';
+  position: absolute;
+  bottom: 2px;
+  left: 10px;
+  right: 10px;
+  height: 2px;
+  background: linear-gradient(90deg, #1f4d6d, #c96b34);
+  border-radius: 1px;
+  transform: scaleX(0);
+  transform-origin: left center;
+  transition: transform 220ms cubic-bezier(0.34, 1.2, 0.64, 1);
+}
+.nav-link:hover::after,
+.nav-link--active::after {
+  transform: scaleX(1);
+}
+.nav-link--active {
+  color: #1f4d6d;
 }
 
 /* Avatar button */

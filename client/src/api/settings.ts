@@ -1,5 +1,5 @@
 import { put, request } from "@/api/http";
-import type { SiteSettings } from "@/types/blog";
+import type { AboutSettings, SiteSettings } from "@/types/blog";
 
 export type SettingsMap = Record<string, unknown>;
 
@@ -58,7 +58,52 @@ export async function getAdminSettings() {
   return response.data;
 }
 
-export async function saveSiteSettings(settings: SiteSettings) {
+export async function saveAboutSettings(settings: AboutSettings) {
+  const payload = {
+    settings: [
+      {
+        settingKey: "about_tech_stack",
+        settingValue: settings.techStack,
+        valueType: "json",
+        groupName: "about",
+        description: "关于页技术栈标签",
+        isPublic: true,
+      },
+      {
+        settingKey: "about_timeline",
+        settingValue: settings.timeline,
+        valueType: "json",
+        groupName: "about",
+        description: "关于页成长时间线",
+        isPublic: true,
+      },
+      {
+        settingKey: "about_contact_email",
+        settingValue: settings.contactEmail,
+        valueType: "string",
+        groupName: "about",
+        description: "联系邮箱",
+        isPublic: true,
+      },
+      {
+        settingKey: "about_github_url",
+        settingValue: settings.githubUrl,
+        valueType: "string",
+        groupName: "about",
+        description: "GitHub 主页",
+        isPublic: true,
+      },
+    ],
+  };
+
+  const response = await put<SettingsMap, typeof payload>(
+    "/admin/settings/batch",
+    payload,
+  );
+  return response.data;
+}
+
+export async function saveSettings(settings: SiteSettings) {
   const payload: BatchSettingsPayload = {
     settings: (
       Object.keys(settingDescriptions) as Array<keyof SiteSettings>

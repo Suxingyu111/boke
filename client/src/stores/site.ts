@@ -5,10 +5,12 @@ import * as settingsApi from "@/api/settings";
 import { getApiErrorMessage } from "@/api/auth";
 import { useContentStore } from "@/stores/content";
 import type {
+  AboutSettings,
   ArticleStatus,
   SiteSettings,
   SiteStats,
   SocialLink,
+  TimelineItem,
 } from "@/types/blog";
 
 const localSettingsKey = "blog_site_settings";
@@ -25,6 +27,61 @@ const defaultSiteSettings: SiteSettings = {
   copyright: "",
   socialLinks: [],
 };
+
+const defaultAboutSettings: AboutSettings = {
+  techStack: [],
+  timeline: [],
+  contactEmail: "",
+  githubUrl: "",
+};
+
+function normalizeTimelineItem(raw: unknown): TimelineItem | null {
+  if (typeof raw !== "object" || raw === null) return null;
+  const source = raw as Record<string, unknown>;
+  const year = typeof source.year === "string" ? source.year.trim() : "";
+  const title = typeof source.title === "string" ? source.title.trim() : "";
+  const desc = typeof source.desc === "string" ? source.desc.trim() : "";
+  return year && title ? { year, title, desc } : null;
+}
+
+function parseJsonField<T>(raw: unknown, fallback: T): T {
+  if (typeof raw === "string") {
+    try {
+      return JSON.parse(raw) as T;
+    } catch {
+      return fallback;
+    }
+  }
+  return (raw ?? fallback) as T;
+}
+
+function normalizeAboutSettings(raw: unknown): AboutSettings {
+  if (typeof raw !== "object" || raw === null) {
+    return { ...defaultAboutSettings };
+  }
+  const source = raw as Record<string, unknown>;
+
+  const rawStack = parseJsonField<unknown[]>(source["about_tech_stack"], []);
+  const techStack = Array.isArray(rawStack)
+    ? rawStack.filter((item): item is string => typeof item === "string")
+    : [];
+
+  const rawTimeline = parseJsonField<unknown[]>(source["about_timeline"], []);
+  const timeline = Array.isArray(rawTimeline)
+    ? rawTimeline.map(normalizeTimelineItem).filter((item): item is TimelineItem => item !== null)
+    : [];
+
+  const contactEmail =
+    typeof source["about_contact_email"] === "string"
+      ? source["about_contact_email"]
+      : "";
+  const githubUrl =
+    typeof source["about_github_url"] === "string"
+      ? source["about_github_url"]
+      : "";
+
+  return { techStack, timeline, contactEmail, githubUrl };
+}
 
 function readLocalSettings(): Partial<SiteSettings> {
   const value = localStorage.getItem(localSettingsKey);
@@ -202,10 +259,12 @@ export const useSiteStore = defineStore("site", {
       ...defaultSiteSettings,
       ...readLocalSettings(),
     },
+    aboutSettings: { ...defaultAboutSettings } as AboutSettings,
     dashboardStats: null as SiteStats | null,
     recentArticles: [] as DashboardRecentArticle[],
     settingsLoading: false,
     settingsSaving: false,
+    aboutSettingsSaving: false,
     statsLoading: false,
     recentArticlesLoading: false,
     settingsError: "",
@@ -236,6 +295,7 @@ export const useSiteStore = defineStore("site", {
         };
         const settings = normalizeSettings(mergedSettings, this.settings);
         this.applySettings(settings);
+        this.aboutSettings = normalizeAboutSettings(mergedSettings);
       } catch (error) {
         this.settingsError = getApiErrorMessage(
           error,
@@ -249,11 +309,10 @@ export const useSiteStore = defineStore("site", {
       this.settingsLoading = true;
       this.settingsError = "";
       try {
-        const settings = normalizeSettings(
-          await settingsApi.getAdminSettings(),
-          this.settings,
-        );
+        const raw = await settingsApi.getAdminSettings();
+        const settings = normalizeSettings(raw, this.settings);
         this.applySettings(settings);
+        this.aboutSettings = normalizeAboutSettings(raw);
       } catch (error) {
         this.settingsError = getApiErrorMessage(
           error,
@@ -285,6 +344,22 @@ export const useSiteStore = defineStore("site", {
         return false;
       } finally {
         this.settingsSaving = false;
+      }
+    },
+    async saveAboutSettings(settings: AboutSettings) {
+      this.aboutSettingsSaving = true;
+      this.settingsError = "";
+      this.settingsNotice = "";
+      try {
+        const raw = await settingsApi.saveAboutSettings(settings);
+        this.aboutSettings = normalizeAboutSettings(raw);
+        this.settingsNotice = "关于页信息已保存";
+        return true;
+      } catch (error) {
+        this.settingsError = getApiErrorMessage(error, "关于页信息保存失败");
+        return false;
+      } finally {
+        this.aboutSettingsSaving = false;
       }
     },
     async loadDashboardStats() {

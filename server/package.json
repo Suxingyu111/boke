@@ -8,6 +8,7 @@
   "scripts": {
     "build": "nest build",
     "db:init": "node ./node_modules/ts-node/dist/bin.js --project tsconfig.json scripts/init-db.ts",
+    "db:seed:about": "node ./node_modules/ts-node/dist/bin.js --project tsconfig.json scripts/seed-about.ts",
     "db:seed-content": "node ./node_modules/ts-node/dist/bin.js --project tsconfig.json scripts/seed-content.ts",
     "db:seed-bulk": "node ./node_modules/ts-node/dist/bin.js --project tsconfig.json scripts/seed-bulk-articles.ts",
     "search:refresh-local": "node -r tsconfig-paths/register ./node_modules/ts-node/dist/bin.js --project tsconfig.json scripts/seed-and-reindex.ts",

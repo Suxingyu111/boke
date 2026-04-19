@@ -73,6 +73,19 @@ export interface SocialLink {
   url: string;
 }
 
+export interface TimelineItem {
+  year: string;
+  title: string;
+  desc: string;
+}
+
+export interface AboutSettings {
+  techStack: string[];
+  timeline: TimelineItem[];
+  contactEmail: string;
+  githubUrl: string;
+}
+
 export type PageType = "about" | "custom" | "resume" | "portfolio";
 export type PageStatus = "draft" | "published";
 
