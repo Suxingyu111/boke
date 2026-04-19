@@ -44,6 +44,7 @@ export interface Article {
   contentHtml?: string;
   coverImage: string;
   status: ArticleStatus;
+  allowComment: boolean;
   viewCount: number;
   likes: number;
   commentCount: number;
@@ -213,6 +214,56 @@ export interface GuestbookMessage {
   content: string;
   createdAt: string;
   status: "published" | "pending";
+}
+
+export type CommentStatus = "pending" | "approved" | "spam" | "rejected";
+
+export interface PublicComment {
+  id: string;
+  articleId: string;
+  parentId: string | null;
+  authorName: string;
+  authorWebsite?: string | null;
+  content: string;
+  createdAt: string;
+  repliedAt?: string | null;
+  replies: PublicComment[];
+}
+
+export interface AdminComment {
+  id: string;
+  articleId: string;
+  parentId: string | null;
+  userId?: string | null;
+  authorName: string;
+  authorEmail: string;
+  authorWebsite?: string | null;
+  content: string;
+  likeCount: number;
+  status: CommentStatus;
+  repliedAt?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CommentPage<T = PublicComment> {
+  items: T[];
+  total: number;
+  page: number;
+  pageSize: number;
+  totalPages: number;
+}
+
+export interface CommentPayload {
+  authorName: string;
+  authorEmail: string;
+  authorWebsite?: string;
+  parentId?: string;
+  content: string;
+}
+
+export interface CommentReplyPayload {
+  content: string;
 }
 
 export interface Announcement {

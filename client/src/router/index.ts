@@ -27,6 +27,7 @@ const LoginView = () => import("@/views/admin/LoginView.vue");
 const RegisterView = () => import("@/views/admin/RegisterView.vue");
 const DashboardView = () => import("@/views/admin/DashboardView.vue");
 const ArticleManageView = () => import("@/views/admin/ArticleManageView.vue");
+const CommentManageView = () => import("@/views/admin/CommentManageView.vue");
 const PageManageView = () => import("@/views/admin/PageManageView.vue");
 const SettingsView = () => import("@/views/admin/SettingsView.vue");
 const ContentEcosystemManageView = () =>
@@ -103,6 +104,11 @@ const routes: RouteRecordRaw[] = [
         path: "articles",
         name: "admin-articles",
         component: ArticleManageView,
+      },
+      {
+        path: "comments",
+        name: "admin-comments",
+        component: CommentManageView,
       },
       {
         path: "pages",

@@ -63,6 +63,15 @@ function getNumber(source: Record<string, unknown>, key: string, fallback = 0) {
   return typeof value === "number" && Number.isFinite(value) ? value : fallback;
 }
 
+function getBoolean(
+  source: Record<string, unknown>,
+  key: string,
+  fallback = false,
+) {
+  const value = source[key];
+  return typeof value === "boolean" ? value : fallback;
+}
+
 function getDateString(
   source: Record<string, unknown>,
   key: string,
@@ -175,6 +184,7 @@ function mapArticle(raw: unknown): Article {
       contentHtml: "",
       coverImage: defaultCover,
       status: "draft",
+      allowComment: true,
       viewCount: 0,
       likes: 0,
       commentCount: 0,
@@ -204,6 +214,7 @@ function mapArticle(raw: unknown): Article {
     contentHtml: getString(raw, "contentHtml", ""),
     coverImage: getString(raw, "coverImage", defaultCover) || defaultCover,
     status: normalizeStatus(raw.status),
+    allowComment: getBoolean(raw, "allowComment", true),
     viewCount: getNumber(raw, "viewCount"),
     likes: getNumber(raw, "likes"),
     commentCount: getNumber(raw, "commentCount"),

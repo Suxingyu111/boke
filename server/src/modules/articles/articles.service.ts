@@ -636,9 +636,12 @@ export class ArticlesService {
       category: this.toPublicCategory(article.category),
       tags: article.tags.map(tag => this.toPublicTag(tag)),
       status: article.status,
+      allowComment: article.allowComment,
       isTop: article.isTop,
       sortOrder: article.sortOrder,
       viewCount: article.viewCount,
+      likes: article.likes,
+      commentCount: article.commentCount,
       publishedAt: article.publishedAt,
       createdAt: article.createdAt,
     };

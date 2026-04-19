@@ -8,6 +8,7 @@ import {
   watch,
 } from "vue";
 import { useRoute } from "vue-router";
+import CommentSection from "@/components/CommentSection.vue";
 import { useAuthStore } from "@/stores/auth";
 import { useContentStore } from "@/stores/content";
 import { useEcosystemStore } from "@/stores/ecosystem";
@@ -355,6 +356,7 @@ onBeforeUnmount(() => {
             <span>{{ estimatedReadMinutes }}</span>
             <span>{{ article.viewCount }} 阅读</span>
             <span>{{ article.likes }} 喜欢</span>
+            <span>{{ article.commentCount }} 评论</span>
           </div>
           <div class="article-share mt-6">
             <button
@@ -497,6 +499,12 @@ onBeforeUnmount(() => {
             </RouterLink>
           </div>
         </section>
+
+        <CommentSection
+          :allow-comment="article.allowComment"
+          :article-id="article.id"
+          :article-title="article.title"
+        />
       </div>
 
       <aside class="grid gap-5">
