@@ -11,7 +11,6 @@ const authStore = useAuthStore();
 const i18nStore = useI18nStore();
 const userStore = useUserStore();
 const router = useRouter();
-const isOpen = ref(false);
 const searchTerm = ref("");
 const searchOpen = ref(false);
 const searchInputRef = ref<HTMLInputElement | null>(null);
@@ -30,12 +29,7 @@ const primaryNavItems = [
   { labelKey: "site.about", to: "/about" },
   { labelKey: "site.guestbook", to: "/guestbook" },
 ];
-const secondaryNavItems: { labelKey: string; to: string }[] = [];
 const allNavItems = [...primaryNavItems];
-
-function closeMenu() {
-  isOpen.value = false;
-}
 
 function closeUserMenu() {
   userMenuOpen.value = false;
@@ -43,7 +37,6 @@ function closeUserMenu() {
 
 function logout() {
   authStore.logout();
-  closeMenu();
   closeUserMenu();
 }
 
@@ -71,13 +64,7 @@ async function submitSearch() {
     query: keyword ? { q: keyword } : {},
   });
   searchTerm.value = "";
-  closeMenu();
-}
-
-async function switchLocale() {
-  await i18nStore.switchLocale(
-    i18nStore.locale === "zh-CN" ? "en-US" : "zh-CN",
-  );
+  searchOpen.value = false;
 }
 
 onMounted(() => {
@@ -104,118 +91,125 @@ watch(
 </script>
 
 <template>
+  <!-- Skip link -->
   <a
     class="focus-ring sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 focus:rounded-md focus:bg-brand focus:px-4 focus:py-3 focus:text-white"
     href="#main-content"
   >
     跳到正文
   </a>
+
   <header
     :class="[
-      'sticky top-0 z-20 backdrop-blur-xl transition-[border-color,box-shadow,background-color] duration-250',
+      'sticky top-0 z-20 backdrop-blur-xl transition-all duration-300',
       scrolled
-        ? 'border-b border-line/90 bg-surface/97 shadow-[0_4px_24px_rgba(16,20,26,0.09)]'
-        : 'border-b border-line/60 bg-surface/82'
+        ? 'border-b border-line/90 bg-surface/97 shadow-[0_6px_28px_rgba(16,20,26,0.10)]'
+        : 'border-b border-line/50 bg-surface/85',
     ]"
   >
-    <!-- Top accent stripe -->
-    <div class="h-[2px] bg-gradient-to-r from-brand/0 via-brand to-coral/80" aria-hidden="true"></div>
-    <!-- Desktop / full-width bar -->
-    <div class="header-bar flex min-h-16 w-full items-center gap-2 px-4 xl:px-6">
-      <!-- Logo -->
-      <RouterLink class="focus-ring group mr-3 flex-shrink-0 rounded-md" to="/">
-        <div class="relative">
-          <span class="block font-display text-3xl leading-none text-ink">
-            {{ siteStore.settings.title }}
-          </span>
-          <span class="mt-0.5 block text-[10px] uppercase tracking-[0.14em] text-brand/70">
-            CODE / ESSAY / NOTES
-          </span>
-          <span
-            class="absolute -bottom-1 left-0 h-0.5 w-0 bg-gradient-to-r from-brand to-coral transition-all duration-300 group-hover:w-full"
-          ></span>
+    <!-- Animated accent stripe -->
+    <div class="accent-stripe" aria-hidden="true"></div>
+
+    <!-- Header bar: logo left, nav absolutely centered, actions right -->
+    <div
+      :class="[
+        'header-bar relative flex items-center px-4 xl:px-8',
+        'transition-[height] duration-300',
+        scrolled ? 'h-14' : 'h-16',
+      ]"
+    >
+      <!-- ① Logo -->
+      <RouterLink class="focus-ring group flex-shrink-0 rounded-sm" to="/">
+        <div class="flex items-center gap-2.5">
+          <!-- Geometric mark -->
+          <div class="logo-mark" aria-hidden="true">
+            <span class="logo-sq logo-sq--a"></span>
+            <span class="logo-sq logo-sq--b"></span>
+            <span class="logo-sq logo-sq--c"></span>
+            <span class="logo-sq logo-sq--d"></span>
+          </div>
+          <div>
+            <span class="block font-display text-[1.6rem] leading-none text-ink tracking-tight">
+              {{ siteStore.settings.title }}
+            </span>
+            <span class="mt-0.5 block text-[9px] uppercase tracking-[0.18em] text-brand/55 transition-colors duration-200 group-hover:text-coral/70">
+              CODE · ESSAY · NOTES
+            </span>
+          </div>
         </div>
       </RouterLink>
 
-      <!-- Desktop Nav – left area, scrollable so items never squish -->
-      <nav class="nav-scroll hidden flex-1 items-center gap-0.5 lg:flex" aria-label="主导航">
+      <!-- ② Nav — absolutely centered, never affected by side widths -->
+      <nav class="nav-center" aria-label="主导航">
         <RouterLink
           v-for="item in allNavItems"
           :key="item.to"
-          class="nav-link focus-ring flex-shrink-0 whitespace-nowrap rounded-md px-3 py-1.5 text-sm font-semibold text-ink/65 hover:text-brand"
-          active-class="nav-link--active"
+          class="nav-pill focus-ring"
+          active-class="nav-pill--active"
           :to="item.to"
         >
           {{ i18nStore.t(item.labelKey) }}
         </RouterLink>
       </nav>
 
-      <!-- Desktop Right Actions – never shrink -->
-      <div class="hidden flex-shrink-0 items-center gap-2 lg:flex">
-        <!-- Search (icon → expanded form) -->
-        <template v-if="!searchOpen">
+      <!-- ③ Right Actions -->
+      <div class="ml-auto flex flex-shrink-0 items-center gap-1">
+        <!-- Search: icon when closed, inline form when open -->
+        <Transition name="search-expand">
+          <form
+            v-if="searchOpen"
+            class="search-inline"
+            role="search"
+            @submit.prevent="submitSearch"
+            @keydown.escape="closeSearch"
+          >
+            <label class="sr-only" for="site-search">搜索文章</label>
+            <svg class="search-inline-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0" />
+            </svg>
+            <input
+              id="site-search"
+              ref="searchInputRef"
+              v-model="searchTerm"
+              class="search-inline-input"
+              placeholder="搜索文章…"
+              type="search"
+              autocomplete="off"
+            />
+            <button
+              class="search-inline-close focus-ring"
+              type="button"
+              aria-label="关闭搜索"
+              @click="closeSearch"
+            >
+              <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </form>
           <button
-            class="focus-ring flex h-9 w-9 items-center justify-center rounded-md text-ink/60 hover:bg-white/80 hover:text-ink"
+            v-else
+            class="action-icon-btn focus-ring"
             type="button"
             aria-label="搜索"
             @click="openSearch"
           >
-            <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0" />
+            <svg class="h-[18px] w-[18px]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0" />
             </svg>
           </button>
-        </template>
-        <form
-          v-else
-          class="flex items-center gap-1"
-          role="search"
-          @submit.prevent="submitSearch"
-          @keydown.escape="closeSearch"
-        >
-          <label class="sr-only" for="site-search">搜索文章</label>
-          <input
-            id="site-search"
-            ref="searchInputRef"
-            v-model="searchTerm"
-            class="focus-ring h-9 w-40 rounded-md border border-line bg-white/92 px-3 text-sm xl:w-52"
-            placeholder="搜索文章…"
-            type="search"
-          />
-          <button class="focus-ring ui-button-secondary h-9 min-h-0 px-3 text-sm" type="submit">搜索</button>
-          <button
-            class="focus-ring flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-md text-ink/50 hover:bg-white/80 hover:text-ink"
-            type="button"
-            aria-label="关闭搜索"
-            @click="closeSearch"
-          >
-            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
-        </form>
+        </Transition>
 
-        <!-- Language switch (globe icon) -->
-        <button
-          class="focus-ring flex h-9 w-9 items-center justify-center rounded-md text-ink/60 hover:bg-white/80 hover:text-ink"
-          type="button"
-          :title="i18nStore.locale === 'zh-CN' ? 'Switch to English' : '切换到中文'"
-          @click="switchLocale"
-        >
-          <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 004 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
-        </button>
-
-        <!-- Unauthenticated: Login + Register -->
+        <!-- Unauthenticated: Login + Register (desktop only) -->
         <template v-if="!authStore.isAuthenticated">
           <RouterLink
-            class="focus-ring ui-button-secondary h-9 min-h-0 px-4 text-sm"
+            class="focus-ring ui-button-secondary hidden h-9 min-h-0 px-4 text-sm lg:inline-flex"
             to="/login"
           >
             {{ i18nStore.t("site.login") }}
           </RouterLink>
           <RouterLink
-            class="focus-ring ui-button-primary h-9 min-h-0 px-4 text-sm"
+            class="focus-ring ui-button-primary hidden h-9 min-h-0 px-4 text-sm lg:inline-flex"
             to="/register"
           >
             {{ i18nStore.t("site.register") }}
@@ -223,7 +217,7 @@ watch(
         </template>
 
         <!-- Authenticated: Avatar with dropdown -->
-        <div v-else ref="userMenuRef" class="relative">
+        <div v-if="authStore.isAuthenticated" ref="userMenuRef" class="relative hidden lg:block">
           <button
             class="avatar-btn focus-ring"
             type="button"
@@ -237,7 +231,6 @@ watch(
               :alt="authStore.displayName"
               class="h-full w-full object-cover"
             />
-            <!-- Default cartoon avatar -->
             <svg v-else viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg" class="h-full w-full">
               <rect width="40" height="40" fill="#dce8f0" />
               <circle cx="20" cy="14" r="8.5" fill="#1f4d6d" />
@@ -252,27 +245,19 @@ watch(
               <path d="M16.5 17 Q20 20.5 23.5 17" stroke="white" stroke-width="1.5" stroke-linecap="round" fill="none" />
               <ellipse cx="20" cy="37.5" rx="13.5" ry="7.5" fill="#1f4d6d" />
             </svg>
+            <!-- Unread notification dot -->
+            <span v-if="userStore.unreadCount" class="unread-dot" aria-hidden="true"></span>
           </button>
 
-          <!-- Dropdown menu -->
           <Transition name="user-menu">
-            <div
-              v-if="userMenuOpen"
-              class="user-dropdown"
-              role="menu"
-            >
-              <div class="border-b border-line px-4 py-3">
+            <div v-if="userMenuOpen" class="user-dropdown" role="menu">
+              <div class="dropdown-header">
                 <p class="truncate text-sm font-semibold text-ink">{{ authStore.displayName }}</p>
                 <p v-if="userStore.unreadCount" class="mt-0.5 text-xs text-brand">
                   {{ userStore.unreadCount }} 条未读通知
                 </p>
               </div>
-              <RouterLink
-                class="dropdown-item"
-                to="/profile"
-                role="menuitem"
-                @click="closeUserMenu"
-              >
+              <RouterLink class="dropdown-item" to="/profile" role="menuitem" @click="closeUserMenu">
                 <svg class="h-4 w-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                 </svg>
@@ -291,7 +276,7 @@ watch(
                 管理后台
               </RouterLink>
               <button
-                class="dropdown-item dropdown-item--danger w-full border-t border-line/50"
+                class="dropdown-item dropdown-item--danger w-full"
                 type="button"
                 role="menuitem"
                 @click="logout"
@@ -304,200 +289,284 @@ watch(
             </div>
           </Transition>
         </div>
+
       </div>
-
-      <!-- Mobile menu toggle -->
-      <button
-        class="focus-ring ui-button-secondary ml-auto px-3 py-1.5 text-sm lg:hidden"
-        :aria-expanded="isOpen"
-        aria-label="打开或关闭导航菜单"
-        type="button"
-        @click="isOpen = !isOpen"
-      >
-        <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path v-if="isOpen" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-          <path v-else stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
-        </svg>
-      </button>
     </div>
-
-    <!-- Mobile Nav -->
-    <nav
-      v-if="isOpen"
-      class="grid gap-2 border-t border-line/70 px-4 py-3 lg:hidden"
-      aria-label="移动端导航"
-    >
-      <RouterLink
-        v-for="item in allNavItems"
-        :key="item.to"
-        class="focus-ring min-h-11 rounded-md px-3 py-2 font-medium hover:bg-white/80"
-        active-class="bg-white shadow-insetline"
-        :to="item.to"
-        @click="isOpen = false"
-      >
-        {{ i18nStore.t(item.labelKey) }}
-      </RouterLink>
-      <form class="grid gap-2" role="search" @submit.prevent="submitSearch">
-        <label class="text-sm font-medium text-ink/65" for="mobile-site-search">搜索文章</label>
-        <div class="grid gap-2 sm:grid-cols-[minmax(0,1fr)_auto]">
-          <input
-            id="mobile-site-search"
-            v-model="searchTerm"
-            class="focus-ring min-h-11 w-full rounded-md border border-line bg-white/92 px-3 py-2"
-            placeholder="输入标题或正文关键词"
-            type="search"
-          />
-          <button class="focus-ring ui-button-secondary px-4 py-2" type="submit">搜索</button>
-        </div>
-      </form>
-      <button
-        class="focus-ring ui-button-secondary px-3 py-2 text-left"
-        type="button"
-        @click="switchLocale"
-      >
-        {{ i18nStore.locale === "zh-CN" ? "English" : "中文" }}
-      </button>
-      <RouterLink
-        v-if="!authStore.isAuthenticated"
-        class="focus-ring ui-button-secondary px-3 py-2"
-        to="/login"
-        @click="closeMenu"
-      >
-        {{ i18nStore.t("site.login") }}
-      </RouterLink>
-      <RouterLink
-        v-if="!authStore.isAuthenticated"
-        class="focus-ring ui-button-primary px-3 py-2"
-        to="/register"
-        @click="closeMenu"
-      >
-        {{ i18nStore.t("site.register") }}
-      </RouterLink>
-      <RouterLink
-        v-if="authStore.isAuthenticated"
-        class="focus-ring ui-button-secondary px-3 py-2"
-        to="/profile"
-        @click="closeMenu"
-      >
-        {{ i18nStore.t("site.profile") }}
-        <span v-if="userStore.unreadCount">({{ userStore.unreadCount }})</span>
-      </RouterLink>
-      <RouterLink
-        v-if="authStore.canAccessAdmin"
-        class="focus-ring ui-button-primary px-3 py-2"
-        to="/admin"
-        @click="closeMenu"
-      >
-        {{ i18nStore.t("site.admin") }}
-      </RouterLink>
-      <button
-        v-if="authStore.isAuthenticated"
-        class="focus-ring ui-button-secondary px-3 py-2 text-left"
-        type="button"
-        @click="logout"
-      >
-        {{ authStore.displayName }} · {{ i18nStore.t("site.logout") }}
-      </button>
-    </nav>
   </header>
 </template>
 
 <style scoped>
-/* Nav scroll – hide scrollbar but allow overflow */
-.nav-scroll {
+/* ─── Accent stripe ─────────────────────────────────────────── */
+.accent-stripe {
+  height: 3px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    #1f4d6d 20%,
+    #c96b34 60%,
+    transparent 100%
+  );
+  background-size: 200% 100%;
+  animation: stripe-flow 6s linear infinite;
+}
+@keyframes stripe-flow {
+  0%   { background-position: 100% 0; }
+  100% { background-position: -100% 0; }
+}
+
+/* ─── Logo geometric mark ────────────────────────────────────── */
+.logo-mark {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2px;
+  width: 22px;
+  height: 22px;
+  flex-shrink: 0;
+  transition: transform 300ms ease;
+}
+.logo-mark:hover { transform: rotate(90deg); }
+.logo-sq {
+  border-radius: 2px;
+  display: block;
+}
+.logo-sq--a { background: #1f4d6d; }
+.logo-sq--b { background: rgba(31,77,109,0.35); }
+.logo-sq--c { background: rgba(201,107,52,0.55); }
+.logo-sq--d { background: #1f4d6d; }
+
+/* ─── Nav center (absolute, decoupled from side widths) ─────── */
+.nav-center {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  /* prevent nav from overlapping logo/actions on very small screens */
+  max-width: calc(100% - 320px);
   overflow-x: auto;
   scrollbar-width: none;
   -ms-overflow-style: none;
+  pointer-events: none; /* container itself non-interactive */
 }
-.nav-scroll::-webkit-scrollbar {
-  display: none;
-}
+.nav-center::-webkit-scrollbar { display: none; }
+/* re-enable pointer events on the actual links */
+.nav-center > * { pointer-events: auto; }
 
-/* Animated nav underline indicator */
-.nav-link {
+/* ─── Nav pill (desktop) ─────────────────────────────────────── */
+.nav-pill {
   position: relative;
-  transition: color 150ms ease;
+  display: inline-flex;
+  align-items: center;
+  padding: 0.35rem 0.85rem;
+  border-radius: 99px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: rgba(16, 20, 26, 0.58);
+  white-space: nowrap;
+  transition: color 160ms ease, background 160ms ease;
 }
-.nav-link::after {
+.nav-pill:hover {
+  color: #1f4d6d;
+  background: rgba(31, 77, 109, 0.07);
+}
+.nav-pill--active {
+  color: #1f4d6d;
+  background: rgba(31, 77, 109, 0.10);
+}
+/* Subtle dot indicator for active item */
+.nav-pill--active::before {
   content: '';
   position: absolute;
-  bottom: 2px;
-  left: 10px;
-  right: 10px;
-  height: 2px;
-  background: linear-gradient(90deg, #1f4d6d, #c96b34);
-  border-radius: 1px;
-  transform: scaleX(0);
-  transform-origin: left center;
-  transition: transform 220ms cubic-bezier(0.34, 1.2, 0.64, 1);
-}
-.nav-link:hover::after,
-.nav-link--active::after {
-  transform: scaleX(1);
-}
-.nav-link--active {
-  color: #1f4d6d;
+  bottom: 5px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: #c96b34;
 }
 
-/* Avatar button */
-.avatar-btn {
+/* ─── Action icon button ─────────────────────────────────────── */
+.action-icon-btn {
   display: flex;
   align-items: center;
   justify-content: center;
   width: 36px;
   height: 36px;
-  border-radius: 50%;
-  overflow: hidden;
-  border: 2px solid var(--line);
-  transition: border-color 180ms ease, box-shadow 180ms ease;
+  border-radius: 8px;
+  color: rgba(16, 20, 26, 0.55);
+  transition: color 160ms ease, background 160ms ease;
 }
-.avatar-btn:hover {
-  border-color: rgba(31, 77, 109, 0.5);
-  box-shadow: 0 0 0 3px rgba(31, 77, 109, 0.12);
+.action-icon-btn:hover {
+  color: #1f4d6d;
+  background: rgba(31, 77, 109, 0.08);
 }
 
-/* Dropdown */
+/* ─── Inline search ──────────────────────────────────────────── */
+.search-inline {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  height: 36px;
+  border: 1.5px solid rgba(31, 77, 109, 0.28);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.92);
+  padding: 0 6px 0 10px;
+  transition: border-color 160ms, box-shadow 160ms;
+}
+.search-inline:focus-within {
+  border-color: #1f4d6d;
+  box-shadow: 0 0 0 3px rgba(31, 77, 109, 0.10);
+}
+.search-inline-icon {
+  flex-shrink: 0;
+  width: 15px;
+  height: 15px;
+  color: rgba(16, 20, 26, 0.38);
+  margin-right: 6px;
+}
+.search-inline-input {
+  width: 160px;
+  height: 100%;
+  border: none;
+  background: transparent;
+  font-size: 0.8125rem;
+  color: #10141a;
+  outline: none;
+  min-width: 0;
+}
+@media (min-width: 1280px) {
+  .search-inline-input { width: 200px; }
+}
+.search-inline-input::placeholder {
+  color: rgba(16, 20, 26, 0.35);
+}
+.search-inline-input::-webkit-search-cancel-button { display: none; }
+.search-inline-close {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 5px;
+  color: rgba(16, 20, 26, 0.38);
+  margin-left: 2px;
+  transition: background 130ms, color 130ms;
+}
+.search-inline-close:hover {
+  background: rgba(16, 20, 26, 0.07);
+  color: rgba(16, 20, 26, 0.70);
+}
+
+/* Search expand/collapse transition */
+.search-expand-enter-active {
+  transition: opacity 180ms ease, transform 200ms cubic-bezier(0.34, 1.2, 0.64, 1);
+}
+.search-expand-leave-active {
+  transition: opacity 140ms ease, transform 140ms ease;
+}
+.search-expand-enter-from,
+.search-expand-leave-to {
+  opacity: 0;
+  transform: scaleX(0.8);
+  transform-origin: right center;
+}
+
+/* ─── Avatar button ──────────────────────────────────────────── */
+.avatar-btn {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  overflow: visible;
+  border: 2px solid rgba(16, 20, 26, 0.14);
+  transition: border-color 180ms ease, box-shadow 180ms ease, transform 180ms ease;
+}
+.avatar-btn > img,
+.avatar-btn > svg {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  overflow: hidden;
+  display: block;
+}
+.avatar-btn:hover {
+  border-color: rgba(31, 77, 109, 0.45);
+  box-shadow: 0 0 0 3px rgba(31, 77, 109, 0.12);
+  transform: scale(1.05);
+}
+
+/* Unread notification dot */
+.unread-dot {
+  position: absolute;
+  top: -1px;
+  right: -1px;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: #ef4444;
+  border: 2px solid white;
+  animation: dot-pulse 2s ease-in-out infinite;
+}
+@keyframes dot-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); }
+  50%       { box-shadow: 0 0 0 4px rgba(239, 68, 68, 0); }
+}
+
+/* ─── Dropdown ───────────────────────────────────────────────── */
 .user-dropdown {
   position: absolute;
   right: 0;
-  top: calc(100% + 8px);
-  width: 11rem;
-  border: 1px solid var(--line);
-  border-radius: 10px;
+  top: calc(100% + 10px);
+  width: 12rem;
+  border: 1px solid rgba(16, 20, 26, 0.10);
+  border-radius: 12px;
   background: rgba(255, 255, 255, 0.98);
-  box-shadow: 0 16px 40px rgba(16, 20, 26, 0.14);
-  backdrop-filter: blur(12px);
+  box-shadow: 0 20px 48px rgba(16, 20, 26, 0.14), 0 1px 3px rgba(16, 20, 26, 0.06);
+  backdrop-filter: blur(16px);
   z-index: 50;
   overflow: hidden;
 }
-
+.dropdown-header {
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid rgba(16, 20, 26, 0.08);
+}
 .dropdown-item {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  padding: 0.65rem 1rem;
+  padding: 0.6rem 1rem;
   font-size: 0.875rem;
-  color: rgba(16, 20, 26, 0.72);
-  transition: background 140ms, color 140ms;
+  color: rgba(16, 20, 26, 0.70);
+  transition: background 130ms, color 130ms;
   text-align: left;
 }
 .dropdown-item:hover {
   background: rgba(31, 77, 109, 0.06);
-  color: var(--brand);
+  color: #1f4d6d;
+}
+.dropdown-item--danger {
+  border-top: 1px solid rgba(16, 20, 26, 0.06);
+  margin-top: 2px;
 }
 .dropdown-item--danger:hover {
   background: rgba(220, 38, 38, 0.06);
   color: #dc2626;
 }
-
-/* Dropdown enter/leave transition */
 .user-menu-enter-active,
 .user-menu-leave-active {
-  transition: opacity 140ms ease, transform 140ms ease;
+  transition: opacity 150ms ease, transform 150ms ease;
 }
 .user-menu-enter-from,
 .user-menu-leave-to {
   opacity: 0;
-  transform: translateY(-6px) scale(0.97);
+  transform: translateY(-8px) scale(0.96);
 }
+
 </style>
