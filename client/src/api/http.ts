@@ -4,6 +4,7 @@ import type { ApiResponse } from "@/types/blog";
 const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || "/api";
 const tokenStorageKeys = ["blog_token", "blog_session_token"];
 const pageCacheTtl = Number(import.meta.env.VITE_PAGE_CACHE_TTL || 60000);
+const pageCacheMaxEntries = Number(import.meta.env.VITE_PAGE_CACHE_MAX_ENTRIES || 80);
 const csrfStorageKey = "blog_csrf_token";
 const getCache = new Map<string, { expiresAt: number; value: ApiResponse<unknown> }>();
 
@@ -20,6 +21,46 @@ function getCsrfToken() {
 
 function getCacheKey(url: string, params?: object) {
   return `${url}?${JSON.stringify(params ?? {})}`;
+}
+
+function pruneExpiredGetCache(now = Date.now()) {
+  getCache.forEach((entry, key) => {
+    if (entry.expiresAt <= now) {
+      getCache.delete(key);
+    }
+  });
+}
+
+function trimGetCacheSize() {
+  while (getCache.size >= pageCacheMaxEntries) {
+    const oldestKey = getCache.keys().next().value;
+    if (!oldestKey) {
+      break;
+    }
+    getCache.delete(oldestKey);
+  }
+}
+
+export function invalidateGetCache(
+  matcher?: string | RegExp | ((cacheKey: string) => boolean),
+) {
+  if (!matcher) {
+    getCache.clear();
+    return;
+  }
+
+  getCache.forEach((_entry, key) => {
+    const matched =
+      typeof matcher === "string"
+        ? key.includes(matcher)
+        : matcher instanceof RegExp
+          ? matcher.test(key)
+          : matcher(key);
+
+    if (matched) {
+      getCache.delete(key);
+    }
+  });
 }
 
 export const http = axios.create({
@@ -63,15 +104,17 @@ export async function request<T>(
   url: string,
   params?: object,
 ): Promise<ApiResponse<T>> {
+  pruneExpiredGetCache();
   const cacheKey = getCacheKey(url, params);
   const cached = getCache.get(cacheKey);
 
-  if (cached && cached.expiresAt > Date.now()) {
+  if (cached) {
     return cached.value as ApiResponse<T>;
   }
 
   const response = await http.get<unknown, ApiResponse<T>>(url, { params });
   if (pageCacheTtl > 0) {
+    trimGetCacheSize();
     getCache.set(cacheKey, {
       expiresAt: Date.now() + pageCacheTtl,
       value: response as ApiResponse<unknown>,
@@ -84,23 +127,31 @@ export async function post<T, D = unknown>(
   url: string,
   data: D,
 ): Promise<ApiResponse<T>> {
-  return http.post<unknown, ApiResponse<T>>(url, data);
+  const response = await http.post<unknown, ApiResponse<T>>(url, data);
+  invalidateGetCache();
+  return response;
 }
 
 export async function patch<T, D = unknown>(
   url: string,
   data: D,
 ): Promise<ApiResponse<T>> {
-  return http.patch<unknown, ApiResponse<T>>(url, data);
+  const response = await http.patch<unknown, ApiResponse<T>>(url, data);
+  invalidateGetCache();
+  return response;
 }
 
 export async function put<T, D = unknown>(
   url: string,
   data: D,
 ): Promise<ApiResponse<T>> {
-  return http.put<unknown, ApiResponse<T>>(url, data);
+  const response = await http.put<unknown, ApiResponse<T>>(url, data);
+  invalidateGetCache();
+  return response;
 }
 
 export async function remove<T>(url: string): Promise<ApiResponse<T>> {
-  return http.delete<unknown, ApiResponse<T>>(url);
+  const response = await http.delete<unknown, ApiResponse<T>>(url);
+  invalidateGetCache();
+  return response;
 }
