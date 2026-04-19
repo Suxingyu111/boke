@@ -12,7 +12,6 @@ import HomeView from "@/views/HomeView.vue";
 const AdminLayout = () => import("@/layouts/AdminLayout.vue");
 const ArticleDetailView = () => import("@/views/ArticleDetailView.vue");
 const CategoriesView = () => import("@/views/CategoriesView.vue");
-const TagsView = () => import("@/views/TagsView.vue");
 const AboutView = () => import("@/views/AboutView.vue");
 const GuestbookView = () => import("@/views/GuestbookView.vue");
 const ArchivesView = () => import("@/views/ArchivesView.vue");
@@ -47,7 +46,7 @@ const routes: RouteRecordRaw[] = [
         component: CategoriesView,
         meta: { title: "文章分类" },
       },
-      { path: "tags", name: "tags", component: TagsView, meta: { title: "标签索引" } },
+      { path: "tags", name: "tags", redirect: "/categories" },
       { path: "about", name: "about", component: AboutView, meta: { title: "关于我" } },
       {
         path: "guestbook",

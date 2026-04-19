@@ -21,7 +21,6 @@ const userMenuRef = ref<HTMLElement | null>(null);
 const primaryNavItems = [
   { labelKey: "site.home", to: "/" },
   { labelKey: "site.categories", to: "/categories" },
-  { labelKey: "site.tags", to: "/tags" },
   { labelKey: "site.archives", to: "/archives" },
   { labelKey: "site.about", to: "/about" },
   { labelKey: "site.guestbook", to: "/guestbook" },

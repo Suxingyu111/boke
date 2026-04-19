@@ -8,10 +8,10 @@ defineProps<{
 
 <template>
   <article
-    class="ui-surface ui-hover-lift group grid overflow-hidden !rounded-[8px] md:grid-cols-[260px_minmax(0,1fr)]"
+    class="ui-surface ui-hover-lift group grid overflow-hidden !rounded-[8px] sm:grid-cols-[160px_minmax(0,1fr)]"
   >
     <RouterLink
-      class="block aspect-[4/3] overflow-hidden bg-line/40 md:aspect-auto md:min-h-full"
+      class="block aspect-[4/3] overflow-hidden bg-line/40 sm:aspect-auto sm:min-h-full"
       :to="`/articles/${article.slug}`"
     >
       <img
@@ -24,42 +24,44 @@ defineProps<{
       />
     </RouterLink>
 
-    <div class="grid gap-4 p-5 md:p-6">
-      <div class="flex flex-wrap items-center gap-2 text-sm text-ink/62">
+    <div class="flex flex-col gap-1.5 p-3 sm:p-4">
+      <div class="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-ink/55">
         <span
-          class="rounded-md border border-line bg-white/84 px-2 py-1 font-semibold"
+          class="rounded border border-line bg-white/84 px-1.5 py-0.5 font-semibold"
           :style="{ color: article.category.color }"
         >
           {{ article.category.name }}
         </span>
-        <span>{{
-          new Date(article.publishedAt).toLocaleDateString("zh-CN")
-        }}</span>
+        <span>{{ new Date(article.publishedAt).toLocaleDateString("zh-CN") }}</span>
         <span>{{ article.viewCount }} 阅读</span>
       </div>
 
       <RouterLink
-        class="focus-ring rounded-md"
+        class="focus-ring rounded"
         :to="`/articles/${article.slug}`"
       >
         <h2
-          class="font-display text-[2rem] leading-tight text-ink transition-colors duration-200 group-hover:text-brand"
+          class="line-clamp-2 font-display text-xl leading-snug text-ink transition-colors duration-200 group-hover:text-brand"
         >
           {{ article.title }}
         </h2>
       </RouterLink>
 
-      <p class="leading-7 text-ink/74">{{ article.excerpt }}</p>
+      <p class="line-clamp-2 text-sm leading-6 text-ink/65">{{ article.excerpt }}</p>
 
-      <div class="flex flex-wrap gap-2">
+      <div class="mt-auto flex flex-wrap gap-1.5 pt-1">
         <RouterLink
-          v-for="tag in article.tags"
+          v-for="tag in article.tags.slice(0, 3)"
           :key="tag.id"
-          class="focus-ring rounded-md bg-wash/78 px-2 py-1 text-sm text-ink/70 hover:bg-accent-soft hover:text-coral"
+          class="focus-ring rounded bg-wash/78 px-1.5 py-0.5 text-xs text-ink/60 hover:bg-accent-soft hover:text-coral"
           :to="`/tags?tag=${tag.slug}`"
         >
           #{{ tag.name }}
         </RouterLink>
+        <span
+          v-if="article.tags.length > 3"
+          class="px-1 text-xs text-ink/40"
+        >+{{ article.tags.length - 3 }}</span>
       </div>
     </div>
   </article>
