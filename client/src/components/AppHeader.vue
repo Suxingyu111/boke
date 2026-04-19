@@ -144,11 +144,15 @@ watch(
         <RouterLink
           v-for="item in allNavItems"
           :key="item.to"
-          class="nav-pill focus-ring"
+          :class="['nav-pill focus-ring', item.to === '/guestbook' && 'nav-pill--guestbook']"
           active-class="nav-pill--active"
           :to="item.to"
         >
+          <svg v-if="item.to === '/guestbook'" class="nav-pill__icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M14 10.667A1.333 1.333 0 0112.667 12H4L1.333 14.667V2.667A1.333 1.333 0 012.667 1.333h10A1.333 1.333 0 0114 2.667v8z"/>
+          </svg>
           {{ i18nStore.t(item.labelKey) }}
+          <span v-if="item.to === '/guestbook'" class="nav-pill__invite" aria-hidden="true"></span>
         </RouterLink>
       </nav>
 
@@ -386,6 +390,49 @@ watch(
   height: 4px;
   border-radius: 50%;
   background: #c96b34;
+}
+
+/* ─── Guestbook accent pill ─────────────────────────────────── */
+.nav-pill--guestbook {
+  gap: 5px;
+}
+.nav-pill__icon {
+  width: 13px;
+  height: 13px;
+  flex-shrink: 0;
+  opacity: 0.42;
+  transition: opacity 160ms;
+}
+.nav-pill--guestbook:hover .nav-pill__icon,
+.nav-pill--guestbook.nav-pill--active .nav-pill__icon {
+  opacity: 1;
+}
+.nav-pill--guestbook:hover {
+  color: #c96b34;
+  background: rgba(201, 107, 52, 0.07);
+}
+.nav-pill--guestbook.nav-pill--active {
+  color: #c96b34;
+  background: rgba(201, 107, 52, 0.10);
+}
+/* The ::before dot still shows in coral – matches perfectly */
+.nav-pill__invite {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #c96b34;
+  flex-shrink: 0;
+  align-self: center;
+  opacity: 0.65;
+  animation: invite-pulse 2.8s ease-in-out infinite;
+}
+@keyframes invite-pulse {
+  0%, 100% { transform: scale(1);   opacity: 0.65; }
+  50%       { transform: scale(1.7); opacity: 0.22; }
+}
+/* Hide the invite dot when already on guestbook page */
+.nav-pill--guestbook.nav-pill--active .nav-pill__invite {
+  display: none;
 }
 
 /* ─── Action icon button ─────────────────────────────────────── */
