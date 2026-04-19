@@ -1,3 +1,9 @@
+import MarkdownIt from "markdown-it";
+import markdownItAnchor from "markdown-it-anchor";
+import markdownItFootnote from "markdown-it-footnote";
+import markdownItTaskLists from "markdown-it-task-lists";
+import hljs from "highlight.js/lib/common";
+
 function escapeHtml(value: string) {
   return value
     .replace(/&/g, "&amp;")
@@ -7,90 +13,143 @@ function escapeHtml(value: string) {
     .replace(/'/g, "&#39;");
 }
 
-function renderInline(value: string) {
-  return escapeHtml(value)
-    .replace(/`([^`]+)`/g, "<code>$1</code>")
-    .replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>")
-    .replace(/\*([^*]+)\*/g, "<em>$1</em>")
-    .replace(
-      /\[([^\]]+)\]\(((https?:\/\/|mailto:)[^)\s]+)\)/g,
-      '<a href="$2" target="_blank" rel="noreferrer">$1</a>',
-    );
+function slugify(value: string) {
+  const normalized = value
+    .trim()
+    .toLowerCase()
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "");
+
+  const slug = normalized
+    .replace(/[^a-z0-9\u4e00-\u9fa5\s-]/g, "")
+    .replace(/\s+/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-|-$/g, "");
+
+  return slug || `section-${Date.now().toString(36)}`;
 }
 
+function isSafeLink(url: string) {
+  if (!url) {
+    return false;
+  }
+
+  if (/^(https?:|mailto:|tel:)/i.test(url)) {
+    return true;
+  }
+
+  return !/^[a-zA-Z][\w+.-]*:/i.test(url);
+}
+
+function renderCodeBlock(code: string, language: string) {
+  const languageName = language.trim().toLowerCase();
+  const resolvedLanguage =
+    languageName && hljs.getLanguage(languageName) ? languageName : "";
+  const highlighted = resolvedLanguage
+    ? hljs.highlight(code, {
+        language: resolvedLanguage,
+        ignoreIllegals: true,
+      }).value
+    : escapeHtml(code);
+  const label = resolvedLanguage || "text";
+
+  return [
+    `<pre class="markdown-code-block" data-language="${escapeHtml(label)}">`,
+    '<div class="markdown-code-toolbar">',
+    `<span class="markdown-code-language">${escapeHtml(label)}</span>`,
+    '<button class="markdown-code-copy" type="button" data-copy-code>复制代码</button>',
+    "</div>",
+    `<code class="hljs language-${escapeHtml(label)}">${highlighted}</code>`,
+    "</pre>",
+  ].join("");
+}
+
+const markdownRenderer = new MarkdownIt({
+  html: false,
+  linkify: true,
+  typographer: true,
+  breaks: false,
+  highlight(code, language) {
+    return renderCodeBlock(code, language);
+  },
+});
+
+markdownRenderer.validateLink = isSafeLink;
+markdownRenderer
+  .use(markdownItAnchor, {
+    level: [1, 2, 3],
+    slugify,
+    tabIndex: false,
+  })
+  .use(markdownItTaskLists, {
+    enabled: true,
+    label: true,
+    labelAfter: true,
+  })
+  .use(markdownItFootnote);
+
+const defaultLinkOpenRenderer =
+  markdownRenderer.renderer.rules.link_open ??
+  ((tokens, index, options, _env, self) =>
+    self.renderToken(tokens, index, options));
+
+markdownRenderer.renderer.rules.link_open = (
+  tokens,
+  index,
+  options,
+  env,
+  self,
+) => {
+  const href = tokens[index].attrGet("href") || "";
+  if (/^https?:\/\//i.test(href)) {
+    tokens[index].attrSet("target", "_blank");
+    tokens[index].attrSet("rel", "noreferrer noopener");
+  }
+  return defaultLinkOpenRenderer(tokens, index, options, env, self);
+};
+
 export function renderMarkdown(markdown: string) {
-  const lines = markdown.replace(/\r\n/g, "\n").split("\n");
-  const html: string[] = [];
-  let inList = false;
-  let inCode = false;
-  let codeLines: string[] = [];
+  return markdownRenderer.render(markdown || "");
+}
 
-  function closeList() {
-    if (inList) {
-      html.push("</ul>");
-      inList = false;
-    }
+export async function handleMarkdownInteraction(event: MouseEvent) {
+  const target = event.target;
+  if (!(target instanceof Element)) {
+    return false;
   }
 
-  function closeCode() {
-    if (inCode) {
-      html.push(`<pre><code>${escapeHtml(codeLines.join("\n"))}</code></pre>`);
-      codeLines = [];
-      inCode = false;
-    }
+  const copyButton = target.closest<HTMLElement>("[data-copy-code]");
+  if (!copyButton) {
+    return false;
   }
 
-  lines.forEach((line) => {
-    if (line.trim().startsWith("```")) {
-      if (inCode) {
-        closeCode();
-      } else {
-        closeList();
-        inCode = true;
-      }
-      return;
+  const codeElement = copyButton
+    .closest(".markdown-code-block")
+    ?.querySelector("code");
+  const code = codeElement?.textContent || "";
+  if (!code) {
+    copyButton.textContent = "暂无代码";
+    return true;
+  }
+
+  const originalLabel = copyButton.dataset.originalLabel || copyButton.textContent || "复制代码";
+  copyButton.dataset.originalLabel = originalLabel;
+
+  try {
+    await navigator.clipboard.writeText(code);
+    copyButton.textContent = "已复制";
+    copyButton.dataset.copied = "true";
+  } catch {
+    copyButton.textContent = "复制失败";
+    copyButton.dataset.copied = "false";
+  }
+
+  window.setTimeout(() => {
+    if (copyButton.isConnected) {
+      copyButton.textContent = originalLabel;
+      delete copyButton.dataset.copied;
     }
+  }, 1600);
 
-    if (inCode) {
-      codeLines.push(line);
-      return;
-    }
-
-    if (!line.trim()) {
-      closeList();
-      return;
-    }
-
-    const heading = line.match(/^(#{1,3})\s+(.+)$/);
-    if (heading) {
-      closeList();
-      const level = heading[1].length;
-      html.push(`<h${level}>${renderInline(heading[2])}</h${level}>`);
-      return;
-    }
-
-    const listItem = line.match(/^[-*]\s+(.+)$/);
-    if (listItem) {
-      if (!inList) {
-        html.push("<ul>");
-        inList = true;
-      }
-      html.push(`<li>${renderInline(listItem[1])}</li>`);
-      return;
-    }
-
-    if (line.startsWith("> ")) {
-      closeList();
-      html.push(`<blockquote>${renderInline(line.slice(2))}</blockquote>`);
-      return;
-    }
-
-    closeList();
-    html.push(`<p>${renderInline(line)}</p>`);
-  });
-
-  closeList();
-  closeCode();
-
-  return html.join("");
+  return true;
 }

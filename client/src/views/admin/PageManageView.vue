@@ -4,7 +4,7 @@ import { getApiErrorMessage } from "@/api/auth";
 import { createSlug } from "@/stores/content";
 import { usePagesStore, type PageMutationPayload } from "@/stores/pages";
 import type { CustomPage, PageType } from "@/types/blog";
-import { renderMarkdown } from "@/utils/markdown";
+import { handleMarkdownInteraction, renderMarkdown } from "@/utils/markdown";
 
 interface PageForm {
   id: string;
@@ -305,6 +305,7 @@ async function removePage(page: CustomPage) {
             <p class="text-sm text-ink/60">实时预览</p>
             <div
               class="markdown-body mt-2 min-h-[360px] overflow-auto rounded-md border border-line bg-paper p-4 shadow-insetline"
+              @click="handleMarkdownInteraction"
               v-html="renderedPreview"
             ></div>
           </div>

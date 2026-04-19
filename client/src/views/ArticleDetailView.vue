@@ -13,7 +13,7 @@ import { useAuthStore } from "@/stores/auth";
 import { useContentStore } from "@/stores/content";
 import { useEcosystemStore } from "@/stores/ecosystem";
 import { useUserStore } from "@/stores/user";
-import { renderMarkdown } from "@/utils/markdown";
+import { handleMarkdownInteraction, renderMarkdown } from "@/utils/markdown";
 
 interface ArticleHeading {
   id: string;
@@ -132,7 +132,7 @@ function buildProcessedContent(value: string) {
 
   container?.querySelectorAll("h2, h3").forEach((heading, index) => {
     const text = (heading.textContent || `段落 ${index + 1}`).trim();
-    const id = `section-${index + 1}`;
+    const id = heading.id || `section-${index + 1}`;
     heading.id = id;
     headings.push({
       id,
@@ -463,6 +463,7 @@ onBeforeUnmount(() => {
         <div
           ref="articleBodyRef"
           class="markdown-body ui-surface p-6 md:p-10 lg:p-12"
+          @click="handleMarkdownInteraction"
           v-html="processedContent"
         ></div>
 

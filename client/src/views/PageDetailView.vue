@@ -4,7 +4,7 @@ import { getApiErrorMessage } from "@/api/auth";
 import { useRoute } from "vue-router";
 import { usePagesStore } from "@/stores/pages";
 import type { CustomPage } from "@/types/blog";
-import { renderMarkdown } from "@/utils/markdown";
+import { handleMarkdownInteraction, renderMarkdown } from "@/utils/markdown";
 
 const route = useRoute();
 const pagesStore = usePagesStore();
@@ -116,6 +116,7 @@ function formatDate(value?: string | null) {
     >
       <div
         class="markdown-body ui-surface p-5 md:p-8"
+        @click="handleMarkdownInteraction"
         v-html="renderedContent"
       ></div>
 

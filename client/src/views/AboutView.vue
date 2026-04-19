@@ -2,7 +2,7 @@
 import { computed, onMounted } from "vue";
 import { usePagesStore } from "@/stores/pages";
 import { useSiteStore } from "@/stores/site";
-import { renderMarkdown } from "@/utils/markdown";
+import { handleMarkdownInteraction, renderMarkdown } from "@/utils/markdown";
 
 const pagesStore = usePagesStore();
 const siteStore  = useSiteStore();
@@ -86,7 +86,11 @@ onMounted(async () => {
       <article class="ap-article">
         <template v-if="aboutPage">
           <h2 class="ap-article__name font-display">{{ aboutPage.title }}</h2>
-          <div class="ap-bio-body markdown-body" v-html="renderedContent"></div>
+          <div
+            class="ap-bio-body markdown-body"
+            @click="handleMarkdownInteraction"
+            v-html="renderedContent"
+          ></div>
         </template>
 
         <template v-else-if="pagesStore.loading">

@@ -3,7 +3,7 @@ import { computed, onMounted, reactive, ref, watch } from "vue";
 import { getApiErrorMessage } from "@/api/auth";
 import { useContentStore, type ArticleMutationPayload } from "@/stores/content";
 import type { Article, ArticleStatus, Category, Tag } from "@/types/blog";
-import { renderMarkdown } from "@/utils/markdown";
+import { handleMarkdownInteraction, renderMarkdown } from "@/utils/markdown";
 
 type PanelKey = "articles" | "categories" | "tags";
 type StatusFilter = ArticleStatus | "all";
@@ -630,6 +630,7 @@ async function removeTag(tag: Tag) {
             <p class="text-sm text-ink/60">实时预览</p>
             <div
               class="markdown-body mt-2 min-h-[360px] overflow-auto rounded-md border border-line bg-paper p-4 shadow-insetline"
+              @click="handleMarkdownInteraction"
               v-html="renderedPreview"
             ></div>
           </div>
