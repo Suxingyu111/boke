@@ -8,6 +8,8 @@ import {
   watch,
 } from "vue";
 import { useRoute } from "vue-router";
+import { getApiErrorMessage } from "@/api/auth";
+import * as contentApi from "@/api/content";
 import CommentSection from "@/components/CommentSection.vue";
 import { useAuthStore } from "@/stores/auth";
 import { useContentStore } from "@/stores/content";
@@ -35,6 +37,9 @@ const article = computed(() =>
 const articleError = ref("");
 const detailReady = ref(false);
 const shareNotice = ref("");
+const likeNotice = ref("");
+const articleLiked = ref(false);
+const likeLoading = ref(false);
 const readingProgress = ref(0);
 const processedContent = ref("");
 const articleHeadings = ref<ArticleHeading[]>([]);
@@ -259,6 +264,43 @@ async function toggleFavorite() {
   await userStore.toggleFavorite(article.value.id);
 }
 
+async function loadLikeState(articleId: string) {
+  try {
+    const result = await contentApi.getArticleLikeState(articleId);
+    articleLiked.value = result.liked;
+    if (article.value) {
+      article.value.likes = result.likes;
+    }
+  } catch {
+    articleLiked.value = false;
+  }
+}
+
+async function toggleLike() {
+  if (!article.value || likeLoading.value) {
+    return;
+  }
+
+  likeLoading.value = true;
+  likeNotice.value = "";
+
+  try {
+    const result = articleLiked.value
+      ? await contentApi.unlikeArticle(article.value.id)
+      : await contentApi.likeArticle(article.value.id);
+    articleLiked.value = result.liked;
+    article.value.likes = result.likes;
+    likeNotice.value = result.message;
+  } catch (error) {
+    likeNotice.value = getApiErrorMessage(
+      error,
+      articleLiked.value ? "取消点赞失败" : "点赞失败",
+    );
+  } finally {
+    likeLoading.value = false;
+  }
+}
+
 watch(
   () => renderedContent.value,
   async (value) => {
@@ -276,7 +318,9 @@ watch(
   async (slug) => {
     articleError.value = "";
     shareNotice.value = "";
+    likeNotice.value = "";
     detailReady.value = false;
+    articleLiked.value = false;
 
     try {
       const detailPromise = contentStore.loadPublicArticleDetail(String(slug));
@@ -287,6 +331,7 @@ watch(
       const [detail] = await Promise.all([detailPromise, listPromise]);
 
       await ecosystemStore.loadPaidArticle(detail.id);
+      await loadLikeState(detail.id);
       if (authStore.isAuthenticated) {
         await userStore.checkFavorite(detail.id);
       }
@@ -403,6 +448,15 @@ onBeforeUnmount(() => {
           <p v-if="shareNotice" class="mt-3 text-sm text-moss">{{ shareNotice }}</p>
           <div class="mt-6 flex flex-wrap gap-3">
             <button
+              class="focus-ring ui-button-secondary px-5 py-3"
+              :class="articleLiked && 'border-brand text-brand'"
+              :disabled="likeLoading"
+              type="button"
+              @click="toggleLike"
+            >
+              {{ likeLoading ? "处理中..." : articleLiked ? "已点赞" : "点赞文章" }}
+            </button>
+            <button
               v-if="authStore.isAuthenticated"
               class="focus-ring ui-button-primary px-5 py-3"
               type="button"
@@ -419,6 +473,9 @@ onBeforeUnmount(() => {
             </RouterLink>
             <p v-if="userStore.notice" class="self-center text-sm text-moss">
               {{ userStore.notice }}
+            </p>
+            <p v-if="likeNotice" class="self-center text-sm text-moss">
+              {{ likeNotice }}
             </p>
           </div>
         </div>

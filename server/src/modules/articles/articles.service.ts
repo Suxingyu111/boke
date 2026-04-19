@@ -6,8 +6,9 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+import { createHash } from 'crypto';
 import { IsNull, Repository } from 'typeorm';
-import { Article, ArticleTag, Category, Tag, User } from '@database/entities';
+import { Article, ArticleLike, ArticleTag, Category, Tag, User } from '@database/entities';
 import { ArticleVersionsService } from './article-versions.service';
 import { CreateArticleDto } from './dto/create-article.dto';
 import { UpdateArticleDto } from './dto/update-article.dto';
@@ -42,6 +43,8 @@ export class ArticlesService {
     private readonly tagRepository: Repository<Tag>,
     @InjectRepository(ArticleTag)
     private readonly articleTagRepository: Repository<ArticleTag>,
+    @InjectRepository(ArticleLike)
+    private readonly articleLikeRepository: Repository<ArticleLike>,
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
     private readonly articleVersionsService: ArticleVersionsService,
@@ -382,6 +385,101 @@ export class ArticlesService {
     return this.toPublicDetail(await this.buildArticleView(updatedArticle));
   }
 
+  async getLikeStatus(
+    articleId: string,
+    ip: string | null,
+    userAgent: string | null,
+    currentUser?: User | null,
+  ) {
+    const article = await this.findLikeableArticle(articleId);
+    const visitorKey = this.buildVisitorKey(ip, userAgent, currentUser?.id ?? null);
+    const like = await this.articleLikeRepository.findOne({
+      where: { articleId: article.id, visitorKey },
+    });
+
+    return {
+      liked: Boolean(like),
+      likes: article.likes,
+    };
+  }
+
+  async likeArticle(
+    articleId: string,
+    ip: string | null,
+    userAgent: string | null,
+    currentUser?: User | null,
+  ) {
+    const article = await this.findLikeableArticle(articleId);
+    const visitorKey = this.buildVisitorKey(ip, userAgent, currentUser?.id ?? null);
+    const existing = await this.articleLikeRepository.findOne({
+      where: { articleId: article.id, visitorKey },
+    });
+
+    if (existing) {
+      return {
+        liked: true,
+        likes: article.likes,
+        message: '已点赞该文章',
+      };
+    }
+
+    await this.articleLikeRepository.save(
+      this.articleLikeRepository.create({
+        articleId: article.id,
+        userId: currentUser?.id ?? null,
+        visitorKey,
+        ipAddress: ip?.slice(0, 45) ?? null,
+        userAgent: userAgent?.slice(0, 500) ?? null,
+      }),
+    );
+
+    const updatedArticle = await this.articleRepository.save({
+      ...article,
+      likes: article.likes + 1,
+      updatedAt: new Date(),
+    });
+
+    return {
+      liked: true,
+      likes: updatedArticle.likes,
+      message: '点赞成功',
+    };
+  }
+
+  async unlikeArticle(
+    articleId: string,
+    ip: string | null,
+    userAgent: string | null,
+    currentUser?: User | null,
+  ) {
+    const article = await this.findLikeableArticle(articleId);
+    const visitorKey = this.buildVisitorKey(ip, userAgent, currentUser?.id ?? null);
+    const like = await this.articleLikeRepository.findOne({
+      where: { articleId: article.id, visitorKey },
+    });
+
+    if (!like) {
+      return {
+        liked: false,
+        likes: article.likes,
+        message: '当前未点赞该文章',
+      };
+    }
+
+    await this.articleLikeRepository.delete({ id: like.id });
+    const updatedArticle = await this.articleRepository.save({
+      ...article,
+      likes: Math.max(0, article.likes - 1),
+      updatedAt: new Date(),
+    });
+
+    return {
+      liked: false,
+      likes: updatedArticle.likes,
+      message: '已取消点赞',
+    };
+  }
+
   private async findManagedArticle(id: string, currentUser: User): Promise<Article> {
     const article = await this.articleRepository.findOne({
       where: {
@@ -396,6 +494,28 @@ export class ArticlesService {
     const canManageAll = ['admin', 'super_admin'].includes(currentUser.role);
     if (!canManageAll && article.userId !== currentUser.id) {
       throw new ForbiddenException(ARTICLE_PERMISSION_DENIED_MESSAGE);
+    }
+
+    return article;
+  }
+
+  private async findLikeableArticle(articleId: string): Promise<Article> {
+    const article = await this.articleRepository.findOne({
+      where: {
+        id: articleId,
+        deletedAt: IsNull(),
+        status: 'published',
+        visibility: 'public',
+      },
+    });
+
+    if (!article) {
+      throw new NotFoundException(ARTICLE_NOT_FOUND_MESSAGE);
+    }
+
+    const publishedAt = this.normalizeDate(article.publishedAt);
+    if (publishedAt && publishedAt > new Date()) {
+      throw new NotFoundException(ARTICLE_NOT_FOUND_MESSAGE);
     }
 
     return article;
@@ -607,6 +727,23 @@ export class ArticlesService {
 
     const normalizedDate = new Date(value);
     return Number.isNaN(normalizedDate.getTime()) ? null : normalizedDate;
+  }
+
+  private buildVisitorKey(
+    ip: string | null,
+    userAgent: string | null,
+    userId: string | null,
+  ): string {
+    if (userId) {
+      return `user:${userId}`;
+    }
+
+    const fingerprint = [ip?.trim(), userAgent?.trim()].filter(Boolean).join('|');
+    if (!fingerprint) {
+      throw new BadRequestException('无法识别当前访客，暂时不能点赞');
+    }
+
+    return `guest:${createHash('sha256').update(fingerprint).digest('hex').slice(0, 64)}`;
   }
 
   private buildPaginatedResponse<T>(items: T[], page = 1, pageSize = 10) {

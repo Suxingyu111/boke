@@ -93,6 +93,22 @@ CREATE TABLE IF NOT EXISTS article_tags (
   CONSTRAINT fk_article_tags_tag FOREIGN KEY (tag_id) REFERENCES tags (id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+CREATE TABLE IF NOT EXISTS article_likes (
+  id CHAR(36) NOT NULL,
+  article_id CHAR(36) NOT NULL,
+  user_id CHAR(36) DEFAULT NULL,
+  visitor_key VARCHAR(80) NOT NULL,
+  ip_address VARCHAR(45) DEFAULT NULL,
+  user_agent VARCHAR(500) DEFAULT NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  UNIQUE KEY idx_article_likes_article_visitor (article_id, visitor_key),
+  KEY idx_article_likes_article_created (article_id, created_at),
+  KEY idx_article_likes_user (user_id),
+  CONSTRAINT fk_article_likes_article FOREIGN KEY (article_id) REFERENCES articles (id) ON DELETE CASCADE,
+  CONSTRAINT fk_article_likes_user FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 CREATE TABLE IF NOT EXISTS pages (
   id CHAR(36) NOT NULL,
   title VARCHAR(255) NOT NULL,

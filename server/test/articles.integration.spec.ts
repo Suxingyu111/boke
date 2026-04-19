@@ -6,6 +6,7 @@ import request from 'supertest';
 import { ObjectLiteral, Repository } from 'typeorm';
 import {
   Article,
+  ArticleLike,
   ArticleTag,
   ArticleVersion,
   Category,
@@ -24,6 +25,7 @@ import { ArticleVersionsService } from '../src/modules/articles/article-versions
 import { PublicArticlesController } from '../src/modules/articles/public-articles.controller';
 import { ArticlesService } from '../src/modules/articles/articles.service';
 import { JwtAuthGuard } from '../src/modules/auth/guards/jwt-auth.guard';
+import { OptionalJwtAuthGuard } from '../src/modules/auth/guards/optional-jwt-auth.guard';
 import { RolesGuard } from '../src/modules/auth/guards/roles.guard';
 
 type RepositoryMock<T extends ObjectLiteral> = Partial<Repository<T>> & {
@@ -237,9 +239,42 @@ class MockJwtAuthGuard implements CanActivate {
   }
 }
 
+class MockOptionalJwtAuthGuard implements CanActivate {
+  canActivate(context: ExecutionContext): boolean {
+    const request = context.switchToHttp().getRequest<{
+      headers: Record<string, string | undefined>;
+      user?: User | null;
+    }>();
+
+    const role = request.headers['x-test-role'];
+    if (!role) {
+      request.user = null;
+      return true;
+    }
+
+    request.user = {
+      id: request.headers['x-test-user-id'] ?? 'reader-user-id',
+      username: request.headers['x-test-username'] ?? 'reader',
+      email: request.headers['x-test-email'] ?? 'reader@example.com',
+      password: '',
+      nickname: '读者',
+      avatar: null,
+      bio: null,
+      isActive: true,
+      role: role as User['role'],
+      lastLoginAt: null,
+      createdAt: new Date('2026-04-16T00:00:00.000Z'),
+      updatedAt: new Date('2026-04-16T00:00:00.000Z'),
+    };
+
+    return true;
+  }
+}
+
 describe('Articles integration', () => {
   let app: INestApplication;
   let articleRepository: RepositoryMock<Article>;
+  let articleLikeRepository: RepositoryMock<ArticleLike>;
   let categoryRepository: RepositoryMock<Category>;
   let tagRepository: RepositoryMock<Tag>;
   let articleTagRepository: RepositoryMock<ArticleTag>;
@@ -248,6 +283,7 @@ describe('Articles integration', () => {
 
   beforeAll(async () => {
     articleRepository = createRepositoryMock<Article>();
+    articleLikeRepository = createRepositoryMock<ArticleLike>();
     categoryRepository = createRepositoryMock<Category>();
     tagRepository = createRepositoryMock<Tag>();
     articleTagRepository = createRepositoryMock<ArticleTag>();
@@ -281,6 +317,10 @@ describe('Articles integration', () => {
           useValue: articleRepository,
         },
         {
+          provide: getRepositoryToken(ArticleLike),
+          useValue: articleLikeRepository,
+        },
+        {
           provide: getRepositoryToken(ArticleTag),
           useValue: articleTagRepository,
         },
@@ -295,7 +335,9 @@ describe('Articles integration', () => {
       ],
     })
       .overrideGuard(JwtAuthGuard)
-      .useValue(new MockJwtAuthGuard());
+      .useValue(new MockJwtAuthGuard())
+      .overrideGuard(OptionalJwtAuthGuard)
+      .useValue(new MockOptionalJwtAuthGuard());
 
     const moduleRef: TestingModule = await moduleBuilder.compile();
 
@@ -436,6 +478,63 @@ describe('Articles integration', () => {
       }),
     );
     expect(detailResponse.body.data.tags).toHaveLength(2);
+  });
+
+  it('公开文章应支持点赞、取消点赞与状态查询', async () => {
+    const article = articleRepository.items.find(item => item.slug === 'scheduled-article');
+    expect(article).toBeDefined();
+
+    const likeStatusResponse = await request(app.getHttpServer())
+      .get(`/api/articles/${article?.id}/like`)
+      .set('x-forwarded-for', '203.0.113.18')
+      .set('user-agent', 'jest-like-agent')
+      .expect(200);
+
+    expect(likeStatusResponse.body.data).toEqual({
+      liked: false,
+      likes: 0,
+    });
+
+    const likeResponse = await request(app.getHttpServer())
+      .post(`/api/articles/${article?.id}/like`)
+      .set('x-forwarded-for', '203.0.113.18')
+      .set('user-agent', 'jest-like-agent')
+      .expect(201);
+
+    expect(likeResponse.body.data).toEqual(
+      expect.objectContaining({
+        liked: true,
+        likes: 1,
+      }),
+    );
+    expect(articleLikeRepository.items).toHaveLength(1);
+
+    const duplicatedLikeResponse = await request(app.getHttpServer())
+      .post(`/api/articles/${article?.id}/like`)
+      .set('x-forwarded-for', '203.0.113.18')
+      .set('user-agent', 'jest-like-agent')
+      .expect(201);
+
+    expect(duplicatedLikeResponse.body.data).toEqual(
+      expect.objectContaining({
+        liked: true,
+        likes: 1,
+      }),
+    );
+
+    const unlikeResponse = await request(app.getHttpServer())
+      .delete(`/api/articles/${article?.id}/like`)
+      .set('x-forwarded-for', '203.0.113.18')
+      .set('user-agent', 'jest-like-agent')
+      .expect(200);
+
+    expect(unlikeResponse.body.data).toEqual(
+      expect.objectContaining({
+        liked: false,
+        likes: 0,
+      }),
+    );
+    expect(articleLikeRepository.items).toHaveLength(0);
   });
 
   it('应校验定时发布参数，并支持文章更新与删除', async () => {

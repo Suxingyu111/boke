@@ -1,4 +1,4 @@
-import { patch, post, remove, request } from "@/api/http";
+import { http, patch, post, remove, request } from "@/api/http";
 import type { ArticleStatus } from "@/types/blog";
 
 export interface PaginationMeta {
@@ -44,6 +44,15 @@ export interface ArticlePayload {
   scheduledAt?: string;
 }
 
+export interface ArticleLikeState {
+  liked: boolean;
+  likes: number;
+}
+
+export interface ArticleLikeAction extends ArticleLikeState {
+  message: string;
+}
+
 export interface CategoryPayload {
   name: string;
   slug: string;
@@ -68,6 +77,26 @@ export async function getPublicArticles(query: ArticleQuery = {}) {
 
 export async function getPublicArticle(slug: string) {
   const response = await request<unknown>(`/articles/${slug}`);
+  return response.data;
+}
+
+export async function getArticleLikeState(articleId: string) {
+  const response = await http.get<unknown, { data: ArticleLikeState }>(
+    `/articles/${articleId}/like`,
+  );
+  return response.data;
+}
+
+export async function likeArticle(articleId: string) {
+  const response = await post<ArticleLikeAction, undefined>(
+    `/articles/${articleId}/like`,
+    undefined,
+  );
+  return response.data;
+}
+
+export async function unlikeArticle(articleId: string) {
+  const response = await remove<ArticleLikeAction>(`/articles/${articleId}/like`);
   return response.data;
 }
 

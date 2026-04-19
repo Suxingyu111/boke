@@ -1,5 +1,6 @@
 export { User } from './user.entity';
 export { Article } from './article.entity';
+export { ArticleLike } from './article-like.entity';
 export { ArticleSeries } from './article-series.entity';
 export { ArticleSeriesItem } from './article-series-item.entity';
 export { ArticleVersion } from './article-version.entity';
