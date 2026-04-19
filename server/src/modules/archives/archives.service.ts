@@ -14,13 +14,17 @@ export interface ArchiveArticle {
   title: string;
   slug: string;
   publishedAt: Date;
-  coverImage: string | null;
   excerpt: string | null;
+  content: string;
 }
 
 export interface ArchiveGroup {
   year: number;
   month: number;
+  total: number;
+  page: number;
+  pageSize: number;
+  totalPages: number;
   articles: ArchiveArticle[];
 }
 
@@ -53,38 +57,44 @@ export class ArchivesService {
     }));
   }
 
-  /** 获取某年某月的归档文章列表 */
-  async getArchiveArticles(year: number, month: number): Promise<ArchiveGroup> {
+  /** 获取某年某月的归档文章列表（支持分页） */
+  async getArchiveArticles(year: number, month: number, page = 1, pageSize = 10): Promise<ArchiveGroup> {
     const startDate = new Date(year, month - 1, 1);
     const endDate = new Date(year, month, 1);
 
-    const articles = await this.articleRepository
+    const qb = this.articleRepository
       .createQueryBuilder('article')
       .select([
         'article.id',
         'article.title',
         'article.slug',
         'article.publishedAt',
-        'article.coverImage',
         'article.excerpt',
+        'article.content',
       ])
       .where('article.status = :status', { status: 'published' })
       .andWhere('article.deleted_at IS NULL')
       .andWhere('article.published_at >= :startDate', { startDate })
       .andWhere('article.published_at < :endDate', { endDate })
-      .orderBy('article.published_at', 'DESC')
-      .getMany();
+      .orderBy('article.published_at', 'DESC');
+
+    const total = await qb.getCount();
+    const articles = await qb.skip((page - 1) * pageSize).take(pageSize).getMany();
 
     return {
       year,
       month,
+      total,
+      page,
+      pageSize,
+      totalPages: Math.ceil(total / pageSize),
       articles: articles.map(a => ({
         id: a.id,
         title: a.title,
         slug: a.slug,
         publishedAt: a.publishedAt!,
-        coverImage: a.coverImage,
         excerpt: a.excerpt,
+        content: a.content,
       })),
     };
   }

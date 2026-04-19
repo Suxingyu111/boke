@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, watch } from "vue";
+import { computed, onMounted, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { getApiErrorMessage } from "@/api/auth";
 import { useEcosystemStore } from "@/stores/ecosystem";
@@ -7,6 +7,18 @@ import { useEcosystemStore } from "@/stores/ecosystem";
 const ecosystemStore = useEcosystemStore();
 const route = useRoute();
 const router = useRouter();
+
+const currentPage = ref(1);
+
+/** 从 markdown 内容中提取前 N 行可读文本 */
+function extractContentLines(content: string, lines = 3): string {
+  return content
+    .split("\n")
+    .map(line => line.replace(/^#{1,6}\s+/, "").replace(/[*_`~>|\[\]]/g, "").trim())
+    .filter(line => line.length > 0)
+    .slice(0, lines)
+    .join(" ");
+}
 
 const archiveGroups = computed(() => {
   const groups = new Map<
@@ -33,19 +45,22 @@ const archiveGroups = computed(() => {
 
 const selectedYear = computed(() => Number(route.query.year || 0));
 const selectedMonth = computed(() => Number(route.query.month || 0));
-const selectedLabel = computed(() => {
-  if (!ecosystemStore.selectedArchive) {
-    return "";
-  }
-
-  return `${ecosystemStore.selectedArchive.year} 年 ${ecosystemStore.selectedArchive.month} 月`;
-});
 
 async function selectArchive(year: number, month: number) {
+  currentPage.value = 1;
   await router.replace({
     name: "archives",
     query: { year: String(year), month: String(month) },
   });
+}
+
+async function goToPage(page: number) {
+  currentPage.value = page;
+  try {
+    await ecosystemStore.loadArchiveArticles(selectedYear.value, selectedMonth.value, page);
+  } catch (error) {
+    ecosystemStore.errorMessage = getApiErrorMessage(error, "归档加载失败");
+  }
 }
 
 async function ensureArchiveLoaded() {
@@ -81,9 +96,11 @@ async function ensureArchiveLoaded() {
     ecosystemStore.selectedArchive?.year !== availableSelection.year ||
     ecosystemStore.selectedArchive?.month !== availableSelection.month
   ) {
+    currentPage.value = 1;
     await ecosystemStore.loadArchiveArticles(
       availableSelection.year,
       availableSelection.month,
+      1,
     );
   }
 }
@@ -109,133 +126,140 @@ onMounted(async () => {
 </script>
 
 <template>
-  <section class="content-shell py-10 md:py-14">
-    <div class="flex flex-wrap items-end justify-between gap-4">
-      <div>
-        <p class="eyebrow">Archives</p>
-        <h1 class="mt-2 font-display text-5xl text-brand md:text-6xl">
-          文章归档
-        </h1>
-        <p class="mt-4 max-w-2xl leading-7 text-ink/66">
-          按年月回看已经发布的文章，把零散更新重新拼成一条清晰时间线。
-        </p>
-      </div>
-      <div class="ui-surface-soft px-4 py-3 text-sm text-ink/58">
-        共
-        {{ ecosystemStore.archiveMonths.reduce((sum, item) => sum + item.count, 0) }}
-        篇文章
-      </div>
-    </div>
-
+  <section class="content-shell archive-page">
     <p
       v-if="ecosystemStore.errorMessage"
-      class="mt-6 rounded-md border border-coral/25 bg-coral/10 px-4 py-3 text-sm text-coral"
+      class="mb-6 rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600"
     >
       {{ ecosystemStore.errorMessage }}
     </p>
 
-    <div class="mt-8 grid gap-6 lg:grid-cols-[320px_minmax(0,1fr)]">
-      <aside class="ui-surface-soft h-fit p-5">
+    <div class="archive-layout">
+      <!-- ── Sidebar: timeline navigator ── -->
+      <aside class="archive-nav">
         <div
           v-for="group in archiveGroups"
           :key="group.year"
-          class="border-b border-line/70 pb-5 last:border-b-0 last:pb-0"
+          class="archive-nav__year-group"
         >
-          <h2 class="font-display text-3xl text-brand">{{ group.year }}</h2>
-          <div class="mt-4 grid gap-2">
+          <div class="archive-nav__year-label">{{ group.year }}</div>
+          <div class="archive-nav__months">
             <button
               v-for="item in group.items"
               :key="item.key"
-              class="focus-ring archive-month-button"
-              :class="{
-                'archive-month-button--active':
-                  selectedYear === item.year && selectedMonth === item.month,
-              }"
+              class="archive-nav__month focus-ring"
+              :class="{ 'archive-nav__month--active': selectedYear === item.year && selectedMonth === item.month }"
               type="button"
               @click="selectArchive(item.year, item.month)"
             >
-              <span>{{ item.month }} 月</span>
-              <span>{{ item.count }} 篇</span>
+              <span class="archive-nav__month-dot"></span>
+              <span class="archive-nav__month-name">{{ item.month }} 月</span>
+              <span class="archive-nav__month-count">{{ item.count }}</span>
             </button>
           </div>
         </div>
       </aside>
 
-      <section class="grid gap-4">
-        <div v-if="ecosystemStore.loading" class="ui-surface p-6">
-          <div class="h-4 w-28 rounded-md bg-line animate-pulse"></div>
-          <div class="mt-5 grid gap-3">
-            <div
-              v-for="index in 3"
-              :key="index"
-              class="h-24 rounded-md bg-line/50 animate-pulse"
-            ></div>
+      <!-- ── Main: article entries ── -->
+      <main class="archive-content">
+        <!-- Month header -->
+        <header v-if="ecosystemStore.selectedArchive" class="archive-content__header">
+          <p class="eyebrow">文章归档</p>
+          <h2 class="archive-content__title">
+            {{ ecosystemStore.selectedArchive.year }}年{{ ecosystemStore.selectedArchive.month }}月
+          </h2>
+          <span class="archive-content__total">
+            共 {{ ecosystemStore.archivePagination.total }} 篇文章
+          </span>
+        </header>
+
+        <!-- Loading skeleton -->
+        <div v-if="ecosystemStore.loading" class="archive-entries">
+          <div v-for="i in 6" :key="i" class="archive-skeleton-entry">
+            <div class="archive-skeleton-block" style="width:2.8rem;height:3.2rem;border-radius:8px;flex-shrink:0"></div>
+            <div style="flex:1;display:grid;gap:0.4rem">
+              <div class="archive-skeleton-block" style="height:0.9rem;width:55%"></div>
+              <div class="archive-skeleton-block" style="height:0.75rem;width:88%"></div>
+              <div class="archive-skeleton-block" style="height:0.75rem;width:68%"></div>
+            </div>
           </div>
         </div>
 
+        <!-- Article entries -->
         <template v-else-if="ecosystemStore.selectedArchive">
-          <div class="ui-surface p-6">
-            <p class="eyebrow">Selected</p>
-            <h2 class="mt-2 font-display text-4xl text-brand">
-              {{ selectedLabel }}
-            </h2>
-            <p class="mt-3 text-sm text-ink/58">
-              {{ ecosystemStore.selectedArchive.articles.length }} 篇文章
-            </p>
-          </div>
-
-          <article
-            v-for="article in ecosystemStore.selectedArchive.articles"
-            :key="article.id"
-            class="ui-surface ui-hover-lift grid gap-4 p-5 md:grid-cols-[180px_minmax(0,1fr)]"
-          >
-            <RouterLink
-              class="block aspect-[4/3] overflow-hidden rounded-md bg-line/30"
-              :to="`/articles/${article.slug}`"
+          <div v-if="ecosystemStore.selectedArchive.articles.length" class="archive-entries">
+            <article
+              v-for="(article, index) in ecosystemStore.selectedArchive.articles"
+              :key="article.id"
+              class="archive-entry"
+              :style="{ '--entry-index': index }"
             >
-              <img
-                v-if="article.coverImage"
-                class="h-full w-full object-cover"
-                :alt="article.title"
-                :src="article.coverImage"
-                width="720"
-                height="540"
-                loading="lazy"
-              />
-              <div
-                v-else
-                class="grid h-full place-items-center bg-white text-sm text-ink/45"
-              >
-                无封面
+              <div class="archive-entry__date-badge">
+                <span class="archive-entry__day">
+                  {{ new Date(article.publishedAt).getDate() }}
+                </span>
+                <span class="archive-entry__month-abbr">
+                  {{ new Date(article.publishedAt).getMonth() + 1 }}月
+                </span>
               </div>
-            </RouterLink>
-
-            <div>
-              <p class="text-sm text-ink/48">
-                {{ new Date(article.publishedAt).toLocaleDateString("zh-CN") }}
-              </p>
-              <RouterLink
-                class="focus-ring mt-2 inline-block rounded-md"
-                :to="`/articles/${article.slug}`"
-              >
-                <h3 class="font-display text-4xl leading-tight text-brand">
-                  {{ article.title }}
-                </h3>
-              </RouterLink>
-              <p class="mt-3 leading-7 text-ink/66">
-                {{ article.excerpt || "这篇文章还没有摘要。" }}
-              </p>
-            </div>
-          </article>
-
-          <div
-            v-if="!ecosystemStore.selectedArchive.articles.length"
-            class="ui-surface p-6 text-ink/60"
-          >
-            当前月份暂无公开文章。
+              <div class="archive-entry__body">
+                <RouterLink
+                  class="archive-entry__title-link focus-ring"
+                  :to="`/articles/${article.slug}`"
+                >
+                  <h3 class="archive-entry__title">{{ article.title }}</h3>
+                </RouterLink>
+                <p class="archive-entry__excerpt">
+                  {{ article.excerpt || extractContentLines(article.content || "") || "暂无内容预览。" }}
+                </p>
+                <div class="archive-entry__meta">
+                  <RouterLink
+                    class="archive-entry__read-link focus-ring"
+                    :to="`/articles/${article.slug}`"
+                  >阅读全文 →</RouterLink>
+                </div>
+              </div>
+            </article>
           </div>
+
+          <div v-else class="archive-empty">当前月份暂无公开文章。</div>
+
+          <!-- Pagination -->
+          <nav
+            v-if="ecosystemStore.archivePagination.totalPages > 1"
+            class="archive-pager"
+            aria-label="分页导航"
+          >
+            <button
+              class="archive-pager__arrow focus-ring"
+              type="button"
+              :disabled="currentPage <= 1"
+              aria-label="上一页"
+              @click="goToPage(currentPage - 1)"
+            >←</button>
+            <div class="archive-pager__pages">
+              <button
+                v-for="p in ecosystemStore.archivePagination.totalPages"
+                :key="p"
+                class="archive-pager__page focus-ring"
+                :class="{ 'archive-pager__page--active': p === currentPage }"
+                type="button"
+                @click="goToPage(p)"
+              >{{ p }}</button>
+            </div>
+            <button
+              class="archive-pager__arrow focus-ring"
+              type="button"
+              :disabled="currentPage >= ecosystemStore.archivePagination.totalPages"
+              aria-label="下一页"
+              @click="goToPage(currentPage + 1)"
+            >→</button>
+            <span class="archive-pager__info">
+              第 {{ currentPage }} / {{ ecosystemStore.archivePagination.totalPages }} 页
+            </span>
+          </nav>
         </template>
-      </section>
+      </main>
     </div>
   </section>
 </template>

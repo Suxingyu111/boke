@@ -15,6 +15,11 @@ export class ArchivesController {
   /** 获取某年某月的文章列表 */
   @Get('articles')
   getArticles(@Query() query: ArchiveQueryDto) {
-    return this.archivesService.getArchiveArticles(query.year, query.month);
+    return this.archivesService.getArchiveArticles(
+      query.year,
+      query.month,
+      query.page ?? 1,
+      query.pageSize ?? 10,
+    );
   }
 }

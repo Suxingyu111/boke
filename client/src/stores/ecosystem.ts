@@ -14,6 +14,8 @@ interface ArchiveArticle {
   title: string;
   slug: string;
   publishedAt: string;
+  excerpt?: string | null;
+  content?: string;
   viewCount?: number;
 }
 
@@ -90,6 +92,8 @@ function mapArchiveArticle(raw: unknown): ArchiveArticle {
     title: asString(r.title, "无标题"),
     slug: asString(r.slug, ""),
     publishedAt: asString(r.publishedAt ?? r.createdAt, new Date().toISOString()),
+    excerpt: typeof r.excerpt === "string" ? r.excerpt : null,
+    content: typeof r.content === "string" ? r.content : undefined,
     viewCount: typeof r.viewCount === "number" ? r.viewCount : undefined,
   };
 }
@@ -128,6 +132,7 @@ export const useEcosystemStore = defineStore("ecosystem", {
     // Archives
     archiveMonths: [] as ArchiveMonth[],
     selectedArchive: null as ArchiveMonth | null,
+    archivePagination: { total: 0, page: 1, pageSize: 10, totalPages: 0 } as SearchMeta,
     // Search
     searchResults: [] as SearchResult[],
     searchMeta: { total: 0, page: 1, pageSize: 20, totalPages: 0 } as SearchMeta,
@@ -156,13 +161,25 @@ export const useEcosystemStore = defineStore("ecosystem", {
         this.loading = false;
       }
     },
-    async loadArchiveArticles(year: number, month: number) {
+    async loadArchiveArticles(year: number, month: number, page = 1) {
       this.loading = true;
       this.errorMessage = "";
       try {
-        const res = await request<unknown[]>("/archives/articles", { year, month });
-        const items = Array.isArray(res.data) ? res.data : [];
+        const res = await request<unknown>("/archives/articles", { year, month, page, pageSize: 10 });
+        // Backend returns ArchiveGroup: { year, month, total, page, pageSize, totalPages, articles: [...] }
+        const data = asRecord(res.data);
+        const items: unknown[] = Array.isArray(data?.articles)
+          ? (data!.articles as unknown[])
+          : Array.isArray(res.data)
+            ? (res.data as unknown[])
+            : [];
         const articles = items.map(mapArchiveArticle);
+        this.archivePagination = {
+          total: asNumber(data?.total),
+          page: asNumber(data?.page, page),
+          pageSize: asNumber(data?.pageSize, 10),
+          totalPages: asNumber(data?.totalPages),
+        };
         const target = this.archiveMonths.find(
           (m) => m.year === year && m.month === month,
         );

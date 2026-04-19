@@ -274,214 +274,199 @@ onMounted(async () => {
 </script>
 
 <template>
-  <section class="content-shell py-8 md:py-10">
-    <!-- 有选中时显示清除全部按钮 -->
+  <section class="content-shell cats-page">
+
+    <!-- ── Active filter strip ── -->
     <Transition
-      enter-active-class="transition duration-200 ease-out"
-      enter-from-class="opacity-0 scale-90"
-      enter-to-class="opacity-100 scale-100"
-      leave-active-class="transition duration-150 ease-in"
-      leave-from-class="opacity-100 scale-100"
-      leave-to-class="opacity-0 scale-90"
+      enter-active-class="transition-all duration-200 ease-out"
+      enter-from-class="opacity-0 -translate-y-1"
+      enter-to-class="opacity-100 translate-y-0"
+      leave-active-class="transition-all duration-150 ease-in"
+      leave-from-class="opacity-100 translate-y-0"
+      leave-to-class="opacity-0 -translate-y-1"
     >
-      <div v-if="hasAnySelection" class="mb-3 flex justify-end">
-        <button
-          class="focus-ring flex items-center gap-1.5 rounded-full border border-line bg-white/80 px-4 py-1.5 text-sm font-semibold text-ink/70 transition hover:border-coral/40 hover:text-coral"
-          @click="clearAll"
-        >
-          清除全部 <span class="text-base leading-none">×</span>
-        </button>
+      <div v-if="hasAnySelection" class="filter-strip">
+        <div class="filter-strip__chips">
+          <button
+            v-for="cat in categories.filter(c => selectedCatIds.has(c.id))"
+            :key="`strip-cat-${cat.id}`"
+            class="filter-strip__cat-chip focus-ring"
+            :style="{ backgroundColor: cat.color }"
+            @click="toggleCategory(cat)"
+          >
+            <span class="filter-strip__cat-chip-dot"></span>
+            {{ cat.name }} ×
+          </button>
+          <button
+            v-for="tag in tags.filter(t => selectedTagIds.has(t.id))"
+            :key="`strip-tag-${tag.id}`"
+            class="filter-strip__tag-chip focus-ring"
+            @click="toggleTag(tag)"
+          >
+            #{{ tag.name }} ×
+          </button>
+        </div>
+        <button class="filter-strip__clear focus-ring" @click="clearAll">清除全部</button>
       </div>
     </Transition>
 
-    <!-- ====== 分类区块 ====== -->
-    <div class="mb-3">
-      <div class="mb-3 flex items-center justify-between">
-        <h2 class="text-xs font-semibold uppercase tracking-widest text-ink/45">分类</h2>
-        <button
-          v-if="hasCatSelection"
-          class="focus-ring text-xs text-ink/45 transition hover:text-coral"
-          @click="clearCats"
-        >
-          已选 {{ selectedCatIds.size }} 个 &times;
-        </button>
-      </div>
+    <!-- ── Filter panel ── -->
+    <div class="cats-filter-panel">
 
-      <!-- 骨架屏 -->
-      <div v-if="contentStore.loading && !visibleCategories.length" class="flex flex-wrap gap-2">
-        <div
-          v-for="i in 5"
-          :key="i"
-          class="h-8 animate-pulse rounded-full bg-line/40"
-          :style="{ width: `${64 + i * 16}px` }"
-        />
-      </div>
-
-      <div v-else-if="visibleCategories.length" class="flex flex-wrap gap-2">
-        <button
-          v-for="category in visibleCategories"
-          :key="category.id"
-          class="focus-ring flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm font-medium transition-all duration-200 hover:shadow-sm"
-          :class="
-            isCatSelected(category)
-              ? 'border-transparent text-white shadow-sm'
-              : 'border-line bg-white/70 text-ink/70 hover:border-line/80 hover:bg-white'
-          "
-          :style="isCatSelected(category) ? { backgroundColor: category.color } : {}"
-          @click="toggleCategory(category)"
-        >
-          <span
-            v-if="!isCatSelected(category)"
-            class="h-2 w-2 shrink-0 rounded-full"
-            :style="{ backgroundColor: category.color }"
-          />
-          <svg
-            v-else
-            class="h-3.5 w-3.5 shrink-0"
-            viewBox="0 0 14 14"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          >
-            <polyline points="2,7 5.5,10.5 12,3.5" />
-          </svg>
-          {{ category.name }}
-          <span
-            class="rounded-full px-1.5 py-0.5 text-xs font-semibold"
-            :class="isCatSelected(category) ? 'bg-white/25 text-white' : 'bg-line/40 text-ink/55'"
-          >
-            {{ catDisplayCount(category) }}
-          </span>
-        </button>
-      </div>
-
-      <p v-else-if="!contentStore.loading" class="text-sm text-ink/45">暂无分类</p>
-    </div>
-
-    <!-- 分隔线 -->
-    <div class="mb-3 border-t border-line/30" />
-
-    <!-- ====== 标签区块 ====== -->
-    <div class="mb-8">
-      <div class="mb-3 flex items-center justify-between">
-        <!-- 标题 + AND/OR 模式切换 -->
-        <div class="flex items-center gap-2">
-          <h2 class="text-xs font-semibold uppercase tracking-widest text-ink/45">标签</h2>
+      <!-- Left: Categories -->
+      <div class="cats-filter-col">
+        <div class="cats-col-header">
+          <span class="cats-col-label">分类</span>
           <button
-            v-if="visibleTags.length > 1"
-            class="focus-ring flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs transition-all duration-200"
-            :class="
-              tagFilterMode === 'and'
-                ? 'border-brand/40 bg-brand/8 font-semibold text-brand'
-                : 'border-line text-ink/40 hover:border-brand/30 hover:text-brand/70'
-            "
-            :title="
-              tagFilterMode === 'or'
-                ? '当前：包含任一标签 — 点击切换为全部匹配'
-                : '当前：必须包含所有标签 — 点击切换为任一匹配'
-            "
-            @click="toggleTagMode"
+            v-if="hasCatSelection"
+            class="cats-col-action focus-ring"
+            @click="clearCats"
+          >已选 {{ selectedCatIds.size }} 个 ×</button>
+        </div>
+
+        <!-- Skeleton -->
+        <div v-if="contentStore.loading && !visibleCategories.length" class="cat-grid">
+          <div
+            v-for="i in 6"
+            :key="i"
+            class="cats-skel"
+            style="height: 2.35rem; border-radius: 7px"
+          />
+        </div>
+
+        <div v-else-if="visibleCategories.length" class="cat-grid">
+          <button
+            v-for="category in visibleCategories"
+            :key="category.id"
+            class="cat-card focus-ring"
+            :class="{ 'cat-card--active': isCatSelected(category) }"
+            :style="isCatSelected(category) ? { backgroundColor: category.color } : {}"
+            @click="toggleCategory(category)"
           >
-            {{ tagFilterMode === "or" ? "任一" : "全部" }}
+            <span
+              class="cat-card__bar"
+              :style="isCatSelected(category) ? {} : { background: category.color }"
+            ></span>
+            <span class="cat-card__name">{{ category.name }}</span>
+            <span class="cat-card__count">{{ catDisplayCount(category) }}</span>
+            <svg
+              v-if="isCatSelected(category)"
+              class="cat-card__check"
+              viewBox="0 0 14 14"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2.5"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <polyline points="2,7 5.5,10.5 12,3.5" />
+            </svg>
           </button>
         </div>
-        <button
-          v-if="hasTagSelection"
-          class="focus-ring text-xs text-ink/45 transition hover:text-coral"
-          @click="clearTags"
-        >
-          已选 {{ selectedTagIds.size }} 个 &times;
-        </button>
+
+        <p v-else-if="!contentStore.loading" class="text-sm" style="color: rgba(16,20,26,0.42)">暂无分类</p>
       </div>
 
-      <!-- 骨架屏 -->
-      <div v-if="contentStore.loading && !visibleTags.length" class="flex flex-wrap gap-2">
-        <div
-          v-for="i in 8"
-          :key="i"
-          class="h-7 animate-pulse rounded-full bg-line/40"
-          :style="{ width: `${48 + i * 10}px` }"
-        />
-      </div>
+      <!-- Right: Tags -->
+      <div class="cats-filter-col">
+        <div class="cats-col-header">
+          <div class="tag-cloud-header">
+            <span class="cats-col-label">标签</span>
+            <!-- AND/OR segmented control -->
+            <div v-if="visibleTags.length > 1" class="filter-mode-seg">
+              <button
+                class="filter-mode-seg__btn"
+                :class="{ 'filter-mode-seg__btn--active': tagFilterMode === 'or' }"
+                :title="'包含任一标签'"
+                @click="tagFilterMode !== 'or' && toggleTagMode()"
+              >任一</button>
+              <button
+                class="filter-mode-seg__btn"
+                :class="{ 'filter-mode-seg__btn--active': tagFilterMode === 'and' }"
+                :title="'必须包含所有标签'"
+                @click="tagFilterMode !== 'and' && toggleTagMode()"
+              >全部</button>
+            </div>
+          </div>
+          <button
+            v-if="hasTagSelection"
+            class="cats-col-action focus-ring"
+            @click="clearTags"
+          >已选 {{ selectedTagIds.size }} 个 ×</button>
+        </div>
 
-      <div v-else-if="visibleTags.length" class="flex flex-wrap items-center gap-2">
-        <!-- 标签 chip：按热度分 3 档大小 -->
-        <button
-          v-for="tag in displayedTags"
-          :key="tag.id"
-          class="focus-ring flex items-center gap-1 rounded-full border transition-all duration-200 hover:shadow-sm"
-          :class="[
-            isTagSelected(tag)
-              ? 'border-brand/50 bg-brand/10 font-semibold text-brand shadow-sm'
-              : 'border-line bg-white/70 text-ink/65 hover:border-brand/30 hover:text-brand',
-            tagSizeTier(tag) === 'lg'
-              ? 'px-3 py-1.5 text-base'
-              : tagSizeTier(tag) === 'sm'
-                ? 'px-2 py-0.5 text-xs'
-                : 'px-2.5 py-1 text-sm',
-          ]"
-          @click="toggleTag(tag)"
-        >
-          <svg
-            v-if="isTagSelected(tag)"
-            class="h-3 w-3 shrink-0"
-            viewBox="0 0 14 14"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2.5"
-            stroke-linecap="round"
-            stroke-linejoin="round"
+        <!-- Skeleton -->
+        <div v-if="contentStore.loading && !visibleTags.length" class="tag-cloud">
+          <div
+            v-for="i in 10"
+            :key="i"
+            class="cats-skel"
+            :style="{ height: '1.7rem', width: `${44 + i * 9}px`, borderRadius: '5px' }"
+          />
+        </div>
+
+        <div v-else-if="visibleTags.length" class="tag-cloud">
+          <button
+            v-for="tag in displayedTags"
+            :key="tag.id"
+            class="tag-chip focus-ring"
+            :class="[
+              { 'tag-chip--active': isTagSelected(tag) },
+              `tag-chip--${tagSizeTier(tag)}`,
+            ]"
+            @click="toggleTag(tag)"
           >
-            <polyline points="2,7 5.5,10.5 12,3.5" />
-          </svg>
-          <span v-else class="text-ink/35">#</span>
-          {{ tag.name }}
-          <span
-            class="rounded-full px-1.5 py-0.5 text-xs"
-            :class="isTagSelected(tag) ? 'bg-brand/15 font-semibold text-brand' : 'text-ink/40'"
+            <span class="tag-chip__hash">
+              <svg
+                v-if="isTagSelected(tag)"
+                style="width:0.7rem;height:0.7rem"
+                viewBox="0 0 14 14"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2.5"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              ><polyline points="2,7 5.5,10.5 12,3.5" /></svg>
+              <span v-else>#</span>
+            </span>
+            {{ tag.name }}
+            <span class="tag-chip__count">{{ tagDisplayCount(tag) }}</span>
+          </button>
+
+          <button
+            v-if="visibleTags.length > TAG_LIMIT"
+            class="tag-expand-btn focus-ring"
+            @click="tagExpanded = !tagExpanded"
           >
-            {{ tagDisplayCount(tag) }}
-          </span>
-        </button>
+            {{ tagExpanded ? "收起 ↑" : `展开 ${visibleTags.length} 个 ↓` }}
+          </button>
+        </div>
 
-        <!-- 展开 / 收起按钮 -->
-        <button
-          v-if="visibleTags.length > TAG_LIMIT"
-          class="focus-ring rounded-full border border-dashed border-line px-2.5 py-1 text-xs text-ink/45 transition hover:border-brand/30 hover:text-brand"
-          @click="tagExpanded = !tagExpanded"
-        >
-          {{ tagExpanded ? "收起 ↑" : `展开全部 ${visibleTags.length} 个 ↓` }}
-        </button>
+        <p v-else-if="!contentStore.loading" class="text-sm" style="color: rgba(16,20,26,0.42)">
+          {{ hasCatSelection ? "所选分类下暂无标签" : "暂无标签" }}
+        </p>
       </div>
-
-      <p v-else-if="!contentStore.loading" class="text-sm text-ink/45">
-        {{ hasCatSelection ? "所选分类下暂无标签" : "暂无标签" }}
-      </p>
     </div>
 
-    <!-- 错误提示 -->
+    <!-- ── Error ── -->
     <p
       v-if="contentStore.errorMessage"
-      class="mt-2 rounded-md border border-coral/25 bg-coral/10 px-4 py-3 text-sm text-coral"
-    >
-      {{ contentStore.errorMessage }}
-    </p>
+      class="mb-5 rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600"
+    >{{ contentStore.errorMessage }}</p>
 
-    <!-- ====== 文章结果区域 ====== -->
+    <!-- ── Results section ── -->
 
-    <!-- 默认：无筛选时展示最新文章（分页） -->
-    <div v-if="!hasAnySelection" class="space-y-5">
-      <div class="flex items-center justify-between">
-        <h2 class="text-xs font-semibold uppercase tracking-widest text-ink/45">最新文章</h2>
-        <span v-if="defaultArticles.length" class="text-xs text-ink/40">
-          共 {{ defaultArticles.length }} 篇 · 第 {{ currentPage }}/{{ totalDefaultPages }} 页
+    <!-- Default: no filter active -->
+    <div v-if="!hasAnySelection" class="cats-results">
+      <div class="cats-results-rule">
+        <span class="cats-results-rule__label">
+          最新文章
+          <span v-if="defaultArticles.length" class="cats-results-rule__count">{{ defaultArticles.length }}</span>
         </span>
       </div>
 
       <div v-if="contentStore.loading" class="grid gap-3 lg:grid-cols-2">
-        <div v-for="i in 4" :key="i" class="ui-surface h-32 animate-pulse rounded-[8px] bg-line/30" />
+        <div v-for="i in 4" :key="i" class="cats-skel" style="height: 8rem; border-radius: 8px" />
       </div>
       <TransitionGroup
         v-else-if="pagedDefaultArticles.length"
@@ -491,74 +476,53 @@ onMounted(async () => {
       >
         <ArticleCard v-for="article in pagedDefaultArticles" :key="article.id" :article="article" />
       </TransitionGroup>
-      <p v-else-if="!contentStore.loading" class="text-sm text-ink/45">暂无文章</p>
+      <p v-else-if="!contentStore.loading" class="text-sm" style="color:rgba(16,20,26,0.42)">暂无文章</p>
 
-      <!-- 分页控件 -->
-      <div v-if="totalDefaultPages > 1" class="flex items-center justify-center gap-1 pt-2">
-        <button
-          class="focus-ring flex h-8 w-8 items-center justify-center rounded-full border border-line text-sm text-ink/50 transition hover:border-brand/40 hover:text-brand disabled:pointer-events-none disabled:opacity-30"
-          :disabled="currentPage <= 1"
-          @click="currentPage--"
-        >‹</button>
+      <div v-if="totalDefaultPages > 1" class="cats-pager">
+        <button class="cats-pager__arrow focus-ring" :disabled="currentPage <= 1" @click="currentPage--">←</button>
         <button
           v-for="p in totalDefaultPages"
           :key="p"
-          class="focus-ring flex h-8 w-8 items-center justify-center rounded-full border text-sm font-medium transition"
-          :class="
-            p === currentPage
-              ? 'border-brand bg-brand text-white'
-              : 'border-line text-ink/55 hover:border-brand/40 hover:text-brand'
-          "
+          class="cats-pager__page focus-ring"
+          :class="{ 'cats-pager__page--active': p === currentPage }"
           @click="currentPage = p"
         >{{ p }}</button>
-        <button
-          class="focus-ring flex h-8 w-8 items-center justify-center rounded-full border border-line text-sm text-ink/50 transition hover:border-brand/40 hover:text-brand disabled:pointer-events-none disabled:opacity-30"
-          :disabled="currentPage >= totalDefaultPages"
-          @click="currentPage++"
-        >›</button>
+        <button class="cats-pager__arrow focus-ring" :disabled="currentPage >= totalDefaultPages" @click="currentPage++">→</button>
       </div>
     </div>
 
-    <!-- 筛选结果：有分类或标签选中时 -->
-    <div v-else ref="articlesSection" class="scroll-mt-24 space-y-10">
-      <!-- ── 筛选摘要栏 ── -->
-      <div
-        class="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-line/50 bg-line/20 px-4 py-3"
-      >
-        <div class="flex min-w-0 flex-wrap items-center gap-1.5 text-sm">
-          <!-- 分类名（最多展示 3 个 + 数量提示） -->
-          <template v-for="(name, i) in selectedCatNames.slice(0, 3)" :key="`cs${i}`">
-            <span v-if="i > 0" class="text-ink/25">·</span>
-            <span class="font-medium text-ink/80">{{ name }}</span>
-          </template>
-          <span v-if="selectedCatNames.length > 3" class="text-xs text-ink/45">
-            +{{ selectedCatNames.length - 3 }}
-          </span>
-          <!-- 分隔箭头 -->
-          <span v-if="hasCatSelection && hasTagSelection" class="mx-0.5 text-ink/30">→</span>
-          <!-- 标签（最多 5 个 + 数量提示） -->
-          <span
-            v-for="(name, i) in selectedTagNames.slice(0, 5)"
-            :key="`ts${i}`"
-            class="rounded-full bg-brand/10 px-2 py-0.5 text-xs font-medium text-brand"
-          >#{{ name }}</span>
-          <span v-if="selectedTagNames.length > 5" class="text-xs text-ink/45">
-            +{{ selectedTagNames.length - 5 }}
-          </span>
-          <!-- AND 模式徽章 -->
-          <span
-            v-if="tagFilterMode === 'and' && hasTagSelection && selectedTagIds.size > 1"
-            class="rounded-full border border-amber-200 bg-amber-50 px-1.5 py-0.5 text-xs text-amber-600"
-          >全部匹配</span>
-        </div>
-        <span class="shrink-0 text-sm text-ink/50">
-          共 <strong class="text-ink/80">{{ totalFilteredCount }}</strong> 篇
+    <!-- Filtered results -->
+    <div v-else ref="articlesSection" class="cats-results scroll-mt-24">
+      <div class="cats-results-rule">
+        <span class="cats-results-rule__label">
+          筛选结果
+          <span class="cats-results-rule__count">{{ totalFilteredCount }}</span>
         </span>
       </div>
 
-      <!-- ── 分页文章列表 ── -->
+      <!-- Filter summary -->
+      <div class="cats-filter-summary">
+        <template v-for="(name, i) in selectedCatNames.slice(0, 3)" :key="`cs${i}`">
+          <span v-if="i > 0" style="opacity:0.3">·</span>
+          <span class="cats-filter-summary__cat">{{ name }}</span>
+        </template>
+        <span v-if="selectedCatNames.length > 3" style="font-size:0.76rem;opacity:0.5">+{{ selectedCatNames.length - 3 }}</span>
+        <span v-if="hasCatSelection && hasTagSelection" style="opacity:0.3;margin-inline:2px">→</span>
+        <span
+          v-for="(name, i) in selectedTagNames.slice(0, 5)"
+          :key="`ts${i}`"
+          class="cats-filter-summary__tag"
+        >#{{ name }}</span>
+        <span v-if="selectedTagNames.length > 5" style="font-size:0.76rem;opacity:0.5">+{{ selectedTagNames.length - 5 }}</span>
+        <span
+          v-if="tagFilterMode === 'and' && hasTagSelection && selectedTagIds.size > 1"
+          class="cats-filter-summary__mode-badge"
+        >全部匹配</span>
+        <span style="margin-left:auto;font-size:0.8rem;opacity:0.55">共 <strong style="opacity:1;color:var(--ink)">{{ totalFilteredCount }}</strong> 篇</span>
+      </div>
+
       <div v-if="contentStore.loading" class="grid gap-3 lg:grid-cols-2">
-        <div v-for="i in 4" :key="i" class="ui-surface h-32 animate-pulse rounded-[8px] bg-line/30" />
+        <div v-for="i in 4" :key="i" class="cats-skel" style="height: 8rem; border-radius: 8px" />
       </div>
       <TransitionGroup
         v-else-if="pagedFilteredArticles.length"
@@ -568,38 +532,27 @@ onMounted(async () => {
       >
         <ArticleCard v-for="article in pagedFilteredArticles" :key="article.id" :article="article" />
       </TransitionGroup>
-      <div
-        v-else
-        class="ui-surface flex flex-wrap items-center justify-between gap-3 px-4 py-3 text-sm text-ink/50"
-      >
+      <div v-else class="cats-no-result">
         <span>{{ hasTagSelection ? '没有符合所选筛选条件的文章' : '该分类下暂无公开文章' }}</span>
-        <div class="flex gap-3">
-          <button v-if="hasTagSelection" class="focus-ring text-xs text-brand transition hover:underline" @click="clearTags">取消标签筛选</button>
-          <button class="focus-ring text-xs text-coral transition hover:underline" @click="clearAll">清除全部</button>
+        <div class="cats-no-result__actions">
+          <button v-if="hasTagSelection" class="cats-no-result__btn focus-ring" @click="clearTags">取消标签筛选</button>
+          <button class="cats-no-result__btn cats-no-result__btn--danger focus-ring" @click="clearAll">清除全部</button>
         </div>
       </div>
 
-      <!-- 分页控件 -->
-      <div v-if="totalFilteredPages > 1" class="flex items-center justify-center gap-1 pt-2">
-        <button
-          class="focus-ring flex h-8 w-8 items-center justify-center rounded-full border border-line text-sm text-ink/50 transition hover:border-brand/40 hover:text-brand disabled:pointer-events-none disabled:opacity-30"
-          :disabled="filteredPage <= 1"
-          @click="filteredPage--"
-        >‹</button>
+      <div v-if="totalFilteredPages > 1" class="cats-pager">
+        <button class="cats-pager__arrow focus-ring" :disabled="filteredPage <= 1" @click="filteredPage--">←</button>
         <button
           v-for="p in totalFilteredPages"
           :key="p"
-          class="focus-ring flex h-8 w-8 items-center justify-center rounded-full border text-sm font-medium transition"
-          :class="p === filteredPage ? 'border-brand bg-brand text-white' : 'border-line text-ink/55 hover:border-brand/40 hover:text-brand'"
+          class="cats-pager__page focus-ring"
+          :class="{ 'cats-pager__page--active': p === filteredPage }"
           @click="filteredPage = p"
         >{{ p }}</button>
-        <button
-          class="focus-ring flex h-8 w-8 items-center justify-center rounded-full border border-line text-sm text-ink/50 transition hover:border-brand/40 hover:text-brand disabled:pointer-events-none disabled:opacity-30"
-          :disabled="filteredPage >= totalFilteredPages"
-          @click="filteredPage++"
-        >›</button>
+        <button class="cats-pager__arrow focus-ring" :disabled="filteredPage >= totalFilteredPages" @click="filteredPage++">→</button>
       </div>
     </div>
+
   </section>
 </template>
 
