@@ -27,7 +27,6 @@ import { FavoritesModule } from './modules/favorites/favorites.module';
 import { UserNotificationsModule } from './modules/user-notifications/user-notifications.module';
 import { VisitorStatsModule } from './modules/visitor-stats/visitor-stats.module';
 import { GuestbookModule } from './modules/guestbook/guestbook.module';
-import { FriendLinksModule } from './modules/friend-links/friend-links.module';
 import { AnnouncementsModule } from './modules/announcements/announcements.module';
 import { CommentsModule } from './modules/comments/comments.module';
 import { MediaAssetsModule } from './modules/media-assets/media-assets.module';
@@ -141,9 +140,6 @@ import { OperationLogInterceptor } from './modules/operation-logs/operation-log.
 
     // 操作日志模块
     OperationLogsModule,
-
-    // 友情链接模块
-    FriendLinksModule,
 
     // 公告栏模块
     AnnouncementsModule,

@@ -2,10 +2,9 @@
 import { computed, onMounted, ref } from "vue";
 import { useRoute } from "vue-router";
 import { getApiErrorMessage } from "@/api/auth";
-import { useEcosystemStore } from "@/stores/ecosystem";
+import { request } from "@/api/http";
 
 const route = useRoute();
-const ecosystemStore = useEcosystemStore();
 const status = ref<"loading" | "success" | "error">("loading");
 const message = ref("正在处理订阅请求...");
 const mode = computed(() =>
@@ -27,13 +26,15 @@ onMounted(async () => {
   }
 
   try {
-    if (mode.value === "confirm") {
-      await ecosystemStore.confirmSubscription(token);
-    } else {
-      await ecosystemStore.unsubscribe(token);
-    }
+    const endpoint =
+      mode.value === "confirm"
+        ? `/subscriptions/confirm/${token}`
+        : `/subscriptions/unsubscribe/${token}`;
+    const res = await request<{ message?: string }>(endpoint);
     status.value = "success";
-    message.value = ecosystemStore.notice;
+    message.value =
+      (res.data as { message?: string }).message ??
+      (mode.value === "confirm" ? "订阅已确认，感谢你的关注！" : "退订成功，你已取消订阅。");
   } catch (error) {
     status.value = "error";
     message.value = getApiErrorMessage(error, "订阅链接处理失败");
@@ -59,9 +60,9 @@ onMounted(async () => {
       <p class="mt-5 leading-7 text-ink/68">{{ message }}</p>
       <RouterLink
         class="focus-ring ui-button-primary mt-7 inline-flex px-5 py-3"
-        to="/ecosystem"
+        to="/"
       >
-        回到内容生态
+        回到首页
       </RouterLink>
     </div>
   </section>

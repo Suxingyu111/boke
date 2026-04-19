@@ -13,7 +13,6 @@ export { DraftEditLog } from './draft-edit-log.entity';
 export { EmailNotification } from './email-notification.entity';
 export { EmailSubscriber } from './email-subscriber.entity';
 export { Favorite } from './favorite.entity';
-export { FriendLink } from './friend-link.entity';
 export { Guestbook } from './guestbook.entity';
 export { MediaAsset } from './media-asset.entity';
 export { OperationLog } from './operation-log.entity';

@@ -1,324 +1,544 @@
 <script setup lang="ts">
-import { computed, onMounted } from "vue";
-import ArticleCard from "@/components/ArticleCard.vue";
-import StatPill from "@/components/StatPill.vue";
-import { useCommunityStore } from "@/stores/community";
+import { computed, onMounted, onUnmounted, ref } from "vue";
 import { useContentStore } from "@/stores/content";
-import { useSiteStore } from "@/stores/site";
-import type { Article } from "@/types/blog";
 
-const siteStore = useSiteStore();
 const contentStore = useContentStore();
-const communityStore = useCommunityStore();
 const allArticles = computed(() => contentStore.publishedArticles);
-const heroArticle = computed(() => allArticles.value[0]);
-const storyArticles = computed(() => {
-  const selected: Article[] = [];
-  const seenImages = new Set<string>();
 
-  if (heroArticle.value?.coverImage) {
-    seenImages.add(heroArticle.value.coverImage);
-  }
-
-  for (const article of allArticles.value.slice(1)) {
-    if (!article.coverImage || seenImages.has(article.coverImage)) {
-      continue;
-    }
-
-    selected.push(article);
-    seenImages.add(article.coverImage);
-
-    if (selected.length === 5) {
-      break;
-    }
-  }
-
-  return selected;
-});
-const storyArticleIds = computed(
-  () => new Set(storyArticles.value.map((article) => article.id)),
+// Top 5 most-viewed for carousel
+const carouselArticles = computed(() =>
+  [...allArticles.value].sort((a, b) => b.viewCount - a.viewCount).slice(0, 5),
 );
-const feedArticles = computed(() =>
-  allArticles.value
-    .slice(1)
-    .filter((article) => !storyArticleIds.value.has(article.id)),
-);
-const popularTags = computed(() => contentStore.tagCloud);
-const highlightTags = computed(() => popularTags.value.slice(0, 14));
-const popularArticles = computed(() =>
+
+// 10 most recently published — sorted by publishedAt descending
+const recentArticles = computed(() =>
   [...allArticles.value]
-    .sort((left, right) => right.viewCount - left.viewCount)
-    .slice(0, 4),
+    .sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime())
+    .slice(0, 10),
 );
+
+// Carousel state
+const currentIndex = ref(0);
+const isHovered = ref(false);
+let autoPlayTimer: ReturnType<typeof setInterval> | null = null;
+
+function nextSlide() {
+  if (!carouselArticles.value.length) return;
+  currentIndex.value = (currentIndex.value + 1) % carouselArticles.value.length;
+}
+
+function prevSlide() {
+  if (!carouselArticles.value.length) return;
+  currentIndex.value =
+    (currentIndex.value - 1 + carouselArticles.value.length) %
+    carouselArticles.value.length;
+}
+
+function goToSlide(index: number) {
+  currentIndex.value = index;
+}
+
+function startAutoPlay() {
+  autoPlayTimer = setInterval(() => {
+    if (!isHovered.value) nextSlide();
+  }, 5000);
+}
 
 function formatDate(value: string) {
-  return new Date(value).toLocaleDateString("zh-CN", {
-    month: "long",
-    day: "numeric",
-  });
+  return new Date(value).toLocaleDateString("zh-CN", { month: "long", day: "numeric" });
 }
 
 onMounted(async () => {
-  await Promise.all([
-    contentStore.loadPublicContent(),
-    communityStore.loadPublicCommunity(),
-  ]);
+  await contentStore.loadPublicContent();
+  startAutoPlay();
+});
+
+onUnmounted(() => {
+  if (autoPlayTimer) clearInterval(autoPlayTimer);
 });
 </script>
 
 <template>
-  <section
-    v-if="heroArticle"
-    class="home-screen home-hero"
-    aria-labelledby="home-hero-title"
-  >
-    <img
-      class="home-hero__image"
-      :alt="heroArticle.title"
-      :src="heroArticle.coverImage"
-      width="1800"
-      height="1200"
-      fetchpriority="high"
-    />
-    <div class="home-hero__shade"></div>
-    <div class="content-shell home-hero__content">
-      <p class="home-kicker">{{ siteStore.settings.subtitle }}</p>
-      <p class="home-meta">
-        {{ heroArticle.category.name }} /
-        {{ formatDate(heroArticle.publishedAt) }}
-      </p>
-      <h1 id="home-hero-title" class="home-hero__title">
-        {{ heroArticle.title }}
-      </h1>
-      <p class="home-hero__excerpt">{{ heroArticle.excerpt }}</p>
-      <div class="home-actions">
-        <RouterLink
-          class="focus-ring home-button home-button--light"
-          :to="`/articles/${heroArticle.slug}`"
-        >
-          阅读最新文章
-        </RouterLink>
-        <a class="focus-ring home-button home-button--ghost" href="#home-feed">
-          继续向下
-        </a>
+  <!-- Carousel – top 5 most-viewed -->
+  <section v-if="carouselArticles.length" aria-label="热门文章轮播" class="carousel-section">
+    <div class="content-shell">
+    <div
+      class="carousel-wrapper"
+      @mouseenter="isHovered = true"
+      @mouseleave="isHovered = false"
+    >
+      <article
+        v-for="(article, index) in carouselArticles"
+        :key="article.id"
+        class="carousel-slide"
+        :class="{ 'carousel-slide--active': index === currentIndex }"
+        :aria-hidden="index !== currentIndex"
+      >
+        <img class="carousel-slide__bg" :src="article.coverImage" :alt="article.title" :loading="index === 0 ? 'eager' : 'lazy'" />
+        <div class="carousel-slide__shade"></div>
+        <div class="carousel-slide__body">
+          <p class="carousel-kicker">热门推荐</p>
+          <div class="carousel-meta">
+            <span class="carousel-cat">{{ article.category.name }}</span>
+            <span>{{ formatDate(article.publishedAt) }}</span>
+            <span>{{ article.viewCount.toLocaleString() }} 阅读</span>
+          </div>
+          <RouterLink class="focus-ring rounded-md" :to="`/articles/${article.slug}`">
+            <h2 class="carousel-slide__title">{{ article.title }}</h2>
+          </RouterLink>
+          <p class="carousel-slide__excerpt">{{ article.excerpt }}</p>
+          <div class="carousel-actions">
+            <RouterLink class="focus-ring home-button home-button--light" :to="`/articles/${article.slug}`">
+              阅读文章
+            </RouterLink>
+            <a class="focus-ring home-button home-button--ghost" href="#home-feed">继续向下</a>
+          </div>
+        </div>
+      </article>
+
+      <button class="carousel-arrow carousel-arrow--prev" type="button" aria-label="上一篇" @click="prevSlide">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" class="h-5 w-5">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7" />
+        </svg>
+      </button>
+      <button class="carousel-arrow carousel-arrow--next" type="button" aria-label="下一篇" @click="nextSlide">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" class="h-5 w-5">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7" />
+        </svg>
+      </button>
+
+      <div class="carousel-dots" role="tablist" aria-label="选择幻灯片">
+        <button
+          v-for="(article, index) in carouselArticles"
+          :key="article.id"
+          class="carousel-dot"
+          :class="{ 'carousel-dot--active': index === currentIndex }"
+          type="button"
+          role="tab"
+          :aria-label="`第 ${index + 1} 篇`"
+          :aria-selected="index === currentIndex"
+          @click="goToSlide(index)"
+        ></button>
       </div>
-    </div>
+
+      <div class="carousel-counter" aria-hidden="true">
+        <span class="carousel-counter__cur">{{ String(currentIndex + 1).padStart(2, "0") }}</span>
+        <span>&nbsp;/&nbsp;</span>
+        <span>{{ String(carouselArticles.length).padStart(2, "0") }}</span>
+      </div>
+      <!-- Auto-play progress bar — :key restarts animation on slide change -->
+      <div class="carousel-progress">
+        <div :key="currentIndex" class="carousel-progress__bar"></div>
+      </div>
+    </div><!-- /carousel-wrapper -->
+    </div><!-- /content-shell -->
   </section>
 
+  <!-- Loading skeleton -->
   <section v-else-if="contentStore.loading" class="home-loading">
     <div class="content-shell home-loading__grid">
       <div class="home-loading__block animate-pulse"></div>
       <div class="home-loading__line animate-pulse"></div>
-      <div
-        class="home-loading__line home-loading__line--short animate-pulse"
-      ></div>
+      <div class="home-loading__line home-loading__line--short animate-pulse"></div>
     </div>
   </section>
 
+  <!-- Empty state -->
   <section v-else class="home-empty">
     <div class="content-shell">
       <div class="ui-surface p-6 md:p-8">
         <p class="eyebrow">Content</p>
         <h1 class="mt-2 font-display text-5xl">还没有公开文章</h1>
-        <p class="mt-4 max-w-2xl text-ink/66">
-          文章发布后会出现在这里。若你刚完成部署，请先确认公开文章接口和发布状态。
-        </p>
+        <p class="mt-4 max-w-2xl text-ink/66">文章发布后会出现在这里。</p>
       </div>
     </div>
   </section>
 
-  <section v-if="contentStore.errorMessage" class="content-shell pb-2">
-    <p
-      class="rounded-md border border-coral/30 bg-coral/10 px-4 py-3 text-sm text-coral"
-    >
+  <!-- Error -->
+  <section v-if="contentStore.errorMessage" class="content-shell pt-3 pb-2">
+    <p class="rounded-md border border-coral/30 bg-coral/10 px-4 py-3 text-sm text-coral">
       {{ contentStore.errorMessage }}
     </p>
   </section>
 
-  <section
-    v-if="communityStore.announcements.length"
-    class="content-shell py-6"
-    aria-label="站点公告"
-  >
-    <div class="grid gap-4 lg:grid-cols-[0.7fr_1fr]">
-      <div>
-        <p class="eyebrow">Notice</p>
-        <h2 class="mt-2 font-display text-4xl text-brand">公告栏</h2>
-      </div>
-      <div class="grid gap-3">
-        <article
-          v-for="announcement in communityStore.announcements"
-          :key="announcement.id"
-          class="ui-surface-soft rounded-md p-4"
-        >
-          <div class="flex flex-wrap items-center justify-between gap-3">
-            <h3 class="font-semibold text-brand">{{ announcement.title }}</h3>
-            <span class="text-xs text-ink/48">
-              {{ new Date(announcement.publishedAt).toLocaleDateString("zh-CN") }}
-            </span>
-          </div>
-          <p class="mt-2 leading-7 text-ink/65">{{ announcement.content }}</p>
-        </article>
-      </div>
-    </div>
-  </section>
-
-  <section
-    v-if="storyArticles.length"
-    class="home-stories"
-    aria-label="精选文章"
-  >
-    <article
-      v-for="(article, index) in storyArticles"
-      :key="article.id"
-      class="home-screen home-story"
-      :class="{ 'home-story--reverse': index % 2 === 1 }"
-    >
-      <RouterLink
-        class="focus-ring home-story__media"
-        :to="`/articles/${article.slug}`"
-      >
-        <img
-          class="home-story__image"
-          :alt="article.title"
-          :src="article.coverImage"
-          width="1500"
-          height="1000"
-          loading="lazy"
-        />
-      </RouterLink>
-      <div class="content-shell home-story__content">
-        <p class="home-kicker">
-          Scroll Essay {{ String(index + 1).padStart(2, "0") }}
-        </p>
-        <p class="home-story__meta">
-          {{ article.category.name }} / {{ formatDate(article.publishedAt) }} /
-          {{ article.viewCount }} 阅读
-        </p>
-        <RouterLink
-          class="focus-ring rounded-md"
-          :to="`/articles/${article.slug}`"
-        >
-          <h2 class="home-story__title">{{ article.title }}</h2>
-        </RouterLink>
-        <p class="home-story__excerpt">{{ article.excerpt }}</p>
-        <RouterLink
-          class="focus-ring home-button home-button--ink"
-          :to="`/articles/${article.slug}`"
-        >
-          进入这一篇
-        </RouterLink>
-      </div>
-    </article>
-  </section>
-
-  <section id="home-feed" class="home-feed">
-    <div class="content-shell home-feed__layout">
-      <div class="home-feed__intro">
+  <!-- Recent articles -->
+  <section id="home-feed" class="recent-section">
+    <div class="content-shell">
+      <div class="recent-header">
         <p class="eyebrow">Latest</p>
-        <h2 class="mt-2 font-display text-5xl leading-tight">最近更新</h2>
-        <p class="mt-4 max-w-xl leading-7 text-ink/72">
-          按发布时间继续往下读。真实封面来自文章数据库，新的公开文章会自动进入这条时间线。
-        </p>
+        <h2 class="recent-title">最近更新</h2>
       </div>
 
-      <div class="home-feed__list">
-        <ArticleCard
-          v-for="article in feedArticles"
-          :key="article.id"
-          :article="article"
-        />
-        <div
-          v-if="!contentStore.loading && !feedArticles.length"
-          class="ui-surface p-6"
-        >
-          <h2 class="font-display text-3xl">暂无更多文章</h2>
-          <p class="mt-3 leading-7 text-ink/65">
-            当前公开文章数量不足以填满列表，发布更多文章后这里会继续更新。
-          </p>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <section class="home-index">
-    <div class="content-shell home-index__layout">
-      <div>
-        <p class="eyebrow">Index</p>
-        <h2 class="mt-2 font-display text-5xl leading-tight">继续探索</h2>
-        <p class="mt-4 max-w-2xl leading-7 text-ink/70">
-          标签和数据留在页面末尾，像一张索引卡，帮你从文章流里换一个方向进入。
-        </p>
-      </div>
-
-      <div class="grid gap-4 md:grid-cols-3">
-        <StatPill label="文章" :value="siteStore.stats.articles" />
-        <StatPill label="阅读" :value="siteStore.stats.views" />
-        <StatPill label="评论" :value="siteStore.stats.comments" />
-      </div>
-
-      <div
-        v-if="communityStore.visitorStats"
-        class="grid gap-4 md:grid-cols-3"
-      >
-        <StatPill
-          label="访问量"
-          :value="communityStore.visitorStats.totalViews"
-        />
-        <StatPill
-          label="访客"
-          :value="communityStore.visitorStats.uniqueVisitors"
-        />
-        <StatPill
-          label="平均停留"
-          :value="`${communityStore.visitorStats.avgStaySeconds}s`"
-        />
-      </div>
-
-      <div v-if="highlightTags.length" class="home-tags">
+      <div v-if="recentArticles.length" class="recent-grid">
         <RouterLink
-          v-for="tag in highlightTags"
-          :key="tag.id"
-          class="focus-ring home-tag"
-          :to="`/tags?tag=${tag.slug}`"
+          v-for="article in recentArticles"
+          :key="article.id"
+          class="focus-ring recent-card"
+          :to="`/articles/${article.slug}`"
         >
-          #{{ tag.name }} {{ tag.articleCount }}
+          <img
+            class="recent-card__thumb"
+            :src="article.coverImage"
+            :alt="article.title"
+            loading="lazy"
+          />
+          <div class="recent-card__body">
+            <div class="recent-card__meta">
+              <span
+                class="recent-card__cat"
+                :style="article.category.color ? { background: article.category.color + '22', color: article.category.color } : {}"
+              >
+                {{ article.category.name }}
+              </span>
+              <span>{{ formatDate(article.publishedAt) }}</span>
+              <span>{{ article.viewCount.toLocaleString() }} 阅读</span>
+            </div>
+            <h3 class="recent-card__title">{{ article.title }}</h3>
+            <p class="recent-card__excerpt">{{ article.excerpt }}</p>
+          </div>
         </RouterLink>
       </div>
-      <p v-else class="text-sm text-ink/58">暂无标签数据</p>
 
-      <div class="home-popular">
-        <div class="flex flex-wrap items-end justify-between gap-4">
-          <div>
-            <p class="eyebrow">Popular</p>
-            <h3 class="mt-2 font-display text-4xl leading-tight text-brand">
-              热门文章
-            </h3>
-          </div>
-          <RouterLink class="focus-ring ui-button-secondary px-4 py-2" to="/archives">
-            查看归档
-          </RouterLink>
-        </div>
+      <!-- View all articles -->
+      <div v-if="recentArticles.length" class="recent-more">
+        <RouterLink class="focus-ring recent-more-link" to="/archives">
+          查看全部文章
+          <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3" />
+          </svg>
+        </RouterLink>
+      </div>
 
-        <div v-if="popularArticles.length" class="mt-5 grid gap-3 md:grid-cols-2">
-          <RouterLink
-            v-for="article in popularArticles"
-            :key="article.id"
-            class="focus-ring ui-surface-soft grid gap-2 p-4 hover:border-brand/30 hover:bg-white/90"
-            :to="`/articles/${article.slug}`"
-          >
-            <div class="flex flex-wrap items-center gap-2 text-xs text-ink/48">
-              <span>{{ article.viewCount }} 阅读</span>
-              <span>{{ article.commentCount }} 评论</span>
-              <span>{{ formatDate(article.publishedAt) }}</span>
-            </div>
-            <h3 class="font-display text-3xl leading-tight text-ink">
-              {{ article.title }}
-            </h3>
-            <p class="line-clamp-2 leading-7 text-ink/66">{{ article.excerpt }}</p>
-          </RouterLink>
-        </div>
+      <div v-else-if="!contentStore.loading" class="ui-surface p-5 mt-5">
+        <p class="font-display text-2xl">暂无文章</p>
       </div>
     </div>
   </section>
 </template>
+
+<style scoped>
+/* ─── Carousel ─── */
+.carousel-section {
+  padding-top: 1.25rem;
+}
+
+.carousel-wrapper {
+  position: relative;
+  height: min(52svh, 480px);
+  min-height: 340px;
+  overflow: hidden;
+  background: #10141a;
+  border-radius: 12px;
+}
+
+.carousel-slide {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 700ms ease;
+}
+.carousel-slide--active {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.carousel-slide__bg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+}
+
+.carousel-slide__shade {
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(90deg, rgba(8,10,12,0.88), rgba(8,10,12,0.36) 55%, rgba(8,10,12,0.1)),
+    linear-gradient(0deg, rgba(8,10,12,0.78), rgba(8,10,12,0.06) 52%);
+}
+
+.carousel-slide__body {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  padding: clamp(20px, 4vw, 56px) clamp(20px, 5vw, 80px);
+  color: #fffaf4;
+}
+
+.carousel-kicker {
+  color: rgba(255,250,244,0.68);
+  font-size: 0.76rem;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.carousel-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.6rem;
+  color: rgba(255,250,244,0.7);
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+.carousel-cat {
+  border: 1px solid rgba(255,250,244,0.35);
+  border-radius: 4px;
+  padding: 0.1rem 0.45rem;
+  font-size: 0.74rem;
+}
+
+.carousel-slide__title {
+  max-width: 50rem;
+  margin-top: 0.8rem;
+  font-family: "Cormorant Garamond", "STSong", "Songti SC", serif;
+  font-size: clamp(1.9rem, 4.8vw, 4.4rem);
+  line-height: 1.02;
+  overflow-wrap: anywhere;
+  color: #fffaf4;
+}
+.carousel-slide__title:hover { opacity: 0.84; }
+
+.carousel-slide__excerpt {
+  max-width: 42rem;
+  margin-top: 0.7rem;
+  color: rgba(255,250,244,0.76);
+  font-size: 1rem;
+  line-height: 1.74;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.carousel-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.7rem;
+  margin-top: 1.3rem;
+}
+
+.carousel-arrow {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.14);
+  border: 1px solid rgba(255,255,255,0.22);
+  color: #fffaf4;
+  backdrop-filter: blur(8px);
+  cursor: pointer;
+  transition: background 180ms, transform 180ms;
+}
+.carousel-arrow:hover { background: rgba(255,255,255,0.28); transform: translateY(-50%) scale(1.08); }
+.carousel-arrow--prev { left: clamp(12px, 2vw, 28px); }
+.carousel-arrow--next { right: clamp(12px, 2vw, 28px); }
+
+.carousel-dots {
+  position: absolute;
+  bottom: 1.2rem;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 0.4rem;
+  z-index: 10;
+}
+.carousel-dot {
+  height: 4px;
+  width: 22px;
+  border-radius: 2px;
+  border: none;
+  background: rgba(255,255,255,0.36);
+  cursor: pointer;
+  transition: background 220ms, width 220ms ease;
+}
+.carousel-dot--active { width: 38px; background: #fffaf4; }
+
+.carousel-counter {
+  position: absolute;
+  bottom: 1.1rem;
+  right: clamp(12px, 2.5vw, 32px);
+  display: flex;
+  align-items: baseline;
+  color: rgba(255,250,244,0.5);
+  font-size: 0.8rem;
+  font-weight: 700;
+  z-index: 10;
+}
+.carousel-counter__cur { color: #fffaf4; font-size: 1rem; }
+
+/* Auto-play progress bar */
+.carousel-progress {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: rgba(255,255,255,0.15);
+  z-index: 10;
+}
+@keyframes progressFill {
+  from { width: 0%; }
+  to   { width: 100%; }
+}
+.carousel-progress__bar {
+  height: 100%;
+  background: rgba(255,255,255,0.8);
+  animation: progressFill 5s linear forwards;
+}
+.carousel-wrapper:hover .carousel-progress__bar {
+  animation-play-state: paused;
+}
+
+/* ─── Recent section ─── */
+.recent-section {
+  padding-block: 1.5rem 2rem;
+  scroll-margin-top: 64px;
+}
+
+.recent-header {
+  display: flex;
+  align-items: baseline;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+.recent-title {
+  font-family: "Cormorant Garamond", "STSong", "Songti SC", serif;
+  font-size: 1.9rem;
+  line-height: 1.1;
+  color: var(--ink);
+}
+
+/* 2-column grid on md+, 1 col on mobile */
+.recent-grid {
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: 1fr;
+}
+@media (min-width: 640px) {
+  .recent-grid { grid-template-columns: 1fr 1fr; }
+}
+@media (min-width: 1024px) {
+  .recent-grid { grid-template-columns: 1fr 1fr; gap: 0.85rem; }
+}
+
+/* Compact horizontal card */
+.recent-card {
+  display: grid;
+  grid-template-columns: 120px minmax(0, 1fr);
+  gap: 0;
+  overflow: hidden;
+  border: 1px solid rgba(16,20,26,0.09);
+  border-radius: 8px;
+  background: rgba(255,255,255,0.88);
+  box-shadow: 0 2px 8px rgba(16,20,26,0.06);
+  transition: border-color 180ms, box-shadow 180ms, transform 180ms;
+}
+.recent-card:hover {
+  border-color: rgba(31,77,109,0.28);
+  box-shadow: 0 6px 20px rgba(16,20,26,0.11);
+  transform: translateY(-2px);
+}
+
+.recent-card__thumb {
+  width: 120px;
+  height: 100%;
+  min-height: 80px;
+  object-fit: cover;
+  display: block;
+  flex-shrink: 0;
+}
+
+.recent-card__body {
+  padding: 0.6rem 0.75rem;
+  display: grid;
+  gap: 0.25rem;
+  align-content: start;
+}
+
+.recent-card__meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.72rem;
+  color: rgba(16,20,26,0.48);
+  line-height: 1.2;
+}
+.recent-card__cat {
+  font-weight: 700;
+  font-size: 0.68rem;
+  padding: 0.1rem 0.42rem;
+  border-radius: 4px;
+  background: rgba(31,77,109,0.1);
+  color: var(--brand);
+}
+
+.recent-card__title {
+  font-family: "Cormorant Garamond", "STSong", "Songti SC", serif;
+  font-size: 1.05rem;
+  line-height: 1.3;
+  color: var(--ink);
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  transition: color 160ms;
+}
+.recent-card:hover .recent-card__title { color: var(--brand); }
+
+.recent-card__excerpt {
+  font-size: 0.78rem;
+  line-height: 1.5;
+  color: rgba(16,20,26,0.58);
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+/* ─── Mobile tweaks ─── */
+@media (max-width: 640px) {
+  .carousel-slide__excerpt { display: none; }
+  .carousel-arrow { width: 34px; height: 34px; }
+  .carousel-dots { bottom: 0.9rem; }
+  .carousel-counter { display: none; }
+}
+
+/* ─── View all link ─── */
+.recent-more {
+  display: flex;
+  justify-content: center;
+  margin-top: 1.25rem;
+}
+.recent-more-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--brand);
+  padding: 0.5rem 1.5rem;
+  border: 1px solid rgba(31,77,109,0.25);
+  border-radius: 999px;
+  transition: background 160ms, border-color 160ms, gap 160ms;
+}
+.recent-more-link:hover {
+  background: rgba(31,77,109,0.06);
+  border-color: rgba(31,77,109,0.5);
+  gap: 0.6rem;
+}
+</style>

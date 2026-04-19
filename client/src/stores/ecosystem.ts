@@ -1,64 +1,156 @@
 import { defineStore } from "pinia";
 import { getApiErrorMessage } from "@/api/auth";
-import * as ecosystemApi from "@/api/ecosystem";
+import { request, post } from "@/api/http";
+
+interface ArchiveMonth {
+  year: number;
+  month: number;
+  count: number;
+  articles: ArchiveArticle[];
+}
+
+interface ArchiveArticle {
+  id: string;
+  title: string;
+  slug: string;
+  publishedAt: string;
+  viewCount?: number;
+}
+
+interface SearchMeta {
+  total: number;
+  page: number;
+  pageSize: number;
+  totalPages: number;
+}
+
+interface SearchResult {
+  id: string;
+  title: string;
+  slug: string;
+  excerpt?: string | null;
+  publishedAt?: string | null;
+  viewCount?: number;
+  category?: { id: string; name: string; slug: string } | null;
+}
+
+interface PaidInfo {
+  isPaid: boolean;
+  price: number;
+  description?: string | null;
+}
+
+interface PaidContent {
+  content: string;
+  contentHtml?: string | null;
+  isPaid: boolean;
+  hasAccess: boolean;
+  price?: number | null;
+}
+
+interface Purchase {
+  id: string;
+  articleId: string;
+  articleTitle?: string;
+  articleSlug?: string;
+  purchasedAt: string;
+  price: number;
+}
+
+function asRecord(v: unknown) {
+  return typeof v === "object" && v !== null ? (v as Record<string, unknown>) : null;
+}
+
+function asString(v: unknown, fallback = "") {
+  return typeof v === "string" ? v : fallback;
+}
+
+function asNumber(v: unknown, fallback = 0) {
+  return typeof v === "number" && Number.isFinite(v) ? v : fallback;
+}
+
+function asBoolean(v: unknown, fallback = false) {
+  return typeof v === "boolean" ? v : fallback;
+}
+
+function mapArchiveMonth(raw: unknown): ArchiveMonth {
+  const r = asRecord(raw) ?? {};
+  return {
+    year: asNumber(r.year),
+    month: asNumber(r.month),
+    count: asNumber(r.count),
+    articles: [],
+  };
+}
+
+function mapArchiveArticle(raw: unknown): ArchiveArticle {
+  const r = asRecord(raw) ?? {};
+  return {
+    id: asString(r.id, "unknown"),
+    title: asString(r.title, "无标题"),
+    slug: asString(r.slug, ""),
+    publishedAt: asString(r.publishedAt ?? r.createdAt, new Date().toISOString()),
+    viewCount: typeof r.viewCount === "number" ? r.viewCount : undefined,
+  };
+}
+
+function mapSearchResult(raw: unknown): SearchResult {
+  const r = asRecord(raw) ?? {};
+  const cat = asRecord(r.category);
+  return {
+    id: asString(r.id),
+    title: asString(r.title, "无标题"),
+    slug: asString(r.slug),
+    excerpt: typeof r.excerpt === "string" ? r.excerpt : null,
+    publishedAt: typeof r.publishedAt === "string" ? r.publishedAt : null,
+    viewCount: typeof r.viewCount === "number" ? r.viewCount : undefined,
+    category: cat
+      ? { id: asString(cat.id), name: asString(cat.name), slug: asString(cat.slug) }
+      : null,
+  };
+}
+
+function mapPurchase(raw: unknown): Purchase {
+  const r = asRecord(raw) ?? {};
+  const article = asRecord(r.article);
+  return {
+    id: asString(r.id),
+    articleId: asString(r.articleId ?? article?.id),
+    articleTitle: article ? asString(article.title) : undefined,
+    articleSlug: article ? asString(article.slug) : undefined,
+    purchasedAt: asString(r.purchasedAt ?? r.createdAt, new Date().toISOString()),
+    price: asNumber(r.price ?? r.amount),
+  };
+}
 
 export const useEcosystemStore = defineStore("ecosystem", {
   state: () => ({
-    archiveMonths: [] as ecosystemApi.ArchiveMonth[],
-    selectedArchive: null as ecosystemApi.ArchiveGroup | null,
-    searchResults: [] as ecosystemApi.SearchResultItem[],
-    searchMeta: {
-      total: 0,
-      page: 1,
-      pageSize: 10,
-      totalPages: 0,
-    },
-    paidInfo: null as ecosystemApi.PaidContentInfo | null,
-    paidContent: null as ecosystemApi.PaidArticleContent | null,
-    purchaseRecords: [] as ecosystemApi.PurchaseRecord[],
-    myPurchases: [] as ecosystemApi.PurchaseRecord[],
-    collaborators: [] as ecosystemApi.DraftCollaborator[],
-    editHistory: [] as ecosystemApi.DraftEditLog[],
-    notifications: [] as ecosystemApi.EmailNotification[],
-    subscribers: [] as ecosystemApi.EmailSubscriber[],
-    notificationMeta: {
-      total: 0,
-      page: 1,
-      pageSize: 20,
-      totalPages: 0,
-    },
-    subscriberMeta: {
-      total: 0,
-      page: 1,
-      pageSize: 20,
-      totalPages: 0,
-    },
+    // Archives
+    archiveMonths: [] as ArchiveMonth[],
+    selectedArchive: null as ArchiveMonth | null,
+    // Search
+    searchResults: [] as SearchResult[],
+    searchMeta: { total: 0, page: 1, pageSize: 20, totalPages: 0 } as SearchMeta,
+    // Paid content
+    paidContent: null as PaidContent | null,
+    paidInfo: null as PaidInfo | null,
+    // Profile
+    myPurchases: [] as Purchase[],
+    // Status
     loading: false,
-    adminLoading: false,
     errorMessage: "",
     notice: "",
   }),
-  getters: {
-    latestArchiveMonth: (state) => state.archiveMonths[0] ?? null,
-    hasPaidAccess: (state) => state.paidContent?.hasAccess ?? true,
-  },
   actions: {
     async loadArchives() {
       this.loading = true;
       this.errorMessage = "";
       try {
-        this.archiveMonths = await ecosystemApi.getArchiveSummary();
-        const first = this.archiveMonths[0];
-        if (first) {
-          this.selectedArchive = await ecosystemApi.getArchiveArticles(
-            first.year,
-            first.month,
-          );
-        } else {
-          this.selectedArchive = null;
-        }
+        const res = await request<unknown[]>("/archives");
+        const items = Array.isArray(res.data) ? res.data : [];
+        this.archiveMonths = items.map(mapArchiveMonth);
       } catch (error) {
-        this.errorMessage = getApiErrorMessage(error, "归档接口加载失败");
+        this.errorMessage = getApiErrorMessage(error, "归档加载失败");
         throw error;
       } finally {
         this.loading = false;
@@ -68,11 +160,20 @@ export const useEcosystemStore = defineStore("ecosystem", {
       this.loading = true;
       this.errorMessage = "";
       try {
-        this.selectedArchive = await ecosystemApi.getArchiveArticles(
-          year,
-          month,
+        const res = await request<unknown[]>("/archives/articles", { year, month });
+        const items = Array.isArray(res.data) ? res.data : [];
+        const articles = items.map(mapArchiveArticle);
+        const target = this.archiveMonths.find(
+          (m) => m.year === year && m.month === month,
         );
-        return this.selectedArchive;
+        if (target) {
+          target.articles = articles;
+          this.selectedArchive = target;
+        } else {
+          const synthetic: ArchiveMonth = { year, month, count: articles.length, articles };
+          this.archiveMonths.push(synthetic);
+          this.selectedArchive = synthetic;
+        }
       } catch (error) {
         this.errorMessage = getApiErrorMessage(error, "归档文章加载失败");
         throw error;
@@ -80,70 +181,32 @@ export const useEcosystemStore = defineStore("ecosystem", {
         this.loading = false;
       }
     },
-    async searchArticles(query: ecosystemApi.SearchQuery = {}) {
+    async searchArticles(params: {
+      keyword?: string;
+      page?: number;
+      pageSize?: number;
+      categoryId?: string;
+      tagId?: string;
+    }) {
       this.loading = true;
       this.errorMessage = "";
       try {
-        const result = await ecosystemApi.searchArticles({
-          page: 1,
-          pageSize: 10,
-          ...query,
-        });
-        this.searchResults = result.items;
+        const res = await request<{ items?: unknown[]; meta?: unknown } | unknown[]>(
+          "/search",
+          params,
+        );
+        const data = res.data as Record<string, unknown>;
+        const items = Array.isArray(data.items) ? data.items : Array.isArray(res.data) ? (res.data as unknown[]) : [];
+        const meta = asRecord(data.meta);
+        this.searchResults = items.map(mapSearchResult);
         this.searchMeta = {
-          total: result.total,
-          page: result.page,
-          pageSize: result.pageSize,
-          totalPages: result.totalPages,
+          total: asNumber(meta?.total),
+          page: asNumber(meta?.page, 1),
+          pageSize: asNumber(meta?.pageSize, 20),
+          totalPages: asNumber(meta?.totalPages),
         };
-        return result;
       } catch (error) {
-        this.errorMessage = getApiErrorMessage(error, "全文搜索接口加载失败");
-        throw error;
-      } finally {
-        this.loading = false;
-      }
-    },
-    async subscribe(payload: ecosystemApi.SubscriptionPayload) {
-      this.loading = true;
-      this.errorMessage = "";
-      this.notice = "";
-      try {
-        const result = await ecosystemApi.subscribe(payload);
-        this.notice = result.message || "订阅请求已提交，请查看邮箱确认";
-        return result;
-      } catch (error) {
-        this.errorMessage = getApiErrorMessage(error, "订阅提交失败");
-        throw error;
-      } finally {
-        this.loading = false;
-      }
-    },
-    async confirmSubscription(token: string) {
-      this.loading = true;
-      this.errorMessage = "";
-      this.notice = "";
-      try {
-        const result = await ecosystemApi.confirmSubscription(token);
-        this.notice = result.message || "订阅确认成功";
-        return result;
-      } catch (error) {
-        this.errorMessage = getApiErrorMessage(error, "订阅确认失败");
-        throw error;
-      } finally {
-        this.loading = false;
-      }
-    },
-    async unsubscribe(token: string) {
-      this.loading = true;
-      this.errorMessage = "";
-      this.notice = "";
-      try {
-        const result = await ecosystemApi.unsubscribe(token);
-        this.notice = result.message || "已成功取消订阅";
-        return result;
-      } catch (error) {
-        this.errorMessage = getApiErrorMessage(error, "取消订阅失败");
+        this.errorMessage = getApiErrorMessage(error, "搜索失败");
         throw error;
       } finally {
         this.loading = false;
@@ -153,34 +216,42 @@ export const useEcosystemStore = defineStore("ecosystem", {
       this.loading = true;
       this.errorMessage = "";
       try {
-        const [info, content] = await Promise.all([
-          ecosystemApi.getPaidInfo(articleId),
-          ecosystemApi.getPaidArticleContent(articleId),
+        const [infoRes, contentRes] = await Promise.all([
+          request<unknown>(`/paid-content/${articleId}/info`),
+          request<unknown>(`/paid-content/${articleId}/content`),
         ]);
-        this.paidInfo = info;
-        this.paidContent = content;
-        return { info, content };
+        const info = asRecord(infoRes.data) ?? {};
+        const content = asRecord(contentRes.data) ?? {};
+        this.paidInfo = {
+          isPaid: asBoolean(info.isPaid),
+          price: asNumber(info.price),
+          description: typeof info.description === "string" ? info.description : null,
+        };
+        this.paidContent = {
+          content: asString(content.content ?? content.contentHtml),
+          contentHtml: typeof content.contentHtml === "string" ? content.contentHtml : null,
+          isPaid: asBoolean(content.isPaid ?? info.isPaid),
+          hasAccess: asBoolean(content.hasAccess, true),
+          price: typeof content.price === "number" ? content.price : asNumber(info.price),
+        };
       } catch (error) {
-        this.errorMessage = getApiErrorMessage(error, "付费内容接口加载失败");
-        throw error;
+        this.errorMessage = getApiErrorMessage(error, "付费内容加载失败");
       } finally {
         this.loading = false;
       }
     },
     async purchaseArticle(articleId: string) {
       this.loading = true;
-      this.errorMessage = "";
       this.notice = "";
+      this.errorMessage = "";
       try {
-        const result = await ecosystemApi.purchaseArticle({
-          articleId,
-          paymentMethod: "manual",
-        });
-        this.notice = "购买记录已创建";
-        await this.loadPaidArticle(articleId);
-        return result;
+        await post("/paid-content/purchase", { articleId });
+        this.notice = "购买成功！";
+        if (this.paidContent) {
+          this.paidContent.hasAccess = true;
+        }
       } catch (error) {
-        this.errorMessage = getApiErrorMessage(error, "购买文章失败");
+        this.errorMessage = getApiErrorMessage(error, "购买失败");
         throw error;
       } finally {
         this.loading = false;
@@ -190,151 +261,14 @@ export const useEcosystemStore = defineStore("ecosystem", {
       this.loading = true;
       this.errorMessage = "";
       try {
-        this.myPurchases = await ecosystemApi.getMyPurchases();
+        const res = await request<unknown[]>("/paid-content/my-purchases");
+        const items = Array.isArray(res.data) ? res.data : [];
+        this.myPurchases = items.map(mapPurchase);
       } catch (error) {
-        this.errorMessage = getApiErrorMessage(error, "购买列表加载失败");
-        throw error;
+        this.errorMessage = getApiErrorMessage(error, "购买记录加载失败");
       } finally {
         this.loading = false;
       }
-    },
-    async rebuildSearchIndex() {
-      this.adminLoading = true;
-      this.errorMessage = "";
-      this.notice = "";
-      try {
-        const result = await ecosystemApi.rebuildSearchIndex();
-        this.notice = `索引重建完成：成功 ${result.indexed}，失败 ${result.failed}`;
-        return result;
-      } catch (error) {
-        this.errorMessage = getApiErrorMessage(error, "搜索索引重建失败");
-        throw error;
-      } finally {
-        this.adminLoading = false;
-      }
-    },
-    async loadCollaboration(articleId: string) {
-      this.adminLoading = true;
-      this.errorMessage = "";
-      try {
-        const [collaborators, history] = await Promise.all([
-          ecosystemApi.getCollaborators(articleId),
-          ecosystemApi.getEditHistory(articleId),
-        ]);
-        this.collaborators = collaborators;
-        this.editHistory = history;
-      } catch (error) {
-        this.errorMessage = getApiErrorMessage(error, "协作信息加载失败");
-        throw error;
-      } finally {
-        this.adminLoading = false;
-      }
-    },
-    async addCollaborator(
-      articleId: string,
-      payload: ecosystemApi.CollaboratorPayload,
-    ) {
-      await ecosystemApi.addCollaborator(articleId, payload);
-      await this.loadCollaboration(articleId);
-      this.notice = "协作者已添加";
-    },
-    async removeCollaborator(articleId: string, collaboratorId: string) {
-      await ecosystemApi.removeCollaborator(articleId, collaboratorId);
-      await this.loadCollaboration(articleId);
-      this.notice = "协作者已移除";
-    },
-    async updateDraft(
-      articleId: string,
-      payload: ecosystemApi.DraftUpdatePayload,
-    ) {
-      await ecosystemApi.updateDraft(articleId, payload);
-      await this.loadCollaboration(articleId);
-      this.notice = "协作草稿已保存";
-    },
-    async setPaidContent(
-      articleId: string,
-      payload: ecosystemApi.PaidContentPayload,
-    ) {
-      await ecosystemApi.setPaidContent(articleId, payload);
-      await this.loadPurchaseRecords(articleId);
-      this.notice = "付费内容设置已保存";
-    },
-    async removePaidContent(articleId: string) {
-      await ecosystemApi.removePaidContent(articleId);
-      this.purchaseRecords = [];
-      this.notice = "付费设置已移除";
-    },
-    async loadPurchaseRecords(articleId: string) {
-      this.adminLoading = true;
-      this.errorMessage = "";
-      try {
-        this.purchaseRecords = await ecosystemApi.getPurchaseRecords(articleId);
-      } catch (error) {
-        this.errorMessage = getApiErrorMessage(error, "购买记录加载失败");
-        throw error;
-      } finally {
-        this.adminLoading = false;
-      }
-    },
-    async sendNotification(payload: ecosystemApi.NotificationPayload) {
-      await ecosystemApi.sendNotification(payload);
-      await this.loadNotifications();
-      this.notice = "通知已写入发送队列";
-    },
-    async notifySubscribers(payload: ecosystemApi.NotifySubscribersPayload) {
-      const result = await ecosystemApi.notifySubscribers(payload);
-      await this.loadNotifications();
-      this.notice = `订阅通知完成：发送 ${result.sent}，失败 ${result.failed}`;
-      return result;
-    },
-    async retryFailedNotifications() {
-      const result = await ecosystemApi.retryFailedNotifications();
-      await this.loadNotifications();
-      this.notice = `已重试 ${result.retried} 条失败通知`;
-      return result;
-    },
-    async loadNotifications(page = 1) {
-      this.adminLoading = true;
-      this.errorMessage = "";
-      try {
-        const result = await ecosystemApi.getNotifications(page, 20);
-        this.notifications = result.items;
-        this.notificationMeta = {
-          total: result.total,
-          page: result.page,
-          pageSize: result.pageSize,
-          totalPages: result.totalPages,
-        };
-      } catch (error) {
-        this.errorMessage = getApiErrorMessage(error, "通知记录加载失败");
-        throw error;
-      } finally {
-        this.adminLoading = false;
-      }
-    },
-    async loadSubscribers(page = 1) {
-      this.adminLoading = true;
-      this.errorMessage = "";
-      try {
-        const result = await ecosystemApi.getSubscribers(page, 20);
-        this.subscribers = result.items;
-        this.subscriberMeta = {
-          total: result.total,
-          page: result.page,
-          pageSize: result.pageSize,
-          totalPages: result.totalPages,
-        };
-      } catch (error) {
-        this.errorMessage = getApiErrorMessage(error, "订阅者列表加载失败");
-        throw error;
-      } finally {
-        this.adminLoading = false;
-      }
-    },
-    async removeSubscriber(id: string) {
-      await ecosystemApi.removeSubscriber(id);
-      await this.loadSubscribers(this.subscriberMeta.page);
-      this.notice = "订阅者已删除";
     },
   },
 });

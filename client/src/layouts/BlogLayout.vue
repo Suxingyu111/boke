@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import AppFooter from "@/components/AppFooter.vue";
 import AppHeader from "@/components/AppHeader.vue";
 </script>
 
@@ -9,6 +8,5 @@ import AppHeader from "@/components/AppHeader.vue";
     <main id="main-content" class="animate-rise pb-6">
       <RouterView />
     </main>
-    <AppFooter />
   </div>
 </template>

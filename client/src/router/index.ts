@@ -14,13 +14,11 @@ const ArticleDetailView = () => import("@/views/ArticleDetailView.vue");
 const CategoriesView = () => import("@/views/CategoriesView.vue");
 const TagsView = () => import("@/views/TagsView.vue");
 const AboutView = () => import("@/views/AboutView.vue");
-const LinksView = () => import("@/views/LinksView.vue");
 const GuestbookView = () => import("@/views/GuestbookView.vue");
 const ArchivesView = () => import("@/views/ArchivesView.vue");
 const PageDetailView = () => import("@/views/PageDetailView.vue");
 const ProfileView = () => import("@/views/ProfileView.vue");
 const SearchView = () => import("@/views/SearchView.vue");
-const ContentEcosystemView = () => import("@/views/ContentEcosystemView.vue");
 const SubscriptionStatusView = () =>
   import("@/views/SubscriptionStatusView.vue");
 const LoginView = () => import("@/views/admin/LoginView.vue");
@@ -30,8 +28,6 @@ const ArticleManageView = () => import("@/views/admin/ArticleManageView.vue");
 const CommentManageView = () => import("@/views/admin/CommentManageView.vue");
 const PageManageView = () => import("@/views/admin/PageManageView.vue");
 const SettingsView = () => import("@/views/admin/SettingsView.vue");
-const ContentEcosystemManageView = () =>
-  import("@/views/admin/ContentEcosystemManageView.vue");
 const TechnicalView = () => import("@/views/admin/TechnicalView.vue");
 
 const routes: RouteRecordRaw[] = [
@@ -53,7 +49,6 @@ const routes: RouteRecordRaw[] = [
       },
       { path: "tags", name: "tags", component: TagsView, meta: { title: "标签索引" } },
       { path: "about", name: "about", component: AboutView, meta: { title: "关于我" } },
-      { path: "links", name: "links", component: LinksView, meta: { title: "友情链接" } },
       {
         path: "guestbook",
         name: "guestbook",
@@ -68,12 +63,6 @@ const routes: RouteRecordRaw[] = [
       },
       { path: "pages/:slug", name: "page-detail", component: PageDetailView },
       { path: "search", name: "search", component: SearchView, meta: { title: "搜索文章" } },
-      {
-        path: "ecosystem",
-        name: "content-ecosystem",
-        component: ContentEcosystemView,
-        meta: { title: "内容生态" },
-      },
       {
         path: "subscriptions/confirm/:token",
         name: "subscription-confirm",
@@ -114,11 +103,6 @@ const routes: RouteRecordRaw[] = [
         path: "pages",
         name: "admin-pages",
         component: PageManageView,
-      },
-      {
-        path: "ecosystem",
-        name: "admin-content-ecosystem",
-        component: ContentEcosystemManageView,
       },
       { path: "settings", name: "admin-settings", component: SettingsView },
       {

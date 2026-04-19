@@ -118,23 +118,6 @@ CREATE TABLE IF NOT EXISTS pages (
   CONSTRAINT fk_pages_updated_by FOREIGN KEY (updated_by) REFERENCES users (id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE TABLE IF NOT EXISTS friend_links (
-  id CHAR(36) NOT NULL,
-  site_name VARCHAR(100) NOT NULL,
-  site_url VARCHAR(255) NOT NULL,
-  logo_url VARCHAR(500) DEFAULT NULL,
-  description VARCHAR(255) DEFAULT NULL,
-  contact_email VARCHAR(255) DEFAULT NULL,
-  applicant_name VARCHAR(100) DEFAULT NULL,
-  sort_order INT NOT NULL DEFAULT 0,
-  status ENUM('pending', 'approved', 'rejected', 'offline') NOT NULL DEFAULT 'approved',
-  approved_at DATETIME DEFAULT NULL,
-  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  PRIMARY KEY (id),
-  KEY idx_friend_links_status_sort (status, sort_order)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
 CREATE TABLE IF NOT EXISTS comments (
   id CHAR(36) NOT NULL,
   article_id CHAR(36) NOT NULL,

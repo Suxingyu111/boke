@@ -7,12 +7,10 @@ const localeStorageKey = "blog_locale";
 const fallbackTranslations: Record<i18nApi.SupportedLocale, Record<string, string>> = {
   "zh-CN": {
     "site.home": "首页",
-    "site.ecosystem": "内容生态",
     "site.categories": "分类",
     "site.tags": "标签",
     "site.archives": "归档",
     "site.about": "关于",
-    "site.links": "友情链接",
     "site.guestbook": "留言板",
     "site.profile": "个人中心",
     "site.login": "登录",
@@ -23,12 +21,10 @@ const fallbackTranslations: Record<i18nApi.SupportedLocale, Record<string, strin
   },
   "en-US": {
     "site.home": "Home",
-    "site.ecosystem": "Ecosystem",
     "site.categories": "Categories",
     "site.tags": "Tags",
     "site.archives": "Archives",
     "site.about": "About",
-    "site.links": "Links",
     "site.guestbook": "Guestbook",
     "site.profile": "Profile",
     "site.login": "Log in",

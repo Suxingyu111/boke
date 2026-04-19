@@ -1,13 +1,7 @@
 import { defineStore } from "pinia";
 import { getApiErrorMessage } from "@/api/auth";
 import * as pagesApi from "@/api/pages";
-import type {
-  CustomPage,
-  FriendLink,
-  FriendLinkStatus,
-  PageStatus,
-  PageType,
-} from "@/types/blog";
+import type { CustomPage, PageStatus, PageType } from "@/types/blog";
 import { renderMarkdown } from "@/utils/markdown";
 
 export interface PageMutationPayload {
@@ -23,26 +17,6 @@ export interface PageMutationPayload {
   seoDescription: string;
 }
 
-export interface FriendLinkMutationPayload {
-  id?: string;
-  siteName: string;
-  siteUrl: string;
-  logoUrl: string;
-  description: string;
-  contactEmail: string;
-  applicantName: string;
-  sortOrder: number;
-  status: FriendLinkStatus;
-}
-
-export interface FriendLinkApplicationPayload {
-  siteName: string;
-  siteUrl: string;
-  description: string;
-  contactEmail: string;
-  applicantName: string;
-}
-
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
 }
@@ -54,11 +28,6 @@ function getString(
 ) {
   const value = source[key];
   return typeof value === "string" ? value : fallback;
-}
-
-function getNumber(source: Record<string, unknown>, key: string, fallback = 0) {
-  const value = source[key];
-  return typeof value === "number" && Number.isFinite(value) ? value : fallback;
 }
 
 function getBoolean(
@@ -102,15 +71,6 @@ function normalizePageStatus(value: unknown): PageStatus {
   return value === "published" ? value : "draft";
 }
 
-function normalizeFriendLinkStatus(value: unknown): FriendLinkStatus {
-  return value === "pending" ||
-    value === "approved" ||
-    value === "rejected" ||
-    value === "offline"
-    ? value
-    : "approved";
-}
-
 function mapPage(raw: unknown): CustomPage {
   if (!isRecord(raw)) {
     return {
@@ -152,43 +112,6 @@ function mapPage(raw: unknown): CustomPage {
   };
 }
 
-function mapFriendLink(raw: unknown): FriendLink {
-  if (!isRecord(raw)) {
-    return {
-      id: "link-unknown",
-      siteName: "未命名站点",
-      siteUrl: "#",
-      logoUrl: null,
-      description: null,
-      contactEmail: null,
-      applicantName: null,
-      sortOrder: 0,
-      status: "pending",
-      approvedAt: null,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
-  }
-
-  const createdAt = getDateString(raw, "createdAt", new Date().toISOString());
-  const updatedAt = getDateString(raw, "updatedAt", createdAt);
-
-  return {
-    id: getString(raw, "id", "link-unknown"),
-    siteName: getString(raw, "siteName", "未命名站点"),
-    siteUrl: getString(raw, "siteUrl", "#"),
-    logoUrl: getNullableString(raw, "logoUrl"),
-    description: getNullableString(raw, "description"),
-    contactEmail: getNullableString(raw, "contactEmail"),
-    applicantName: getNullableString(raw, "applicantName"),
-    sortOrder: getNumber(raw, "sortOrder"),
-    status: normalizeFriendLinkStatus(raw.status),
-    approvedAt: getDateString(raw, "approvedAt", "") || null,
-    createdAt,
-    updatedAt,
-  };
-}
-
 function upsertById<T extends { id: string }>(items: T[], item: T) {
   const index = items.findIndex((current) => current.id === item.id);
   if (index === -1) {
@@ -207,16 +130,6 @@ function sortPages(pages: CustomPage[]) {
   });
 }
 
-function sortFriendLinks(links: FriendLink[]) {
-  return [...links].sort((left, right) => {
-    if (left.sortOrder !== right.sortOrder) {
-      return left.sortOrder - right.sortOrder;
-    }
-
-    return left.siteName.localeCompare(right.siteName, "zh-CN");
-  });
-}
-
 function buildPageRequest(payload: PageMutationPayload): pagesApi.PagePayload {
   return {
     title: payload.title,
@@ -232,25 +145,9 @@ function buildPageRequest(payload: PageMutationPayload): pagesApi.PagePayload {
   };
 }
 
-function buildFriendLinkRequest(
-  payload: FriendLinkMutationPayload,
-): pagesApi.FriendLinkPayload {
-  return {
-    siteName: payload.siteName,
-    siteUrl: payload.siteUrl,
-    logoUrl: payload.logoUrl || undefined,
-    description: payload.description || undefined,
-    contactEmail: payload.contactEmail || undefined,
-    applicantName: payload.applicantName || undefined,
-    sortOrder: payload.sortOrder,
-    status: payload.status,
-  };
-}
-
 export const usePagesStore = defineStore("pages", {
   state: () => ({
     pages: [] as CustomPage[],
-    friendLinks: [] as FriendLink[],
     loading: false,
     adminLoading: false,
     errorMessage: "",
@@ -270,19 +167,11 @@ export const usePagesStore = defineStore("pages", {
           page.isHomeVisible &&
           page.pageType !== "about",
       ),
-    approvedLinks: (state) =>
-      sortFriendLinks(
-        state.friendLinks.filter((link) => link.status === "approved"),
-      ),
     adminPages: (state) => sortPages(state.pages),
-    adminFriendLinks: (state) => sortFriendLinks(state.friendLinks),
   },
   actions: {
     upsertPage(page: CustomPage) {
       upsertById(this.pages, page);
-    },
-    upsertFriendLink(link: FriendLink) {
-      upsertById(this.friendLinks, link);
     },
     async loadAboutPage() {
       this.loading = true;
@@ -314,30 +203,12 @@ export const usePagesStore = defineStore("pages", {
         this.loading = false;
       }
     },
-    async loadPublicFriendLinks() {
-      this.loading = true;
-      this.errorMessage = "";
-      try {
-        const links = await pagesApi.getPublicFriendLinks();
-        this.friendLinks = links.map(mapFriendLink);
-        this.apiReady = true;
-      } catch (error) {
-        this.errorMessage = getApiErrorMessage(error, "友情链接暂不可用");
-        throw error;
-      } finally {
-        this.loading = false;
-      }
-    },
     async loadAdminPages() {
       this.adminLoading = true;
       this.errorMessage = "";
       try {
-        const [pages, links] = await Promise.all([
-          pagesApi.getAdminPages(),
-          pagesApi.getAdminFriendLinks(),
-        ]);
+        const pages = await pagesApi.getAdminPages();
         this.pages = pages.map(mapPage);
-        this.friendLinks = links.map(mapFriendLink);
         this.apiReady = true;
       } catch (error) {
         this.errorMessage = getApiErrorMessage(error, "页面管理接口加载失败");
@@ -361,21 +232,6 @@ export const usePagesStore = defineStore("pages", {
         this.adminLoading = false;
       }
     },
-    async loadAdminFriendLinkDetail(id: string) {
-      this.adminLoading = true;
-      this.errorMessage = "";
-      try {
-        const link = mapFriendLink(await pagesApi.getAdminFriendLink(id));
-        this.upsertFriendLink(link);
-        this.apiReady = true;
-        return link;
-      } catch (error) {
-        this.errorMessage = getApiErrorMessage(error, "友链详情加载失败");
-        throw error;
-      } finally {
-        this.adminLoading = false;
-      }
-    },
     async savePage(payload: PageMutationPayload) {
       const requestPayload = buildPageRequest(payload);
       const page = mapPage(
@@ -391,35 +247,6 @@ export const usePagesStore = defineStore("pages", {
       await pagesApi.deletePage(id);
       this.pages = this.pages.filter((page) => page.id !== id);
       await this.loadAdminPages();
-    },
-    async saveFriendLink(payload: FriendLinkMutationPayload) {
-      const requestPayload = buildFriendLinkRequest(payload);
-      const link = mapFriendLink(
-        payload.id
-          ? await pagesApi.updateFriendLink(payload.id, requestPayload)
-          : await pagesApi.createFriendLink(requestPayload),
-      );
-      this.upsertFriendLink(link);
-      await this.loadAdminPages();
-      return link;
-    },
-    async deleteFriendLink(id: string) {
-      await pagesApi.deleteFriendLink(id);
-      this.friendLinks = this.friendLinks.filter((link) => link.id !== id);
-      await this.loadAdminPages();
-    },
-    async applyFriendLink(payload: FriendLinkApplicationPayload) {
-      const link = mapFriendLink(
-        await pagesApi.applyFriendLink({
-          siteName: payload.siteName,
-          siteUrl: payload.siteUrl,
-          description: payload.description || undefined,
-          contactEmail: payload.contactEmail || undefined,
-          applicantName: payload.applicantName || undefined,
-        }),
-      );
-      this.upsertFriendLink(link);
-      return link;
     },
   },
 });
