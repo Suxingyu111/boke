@@ -336,56 +336,68 @@ onBeforeUnmount(() => {
         class="content-shell grid gap-8 py-8 lg:grid-cols-[minmax(0,1fr)_420px] lg:items-end"
       >
         <div>
-          <RouterLink
-            class="focus-ring rounded-md text-sm font-semibold text-coral hover:text-brand"
-            to="/"
-          >
-            返回首页
-          </RouterLink>
+          <nav class="flex flex-wrap items-center gap-1.5 text-sm text-ink/50">
+            <RouterLink class="focus-ring hover:text-brand" to="/">首页</RouterLink>
+            <span class="text-ink/30">/</span>
+            <RouterLink
+              class="focus-ring hover:text-brand"
+              :to="`/categories/${article.category.slug}`"
+            >{{ article.category.name }}</RouterLink>
+            <span class="text-ink/30">/</span>
+            <span class="line-clamp-1 max-w-[200px] text-ink/75">{{ article.title }}</span>
+          </nav>
           <h1
-            class="mt-6 max-w-4xl font-display text-5xl leading-tight text-brand md:text-7xl"
+            class="mt-5 max-w-3xl font-display text-[2.25rem] leading-[1.12] text-brand md:text-5xl lg:text-[3.5rem]"
           >
             {{ article.title }}
           </h1>
-          <p class="mt-5 max-w-2xl text-lg text-ink/74">
+          <p class="mt-4 max-w-2xl text-[1.1rem] leading-[1.8] text-ink/68">
             {{ article.excerpt }}
           </p>
-          <div class="mt-6 flex flex-wrap gap-3 text-sm text-ink/60">
-            <span>{{ article.author.nickname }}</span>
-            <span>{{ formatDate(article.publishedAt) }}</span>
-            <span>{{ estimatedReadMinutes }}</span>
-            <span>{{ article.viewCount }} 阅读</span>
-            <span>{{ article.likes }} 喜欢</span>
-            <span>{{ article.commentCount }} 评论</span>
+          <div class="mt-5 flex flex-col gap-1.5">
+            <div class="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm font-medium text-ink/75">
+              <span class="font-semibold">{{ article.author.nickname }}</span>
+              <span class="text-ink/35">·</span>
+              <span>{{ formatDate(article.publishedAt) }}</span>
+              <span class="text-ink/35">·</span>
+              <span>{{ estimatedReadMinutes }}</span>
+            </div>
+            <div class="flex flex-wrap items-center gap-x-3 text-xs text-ink/45">
+              <span>{{ article.viewCount }} 次阅读</span>
+              <span class="text-ink/25">|</span>
+              <span>{{ article.likes }} 喜欢</span>
+              <span class="text-ink/25">|</span>
+              <span>{{ article.commentCount }} 评论</span>
+            </div>
           </div>
           <div class="article-share mt-6">
             <button
-              class="focus-ring ui-button-secondary px-4 py-2 text-sm"
+              class="focus-ring ui-button-primary inline-flex items-center gap-1.5 px-4 py-2 text-sm"
               type="button"
               @click="shareNative"
             >
-              系统分享
+              <span aria-hidden="true">↑</span> 分享文章
             </button>
             <button
-              class="focus-ring ui-button-secondary px-4 py-2 text-sm"
+              class="focus-ring ui-button-secondary px-3 py-2 text-sm"
               type="button"
               @click="shareToWeibo"
             >
-              分享到微博
+              微博
             </button>
             <button
-              class="focus-ring ui-button-secondary px-4 py-2 text-sm"
+              class="focus-ring ui-button-secondary px-3 py-2 text-sm"
               type="button"
               @click="shareToX"
             >
-              分享到 X
+              X
             </button>
             <button
-              class="focus-ring ui-button-secondary px-4 py-2 text-sm"
+              class="focus-ring ui-button-secondary px-3 py-2 text-sm"
               type="button"
               @click="copyArticleLink"
             >
-              微信 / 复制链接
+              复制链接
             </button>
           </div>
           <p v-if="shareNotice" class="mt-3 text-sm text-moss">{{ shareNotice }}</p>
@@ -428,9 +440,29 @@ onBeforeUnmount(() => {
       class="content-shell grid gap-8 py-10 lg:grid-cols-[minmax(0,760px)_300px]"
     >
       <div class="grid gap-6">
+        <details
+          v-if="articleHeadings.length"
+          class="lg:hidden ui-surface-soft p-4"
+        >
+          <summary class="cursor-pointer select-none text-sm font-semibold text-brand">
+            目录（{{ articleHeadings.length }} 节）
+          </summary>
+          <div class="mt-3 grid gap-0.5 border-l-2 border-line pl-3">
+            <button
+              v-for="heading in articleHeadings"
+              :key="heading.id"
+              class="focus-ring text-left text-sm leading-relaxed text-ink/68 hover:text-brand"
+              :class="{ 'pl-3 text-xs text-ink/52': heading.level === 3 }"
+              type="button"
+              @click="scrollToHeading(heading.id)"
+            >
+              {{ heading.text }}
+            </button>
+          </div>
+        </details>
         <div
           ref="articleBodyRef"
-          class="markdown-body ui-surface p-5 md:p-8"
+          class="markdown-body ui-surface p-6 md:p-10 lg:p-12"
           v-html="processedContent"
         ></div>
 
@@ -474,7 +506,7 @@ onBeforeUnmount(() => {
           <div class="flex flex-wrap items-end justify-between gap-4">
             <div>
               <p class="eyebrow">Related</p>
-              <h2 class="mt-2 font-display text-4xl text-brand">相关文章</h2>
+              <h2 class="mt-2 font-display text-3xl text-brand">相关文章</h2>
             </div>
             <RouterLink class="focus-ring text-sm font-semibold text-coral" to="/archives">
               去看更多归档
@@ -490,10 +522,10 @@ onBeforeUnmount(() => {
               <p class="text-xs text-ink/48">
                 {{ item.category.name }} / {{ item.viewCount }} 阅读
               </p>
-              <h3 class="mt-2 font-display text-3xl leading-tight text-brand">
+              <h3 class="mt-1.5 font-display text-xl leading-snug text-brand line-clamp-2">
                 {{ item.title }}
               </h3>
-              <p class="mt-3 line-clamp-3 leading-7 text-ink/64">
+              <p class="mt-2 line-clamp-3 text-sm leading-7 text-ink/64">
                 {{ item.excerpt }}
               </p>
             </RouterLink>
@@ -509,8 +541,11 @@ onBeforeUnmount(() => {
 
       <aside class="grid gap-5">
         <section v-if="articleHeadings.length" class="ui-surface-soft h-fit p-5 article-toc">
-          <p class="font-display text-2xl text-brand">文章目录</p>
-          <div class="mt-4 grid gap-2">
+          <div class="mb-4 flex items-center gap-2.5">
+            <span class="h-5 w-0.5 shrink-0 rounded-full bg-coral"></span>
+            <p class="font-display text-xl text-brand">文章目录</p>
+          </div>
+          <div class="grid gap-0.5">
             <button
               v-for="heading in articleHeadings"
               :key="heading.id"
@@ -525,18 +560,21 @@ onBeforeUnmount(() => {
         </section>
 
         <section class="ui-surface-soft h-fit p-5">
-          <p class="font-display text-2xl text-brand">分类与标签</p>
+          <div class="mb-3 flex items-center gap-2.5">
+            <span class="h-5 w-0.5 shrink-0 rounded-full bg-coral"></span>
+            <p class="font-display text-xl text-brand">分类与标签</p>
+          </div>
           <p
-            class="mt-3 font-semibold"
+            class="mt-1 font-semibold"
             :style="{ color: article.category.color }"
           >
             {{ article.category.name }}
           </p>
-          <div class="mt-4 flex flex-wrap gap-2">
+          <div class="mt-3 flex flex-wrap gap-2">
             <RouterLink
               v-for="tag in article.tags"
               :key="tag.id"
-              class="focus-ring min-h-9 rounded-md bg-white px-2 py-1 text-sm hover:text-coral"
+              class="focus-ring inline-flex items-center rounded-full border border-line bg-white/80 px-3 py-1 text-xs font-semibold text-ink/65 hover:border-coral/50 hover:bg-coral/8 hover:text-coral"
               :to="`/tags?tag=${tag.slug}`"
             >
               #{{ tag.name }}
@@ -545,8 +583,11 @@ onBeforeUnmount(() => {
         </section>
 
         <section v-if="popularArticles.length" class="ui-surface-soft h-fit p-5">
-          <p class="font-display text-2xl text-brand">热门文章</p>
-          <div class="mt-4 grid gap-3">
+          <div class="mb-4 flex items-center gap-2.5">
+            <span class="h-5 w-0.5 shrink-0 rounded-full bg-coral"></span>
+            <p class="font-display text-xl text-brand">热门文章</p>
+          </div>
+          <div class="grid gap-3">
             <RouterLink
               v-for="item in popularArticles"
               :key="item.id"

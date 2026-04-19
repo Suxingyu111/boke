@@ -997,23 +997,28 @@ img {
 
 .article-toc__item {
   width: 100%;
-  border: 1px solid transparent;
-  border-radius: 8px;
-  background: rgba(255, 255, 255, 0.84);
-  padding: 0.8rem 0.9rem;
-  color: rgba(16, 20, 26, 0.76);
+  border: none;
+  border-left: 2px solid transparent;
+  border-radius: 0 6px 6px 0;
+  background: transparent;
+  padding: 0.52rem 0.85rem;
+  color: rgba(16, 20, 26, 0.62);
   text-align: left;
+  font-size: 0.875rem;
   line-height: 1.5;
+  transition: border-left-color 160ms ease, background-color 160ms ease, color 160ms ease;
 }
 
 .article-toc__item:hover {
-  border-color: rgba(31, 77, 109, 0.26);
+  border-left-color: var(--accent);
+  background: rgba(201, 107, 52, 0.06);
   color: var(--brand);
 }
 
 .article-toc__item--sub {
-  padding-left: 1.7rem;
-  font-size: 0.94rem;
+  padding-left: 1.6rem;
+  font-size: 0.825rem;
+  color: rgba(16, 20, 26, 0.52);
 }
 
 .markdown-body {
@@ -1036,18 +1041,24 @@ img {
 }
 
 .markdown-body h2 {
-  font-size: clamp(1.6rem, 2.2vw, 2.4rem);
+  font-size: clamp(1.5rem, 2.2vw, 2.2rem);
+  padding-left: 0.85rem;
+  border-left: 3px solid var(--accent);
+  margin-top: 2em;
 }
 
 .markdown-body h3 {
-  font-size: clamp(1.32rem, 1.8vw, 1.82rem);
+  font-size: clamp(1.18rem, 1.8vw, 1.6rem);
+  padding-left: 0.7rem;
+  border-left: 2px solid rgba(201, 107, 52, 0.4);
+  margin-top: 1.6em;
 }
 
 .markdown-body p,
 .markdown-body ul,
 .markdown-body blockquote,
 .markdown-body pre {
-  margin-top: 1rem;
+  margin-top: 1.2rem;
 }
 
 .markdown-body ul {
@@ -1057,8 +1068,11 @@ img {
 
 .markdown-body blockquote {
   border-left: 4px solid var(--accent);
-  padding-left: 1rem;
+  padding: 0.75rem 1.25rem;
+  background: rgba(201, 107, 52, 0.05);
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
   color: var(--ink-muted);
+  font-style: italic;
 }
 
 .markdown-body pre {
