@@ -241,6 +241,11 @@ export interface AdminComment {
   repliedAt?: string | null;
   createdAt: string;
   updatedAt: string;
+  article?: {
+    id: string;
+    title: string;
+    slug: string;
+  } | null;
 }
 
 export interface CommentPage<T = PublicComment> {

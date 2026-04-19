@@ -26,6 +26,29 @@ export interface PublicCommentView {
   replies: PublicCommentView[];
 }
 
+export interface AdminCommentArticleView {
+  id: string;
+  title: string;
+  slug: string;
+}
+
+export interface AdminCommentView {
+  id: string;
+  articleId: string;
+  parentId: string | null;
+  userId: string | null;
+  authorName: string;
+  authorEmail: string;
+  authorWebsite: string | null;
+  content: string;
+  likeCount: number;
+  status: CommentStatus;
+  repliedAt: Date | null;
+  createdAt: Date;
+  updatedAt: Date;
+  article: AdminCommentArticleView | null;
+}
+
 @Injectable()
 export class CommentsService {
   private readonly logger = new Logger(CommentsService.name);
@@ -150,9 +173,10 @@ export class CommentsService {
       skip: (page - 1) * pageSize,
       take: pageSize,
     });
+    const articleMap = await this.buildArticleSummaryMap(items.map(item => item.articleId));
 
     return {
-      items,
+      items: items.map(item => this.toAdminView(item, articleMap)),
       total,
       page,
       pageSize,
@@ -309,6 +333,49 @@ export class CommentsService {
       repliedAt: comment.repliedAt,
       replies,
     };
+  }
+
+  private toAdminView(
+    comment: CommentEntity,
+    articleMap: Map<string, AdminCommentArticleView>,
+  ): AdminCommentView {
+    return {
+      id: comment.id,
+      articleId: comment.articleId,
+      parentId: comment.parentId,
+      userId: comment.userId,
+      authorName: comment.authorName,
+      authorEmail: comment.authorEmail,
+      authorWebsite: comment.authorWebsite,
+      content: comment.content,
+      likeCount: comment.likeCount,
+      status: comment.status,
+      repliedAt: comment.repliedAt,
+      createdAt: comment.createdAt,
+      updatedAt: comment.updatedAt,
+      article: articleMap.get(comment.articleId) ?? null,
+    };
+  }
+
+  private async buildArticleSummaryMap(articleIds: string[]): Promise<Map<string, AdminCommentArticleView>> {
+    const uniqueArticleIds = [...new Set(articleIds.filter(Boolean))];
+    if (uniqueArticleIds.length === 0) {
+      return new Map<string, AdminCommentArticleView>();
+    }
+
+    const articles = await this.articleRepository.find();
+    return new Map(
+      articles
+        .filter(article => uniqueArticleIds.includes(article.id))
+        .map(article => [
+          article.id,
+          {
+            id: article.id,
+            title: article.title,
+            slug: article.slug,
+          },
+        ]),
+    );
   }
 
   private collectSubtreeIds(commentId: string, comments: CommentEntity[]): string[] {

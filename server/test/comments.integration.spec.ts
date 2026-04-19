@@ -360,6 +360,21 @@ describe('Comments integration', () => {
 
     expect(articleRepository.items[0].commentCount).toBe(1);
 
+    const adminCommentsResponse = await request(app.getHttpServer())
+      .get('/api/admin/comments')
+      .set('x-test-role', 'admin')
+      .expect(200);
+
+    expect(adminCommentsResponse.body.data.items[0]).toEqual(
+      expect.objectContaining({
+        article: expect.objectContaining({
+          id: 'article-1',
+          title: 'NestJS 评论设计',
+          slug: 'nestjs-comments-design',
+        }),
+      }),
+    );
+
     const publicResponse = await request(app.getHttpServer())
       .get('/api/articles/article-1/comments')
       .expect(200);

@@ -84,11 +84,11 @@ function statusClass(status: CommentStatus) {
 }
 
 function getArticleTitle(comment: AdminComment) {
-  return articleMap.value.get(comment.articleId)?.title || "未知文章";
+  return comment.article?.title || articleMap.value.get(comment.articleId)?.title || "未知文章";
 }
 
 function getArticleSlug(comment: AdminComment) {
-  return articleMap.value.get(comment.articleId)?.slug || "";
+  return comment.article?.slug || articleMap.value.get(comment.articleId)?.slug || "";
 }
 
 async function loadCommentData() {
@@ -123,7 +123,6 @@ async function loadArticleContext() {
 
 async function refreshPageContext() {
   await loadCommentData();
-  await loadArticleContext();
 }
 
 async function changeStatus(comment: AdminComment, status: CommentStatus) {
