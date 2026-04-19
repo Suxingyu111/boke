@@ -16,14 +16,24 @@ const logger = new Logger('RedisModule');
           socket: {
             host: configService.get<string>('redis.host', '127.0.0.1'),
             port: configService.get<number>('redis.port', 6379),
+            reconnectStrategy: retries => Math.min(retries * 100, 5000),
           },
           password: configService.get<string>('redis.password') || undefined,
           database: configService.get<number>('redis.db', 0),
         });
 
+        client.on('error', error => {
+          logger.error('Redis 连接异常', error instanceof Error ? error.stack : String(error));
+        });
+        client.on('reconnecting', () => {
+          logger.warn('Redis 正在重连');
+        });
+        client.on('ready', () => {
+          logger.log('Redis 连接就绪');
+        });
+
         try {
           await client.connect();
-          logger.log('Redis connected successfully');
         } catch (error) {
           logger.error('Redis connection failed', error instanceof Error ? error.stack : undefined);
           throw error;

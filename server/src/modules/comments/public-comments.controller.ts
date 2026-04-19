@@ -1,8 +1,7 @@
-import { Body, Controller, Get, Post, Query, Req, UseGuards, UsePipes } from '@nestjs/common';
+import { Body, Controller, Get, Post, Query, Req, UseGuards } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
 import { Request } from 'express';
 import { User } from '@database/entities';
-import { SanitizePipe } from '../../common/pipes/sanitize.pipe';
 import { OptionalJwtAuthGuard } from '../auth/guards/optional-jwt-auth.guard';
 import { CreateCommentDto } from './dto/create-comment.dto';
 import { CommentsService, type PublicCommentView } from './comments.service';
@@ -37,7 +36,6 @@ export class PublicCommentsController {
   @Post()
   @UseGuards(OptionalJwtAuthGuard)
   @Throttle({ default: { limit: 5, ttl: 60000 } })
-  @UsePipes(SanitizePipe)
   createComment(@Body() dto: CreateCommentDto, @Req() req: CommentRequest) {
     const ip = (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() || req.ip || null;
     const userAgent = req.headers['user-agent'] ?? null;

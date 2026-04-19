@@ -18,6 +18,7 @@ const ArchivesView = () => import("@/views/ArchivesView.vue");
 const PageDetailView = () => import("@/views/PageDetailView.vue");
 const ProfileView = () => import("@/views/ProfileView.vue");
 const SearchView = () => import("@/views/SearchView.vue");
+const NotFoundView = () => import("@/views/NotFoundView.vue");
 const SubscriptionStatusView = () =>
   import("@/views/SubscriptionStatusView.vue");
 const LoginView = () => import("@/views/admin/LoginView.vue");
@@ -110,6 +111,12 @@ const routes: RouteRecordRaw[] = [
         component: TechnicalView,
       },
     ],
+  },
+  {
+    path: "/:pathMatch(.*)*",
+    name: "not-found",
+    component: NotFoundView,
+    meta: { title: "页面不存在" },
   },
 ];
 

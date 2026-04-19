@@ -18,6 +18,7 @@ export const validationSchema = Joi.object({
   DB_DATABASE: Joi.string().required(),
   DB_SYNCHRONIZE: Joi.boolean().default(false),
   DB_LOGGING: Joi.boolean().default(false),
+  DB_POOL_SIZE: Joi.number().integer().min(1).default(10),
 
   // Redis
   REDIS_HOST: Joi.string().required(),
@@ -66,4 +67,5 @@ export const validationSchema = Joi.object({
   SMTP_USER: Joi.string().allow('').optional().default(''),
   SMTP_PASS: Joi.string().allow('').optional().default(''),
   SMTP_FROM: Joi.string().allow('').optional().default(''),
+  SWAGGER_ENABLED: Joi.boolean().optional(),
 });

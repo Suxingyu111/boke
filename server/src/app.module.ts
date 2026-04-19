@@ -1,11 +1,12 @@
 import { Module } from '@nestjs/common';
-import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
+import { APP_GUARD, APP_INTERCEPTOR, APP_PIPE } from '@nestjs/core';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { configuration } from './config/configuration';
 import { validationSchema } from './config/validation';
 import { DatabaseModule } from './database/database.module';
 import { RedisModule } from './common/redis/redis.module';
+import { SanitizePipe } from './common/pipes/sanitize.pipe';
 import { HealthModule } from './modules/health/health.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { CategoriesModule } from './modules/categories/categories.module';
@@ -153,6 +154,10 @@ import { OperationLogInterceptor } from './modules/operation-logs/operation-log.
     {
       provide: APP_INTERCEPTOR,
       useClass: OperationLogInterceptor,
+    },
+    {
+      provide: APP_PIPE,
+      useClass: SanitizePipe,
     },
   ],
 })

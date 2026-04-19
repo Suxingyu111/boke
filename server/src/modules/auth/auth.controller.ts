@@ -1,4 +1,5 @@
 import { Body, Controller, Get, HttpCode, HttpStatus, Post, UseGuards } from '@nestjs/common';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import { User } from '@database/entities';
 import { AuthResponseDto } from './dto/auth-response.dto';
@@ -11,6 +12,7 @@ import { Roles } from './decorators/roles.decorator';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { RolesGuard } from './guards/roles.guard';
 
+@ApiTags('auth')
 @Controller('auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
@@ -30,6 +32,7 @@ export class AuthController {
 
   @Get('me')
   @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth('bearer')
   getMe(@CurrentUser() user: User): AuthUserDto {
     return new AuthUserDto(user);
   }
@@ -37,6 +40,7 @@ export class AuthController {
   @Get('admin/me')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('admin')
+  @ApiBearerAuth('bearer')
   getAdminMe(@CurrentUser() user: User): AuthUserDto {
     return new AuthUserDto(user);
   }

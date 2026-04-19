@@ -88,6 +88,10 @@ REDIS_PORT=6379
 
 # JWT
 JWT_SECRET=your_secret_key_here
+
+# 连接池与文档
+DB_POOL_SIZE=10
+SWAGGER_ENABLED=true
 ```
 
 ### 3. 初始化数据库
@@ -207,6 +211,7 @@ npm run migration:revert   # 回滚迁移
 5. 内容管理接口文档见 [server/docs/CONTENT_API.md](server/docs/CONTENT_API.md)
 6. 页面管理接口文档见 [server/docs/PAGES_API.md](server/docs/PAGES_API.md)
 7. 前端展示接口文档见 [server/docs/FRONTEND_DISPLAY_API.md](server/docs/FRONTEND_DISPLAY_API.md)
+8. 在线 Swagger 文档（启用时）见 `http://localhost:3000/api/docs`
 
 ```bash
 # 请求示例

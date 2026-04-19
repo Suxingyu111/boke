@@ -4,6 +4,7 @@ import { json, urlencoded } from 'express';
 import { NestFactory } from '@nestjs/core';
 import { Logger, ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { AppModule } from './app.module';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 import { ResponseInterceptor } from './common/interceptors/response.interceptor';
@@ -14,17 +15,25 @@ const bootstrapLogger = new Logger('Bootstrap');
 async function bootstrap(): Promise<void> {
   const app = await NestFactory.create(AppModule);
   const configService = app.get(ConfigService);
+  const nodeEnv = configService.get<string>('nodeEnv', 'development');
   const corsOrigins = configService.get<string[]>('cors.origins', []);
   const allowRequestsWithoutOrigin = configService.get<boolean>(
     'cors.allowRequestsWithoutOrigin',
     true,
   );
+  const swaggerEnabledValue = configService.get<string | boolean>('SWAGGER_ENABLED');
+  const swaggerEnabled =
+    typeof swaggerEnabledValue === 'boolean'
+      ? swaggerEnabledValue
+      : swaggerEnabledValue !== undefined
+        ? swaggerEnabledValue === 'true'
+        : nodeEnv !== 'production';
 
   app.use(helmet());
 
-  // 允许最大 50 MB 的 JSON / urlencoded 请求体（multipart 由 multer 单独控制）
-  app.use(json({ limit: '50mb' }));
-  app.use(urlencoded({ extended: true, limit: '50mb' }));
+  // 全局请求体限制为 1MB，文件上传由 multer 在具体路由单独控制。
+  app.use(json({ limit: '1mb' }));
+  app.use(urlencoded({ extended: true, limit: '1mb' }));
 
   // 启用 CORS
   app.enableCors(
@@ -54,6 +63,26 @@ async function bootstrap(): Promise<void> {
 
   // 全局响应拦截器
   app.useGlobalInterceptors(new ResponseInterceptor());
+
+  if (swaggerEnabled) {
+    const swaggerConfig = new DocumentBuilder()
+      .setTitle('Blog API')
+      .setDescription('博客系统后端接口文档')
+      .setVersion('1.0.0')
+      .addBearerAuth(
+        {
+          type: 'http',
+          scheme: 'bearer',
+          bearerFormat: 'JWT',
+          in: 'header',
+        },
+        'bearer',
+      )
+      .build();
+    const document = SwaggerModule.createDocument(app, swaggerConfig);
+    SwaggerModule.setup('api/docs', app, document);
+    bootstrapLogger.log('Swagger 文档已启用: /api/docs');
+  }
 
   const port = configService.get<number>('port', 3000);
   const appName = configService.get<string>('app.name', 'Blog System');

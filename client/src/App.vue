@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import { useRoute } from "vue-router";
+import ErrorBoundary from "@/components/ErrorBoundary.vue";
 import * as seoApi from "@/api/seo";
 import { recordVisit } from "@/api/visitor-stats";
 import { useCommunityStore } from "@/stores/community";
@@ -153,7 +154,9 @@ watch(
 </script>
 
 <template>
-  <RouterView />
+  <ErrorBoundary>
+    <RouterView />
+  </ErrorBoundary>
   <button
     v-if="showBackToTop"
     class="focus-ring app-backtop"

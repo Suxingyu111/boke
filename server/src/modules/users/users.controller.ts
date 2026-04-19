@@ -35,11 +35,11 @@ export class UsersController {
     return this.usersService.updateProfile(user.id, dto);
   }
 
-  /** 上传头像图片（自动更新用户 avatar 字段，最大 50 MB，服务端自动压缩） */
+  /** 上传头像图片（自动更新用户 avatar 字段，最大 10 MB，服务端自动压缩） */
   @Post('avatar')
   @UseInterceptors(
     FileInterceptor('file', {
-      limits: { fileSize: 50 * 1024 * 1024 },
+      limits: { fileSize: 10 * 1024 * 1024 },
     }),
   )
   uploadAvatar(
