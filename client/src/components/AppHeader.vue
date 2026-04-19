@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { nextTick, onMounted, onUnmounted, ref, watch } from "vue";
 import { useRouter } from "vue-router";
+import { useTheme } from "@/composables/useTheme";
 import { useSiteStore } from "@/stores/site";
 import { useAuthStore } from "@/stores/auth";
 import { useI18nStore } from "@/stores/i18n";
@@ -11,6 +12,7 @@ const authStore = useAuthStore();
 const i18nStore = useI18nStore();
 const userStore = useUserStore();
 const router = useRouter();
+const { cycleTheme, themeIcon, themeLabel } = useTheme();
 const searchTerm = ref("");
 const searchOpen = ref(false);
 const searchInputRef = ref<HTMLInputElement | null>(null);
@@ -203,6 +205,16 @@ watch(
             </svg>
           </button>
         </Transition>
+
+        <button
+          class="action-icon-btn focus-ring"
+          type="button"
+          :aria-label="`切换主题，当前：${themeLabel}`"
+          :title="`切换主题，当前：${themeLabel}`"
+          @click="cycleTheme"
+        >
+          <span class="text-base leading-none">{{ themeIcon }}</span>
+        </button>
 
         <!-- Unauthenticated: Login + Register (desktop only) -->
         <template v-if="!authStore.isAuthenticated">

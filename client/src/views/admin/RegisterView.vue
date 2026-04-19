@@ -2,10 +2,12 @@
 import { computed, ref } from "vue";
 import { useRouter } from "vue-router";
 import { getApiErrorMessage } from "@/api/auth";
+import { useTheme } from "@/composables/useTheme";
 import { useAuthStore } from "@/stores/auth";
 
 const router = useRouter();
 const authStore = useAuthStore();
+const { cycleTheme, themeIcon, themeLabel } = useTheme();
 
 const username = ref("");
 const email = ref("");
@@ -77,12 +79,23 @@ async function handleRegister() {
         class="ui-surface w-full p-6 md:p-9"
         @submit.prevent="handleRegister"
       >
-        <RouterLink
-          class="focus-ring inline-block rounded-md text-sm text-coral"
-          to="/"
-        >
-          返回首页
-        </RouterLink>
+        <div class="flex items-center justify-between gap-3">
+          <RouterLink
+            class="focus-ring inline-block rounded-md text-sm text-coral"
+            to="/"
+          >
+            返回首页
+          </RouterLink>
+          <button
+            class="focus-ring inline-flex min-h-11 items-center gap-2 rounded-md border border-line bg-white px-3 py-2 text-sm text-ink/72 hover:border-brand hover:text-brand"
+            type="button"
+            :aria-label="`切换主题，当前：${themeLabel}`"
+            @click="cycleTheme"
+          >
+            <span>{{ themeIcon }}</span>
+            <span>{{ themeLabel }}</span>
+          </button>
+        </div>
 
         <p class="eyebrow mt-8">Register</p>
         <h1 class="mt-2 font-display text-5xl leading-none text-brand">

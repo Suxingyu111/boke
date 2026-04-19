@@ -4,6 +4,7 @@ import { useRoute } from "vue-router";
 import ErrorBoundary from "@/components/ErrorBoundary.vue";
 import * as seoApi from "@/api/seo";
 import { recordVisit } from "@/api/visitor-stats";
+import { useTheme } from "@/composables/useTheme";
 import { useCommunityStore } from "@/stores/community";
 import { useI18nStore } from "@/stores/i18n";
 import { useSiteStore } from "@/stores/site";
@@ -13,6 +14,7 @@ const siteStore = useSiteStore();
 const i18nStore = useI18nStore();
 const communityStore = useCommunityStore();
 const route = useRoute();
+useTheme();
 const apiBaseUrl = (import.meta.env.VITE_API_BASE_URL || "/api").replace(
   /\/$/,
   "",

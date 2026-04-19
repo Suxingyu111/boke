@@ -2,11 +2,13 @@
 import { ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { getApiErrorMessage } from "@/api/auth";
+import { useTheme } from "@/composables/useTheme";
 import { useAuthStore } from "@/stores/auth";
 
 const route = useRoute();
 const router = useRouter();
 const authStore = useAuthStore();
+const { cycleTheme, themeIcon, themeLabel } = useTheme();
 const account = ref("");
 const password = ref("");
 const remember = ref(true);
@@ -117,12 +119,23 @@ async function handleLogin() {
 
     <section class="flex min-h-screen items-center p-5 md:p-8">
       <form class="ui-surface w-full p-6 md:p-9" @submit.prevent="handleLogin">
-        <RouterLink
-          class="focus-ring inline-block rounded-md text-sm text-coral lg:hidden"
-          to="/"
-        >
-          返回首页
-        </RouterLink>
+        <div class="flex items-center justify-between gap-3">
+          <RouterLink
+            class="focus-ring inline-block rounded-md text-sm text-coral lg:hidden"
+            to="/"
+          >
+            返回首页
+          </RouterLink>
+          <button
+            class="focus-ring inline-flex min-h-11 items-center gap-2 rounded-md border border-line bg-white px-3 py-2 text-sm text-ink/72 hover:border-brand hover:text-brand"
+            type="button"
+            :aria-label="`切换主题，当前：${themeLabel}`"
+            @click="cycleTheme"
+          >
+            <span>{{ themeIcon }}</span>
+            <span>{{ themeLabel }}</span>
+          </button>
+        </div>
 
         <p class="eyebrow mt-8 lg:mt-0">Login</p>
         <h2 class="mt-2 font-display text-5xl text-brand leading-none">

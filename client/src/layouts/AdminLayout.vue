@@ -1,9 +1,11 @@
 <script setup lang="ts">
 import { useRouter } from "vue-router";
+import { useTheme } from "@/composables/useTheme";
 import { useAuthStore } from "@/stores/auth";
 
 const authStore = useAuthStore();
 const router = useRouter();
+const { cycleTheme, themeIcon, themeLabel } = useTheme();
 
 async function logout() {
   authStore.logout();
@@ -27,6 +29,15 @@ async function logout() {
         <p class="mt-2 text-sm text-white/70">
           {{ authStore.displayName || "后台管理" }}
         </p>
+
+        <button
+          class="focus-ring mt-5 min-h-11 w-full rounded-md border border-white/18 px-3 py-2 text-left text-sm text-white/78 hover:bg-white/12"
+          type="button"
+          @click="cycleTheme"
+        >
+          <span class="mr-2 inline-block w-5 text-center">{{ themeIcon }}</span>
+          切换主题 · {{ themeLabel }}
+        </button>
 
         <nav class="mt-8 grid gap-2 text-sm">
           <RouterLink
