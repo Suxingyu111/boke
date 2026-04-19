@@ -1,7 +1,10 @@
 <script setup lang="ts">
+import { computed } from "vue";
 import { useSiteStore } from "@/stores/site";
 
 const siteStore = useSiteStore();
+const apiBaseUrl = (import.meta.env.VITE_API_BASE_URL || "/api").replace(/\/$/, "");
+const rssUrl = computed(() => `${apiBaseUrl}/feed/rss`);
 
 function sanitizeUrl(url: string) {
   const value = url.trim();
@@ -45,10 +48,17 @@ function isExternalLink(url: string) {
         </p>
       </div>
       <nav
-        v-if="siteStore.settings.socialLinks.length"
         class="flex flex-wrap gap-2 lg:justify-end"
-        aria-label="社交链接"
+        aria-label="社交链接与订阅"
       >
+        <a
+          class="focus-ring min-h-11 rounded-md border border-line bg-white/85 px-3 py-2 text-sm font-semibold text-ink/72 hover:border-brand/40 hover:text-brand"
+          :href="rssUrl"
+          rel="noreferrer noopener"
+          target="_blank"
+        >
+          RSS 订阅
+        </a>
         <a
           v-for="link in siteStore.settings.socialLinks"
           :key="`${link.label}-${link.url}`"

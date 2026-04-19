@@ -33,6 +33,7 @@ import { CommentsModule } from './modules/comments/comments.module';
 import { MediaAssetsModule } from './modules/media-assets/media-assets.module';
 import { ArticleSeriesModule } from './modules/article-series/article-series.module';
 import { OperationLogsModule } from './modules/operation-logs/operation-logs.module';
+import { FeedModule } from './modules/feed/feed.module';
 import { OperationLogInterceptor } from './modules/operation-logs/operation-log.interceptor';
 
 @Module({
@@ -69,6 +70,9 @@ import { OperationLogInterceptor } from './modules/operation-logs/operation-log.
 
     // 健康检查模块
     HealthModule,
+
+    // 订阅源模块
+    FeedModule,
 
     // 认证模块
     AuthModule,

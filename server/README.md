@@ -212,6 +212,7 @@ npm run migration:revert   # 回滚迁移
 6. 页面管理接口文档见 [server/docs/PAGES_API.md](server/docs/PAGES_API.md)
 7. 前端展示接口文档见 [server/docs/FRONTEND_DISPLAY_API.md](server/docs/FRONTEND_DISPLAY_API.md)
 8. 在线 Swagger 文档（启用时）见 `http://localhost:3000/api/docs`
+9. 订阅源接口：`/api/feed/rss`、`/api/feed/atom`
 
 ```bash
 # 请求示例
