@@ -173,7 +173,7 @@ function mapTag(raw: unknown): Tag {
   };
 }
 
-function mapArticle(raw: unknown): Article {
+export function mapArticle(raw: unknown): Article {
   if (!isRecord(raw)) {
     return {
       id: "article-unknown",

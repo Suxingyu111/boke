@@ -1,26 +1,32 @@
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref } from "vue";
-import { useContentStore } from "@/stores/content";
+import { computed, onMounted, onUnmounted, ref, watch } from "vue";
+import { useRoute, useRouter } from "vue-router";
+import { getApiErrorMessage } from "@/api/auth";
+import * as contentApi from "@/api/content";
+import type { Article } from "@/types/blog";
+import { mapArticle } from "@/stores/content";
 
-const contentStore = useContentStore();
-const allArticles = computed(() => contentStore.publishedArticles);
-
-// Top 5 most-viewed for carousel
-const carouselArticles = computed(() =>
-  [...allArticles.value].sort((a, b) => b.viewCount - a.viewCount).slice(0, 5),
-);
-
-// 10 most recently published — sorted by publishedAt descending
-const recentArticles = computed(() =>
-  [...allArticles.value]
-    .sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime())
-    .slice(0, 10),
-);
+const route = useRoute();
+const router = useRouter();
+const pageSize = 10;
+const carouselArticles = ref<Article[]>([]);
+const recentArticles = ref<Article[]>([]);
+const loading = ref(false);
+const errorMessage = ref("");
+const totalArticles = ref(0);
+const totalPages = ref(1);
 
 // Carousel state
 const currentIndex = ref(0);
 const isHovered = ref(false);
 let autoPlayTimer: ReturnType<typeof setInterval> | null = null;
+
+const currentPage = computed(() => {
+  const rawPage = Number.parseInt(String(route.query.page ?? "1"), 10);
+  return Number.isFinite(rawPage) && rawPage > 0 ? rawPage : 1;
+});
+
+const hasMore = computed(() => currentPage.value < totalPages.value);
 
 function nextSlide() {
   if (!carouselArticles.value.length) return;
@@ -39,6 +45,9 @@ function goToSlide(index: number) {
 }
 
 function startAutoPlay() {
+  if (autoPlayTimer) {
+    clearInterval(autoPlayTimer);
+  }
   autoPlayTimer = setInterval(() => {
     if (!isHovered.value) nextSlide();
   }, 5000);
@@ -48,8 +57,105 @@ function formatDate(value: string) {
   return new Date(value).toLocaleDateString("zh-CN", { month: "long", day: "numeric" });
 }
 
-onMounted(async () => {
-  await contentStore.loadPublicContent();
+function buildPageQuery(page: number) {
+  return page > 1 ? { ...route.query, page: String(page) } : {};
+}
+
+async function syncPage(page: number) {
+  await router.replace({ query: buildPageQuery(page) });
+}
+
+async function loadHomeContent(page: number) {
+  loading.value = true;
+  errorMessage.value = "";
+
+  try {
+    const [featuredPage, firstRecentPage] = await Promise.all([
+      contentApi.getPublicArticles({
+        page: 1,
+        pageSize: 5,
+        sortBy: "viewCount",
+        order: "DESC",
+      }),
+      contentApi.getPublicArticles({
+        page: 1,
+        pageSize,
+        sortBy: "publishedAt",
+        order: "DESC",
+      }),
+    ]);
+    const safeTargetPage = Math.min(page, firstRecentPage.meta.totalPages || 1);
+    const remainingRequests = Array.from(
+      { length: Math.max(0, safeTargetPage - 1) },
+      (_, index) =>
+        contentApi.getPublicArticles({
+          page: index + 2,
+          pageSize,
+          sortBy: "publishedAt",
+          order: "DESC",
+        }),
+    );
+    const remainingPages = remainingRequests.length
+      ? await Promise.all(remainingRequests)
+      : [];
+    const recentPages = [firstRecentPage, ...remainingPages];
+
+    carouselArticles.value = featuredPage.items.map(mapArticle);
+
+    const articleMap = new Map<string, Article>();
+    recentPages
+      .flatMap((pageData) => pageData.items)
+      .map(mapArticle)
+      .forEach((article) => {
+        articleMap.set(article.id, article);
+      });
+    recentArticles.value = Array.from(articleMap.values()).sort(
+      (a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime(),
+    );
+
+    totalArticles.value = firstRecentPage.meta.total;
+    totalPages.value = firstRecentPage.meta.totalPages;
+    currentIndex.value = 0;
+
+    if (safeTargetPage !== page) {
+      await syncPage(safeTargetPage);
+    }
+  } catch (error) {
+    carouselArticles.value = [];
+    recentArticles.value = [];
+    totalArticles.value = 0;
+    totalPages.value = 1;
+    errorMessage.value = getApiErrorMessage(error, "首页文章加载失败");
+  } finally {
+    loading.value = false;
+  }
+}
+
+async function loadMoreArticles() {
+  if (!hasMore.value || loading.value) {
+    return;
+  }
+  await syncPage(currentPage.value + 1);
+}
+
+watch(
+  () => currentPage.value,
+  async (page) => {
+    await loadHomeContent(page);
+  },
+  { immediate: true },
+);
+
+watch(
+  () => carouselArticles.value.length,
+  (length) => {
+    if (currentIndex.value >= length) {
+      currentIndex.value = 0;
+    }
+  },
+);
+
+onMounted(() => {
   startAutoPlay();
 });
 
@@ -135,7 +241,7 @@ onUnmounted(() => {
   </section>
 
   <!-- Loading skeleton -->
-  <section v-else-if="contentStore.loading" class="home-loading">
+  <section v-else-if="loading" class="home-loading">
     <div class="content-shell home-loading__grid">
       <div class="home-loading__block animate-pulse"></div>
       <div class="home-loading__line animate-pulse"></div>
@@ -155,9 +261,9 @@ onUnmounted(() => {
   </section>
 
   <!-- Error -->
-  <section v-if="contentStore.errorMessage" class="content-shell pt-3 pb-2">
+  <section v-if="errorMessage" class="content-shell pt-3 pb-2">
     <p class="rounded-md border border-coral/30 bg-coral/10 px-4 py-3 text-sm text-coral">
-      {{ contentStore.errorMessage }}
+      {{ errorMessage }}
     </p>
   </section>
 
@@ -167,9 +273,12 @@ onUnmounted(() => {
       <div class="recent-header">
         <p class="eyebrow">Latest</p>
         <h2 class="recent-title">最近更新</h2>
-      </div>
+          <span v-if="recentArticles.length" class="recent-subtitle">
+            已加载 {{ recentArticles.length }} / {{ totalArticles }} 篇
+          </span>
+        </div>
 
-      <div v-if="recentArticles.length" class="recent-grid">
+        <div v-if="recentArticles.length" class="recent-grid">
         <RouterLink
           v-for="article in recentArticles"
           :key="article.id"
@@ -200,7 +309,15 @@ onUnmounted(() => {
       </div>
 
       <!-- View all articles -->
-      <div v-if="recentArticles.length" class="recent-more">
+      <div v-if="recentArticles.length" class="recent-more recent-more--stack">
+        <button
+          v-if="hasMore"
+          class="focus-ring ui-button-primary recent-more-button"
+          type="button"
+          @click="loadMoreArticles"
+        >
+          加载更多文章
+        </button>
         <RouterLink class="focus-ring recent-more-link" to="/archives">
           查看全部文章
           <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -209,7 +326,7 @@ onUnmounted(() => {
         </RouterLink>
       </div>
 
-      <div v-else-if="!contentStore.loading" class="ui-surface p-5 mt-5">
+      <div v-else-if="!loading" class="ui-surface p-5 mt-5">
         <p class="font-display text-2xl">暂无文章</p>
       </div>
     </div>
@@ -412,6 +529,8 @@ onUnmounted(() => {
 .recent-header {
   display: flex;
   align-items: baseline;
+  justify-content: space-between;
+  flex-wrap: wrap;
   gap: 1rem;
   margin-bottom: 1rem;
 }
@@ -420,6 +539,10 @@ onUnmounted(() => {
   font-size: 1.9rem;
   line-height: 1.1;
   color: var(--ink);
+}
+.recent-subtitle {
+  font-size: 0.85rem;
+  color: rgba(16, 20, 26, 0.52);
 }
 
 /* 2-column grid on md+, 1 col on mobile */
@@ -523,6 +646,13 @@ onUnmounted(() => {
   display: flex;
   justify-content: center;
   margin-top: 1.25rem;
+}
+.recent-more--stack {
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+.recent-more-button {
+  padding: 0.7rem 1.4rem;
 }
 .recent-more-link {
   display: inline-flex;
