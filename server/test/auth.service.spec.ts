@@ -281,4 +281,114 @@ describe('AuthService', () => {
       ForbiddenException,
     );
   });
+
+  it('应返回 OAuth 提供商启用状态', () => {
+    configService.get.mockImplementation((key: string, defaultValue?: string) => {
+      if (key === 'oauth.github.clientId') return 'github-client-id';
+      if (key === 'oauth.github.clientSecret') return 'github-client-secret';
+      if (key === 'oauth.github.callbackUrl') return 'http://localhost:3000/api/auth/github/callback';
+      if (key === 'oauth.google.clientId') return '';
+      if (key === 'oauth.google.clientSecret') return '';
+      if (key === 'oauth.google.callbackUrl') return '';
+      return defaultValue;
+    });
+
+    expect(service.getOAuthProviders()).toEqual({
+      github: true,
+      google: false,
+    });
+  });
+
+  it('OAuth 首次登录时应自动创建本地账号', async () => {
+    userRepository.findOne
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce(null);
+    userRepository.create.mockReturnValue({
+      ...baseUser,
+      username: 'github_user',
+      email: 'oauth-user@example.com',
+      oauthProvider: 'github',
+      oauthProviderId: 'github-001',
+    });
+    userRepository.save.mockResolvedValue({
+      ...baseUser,
+      username: 'github_user',
+      email: 'oauth-user@example.com',
+      oauthProvider: 'github',
+      oauthProviderId: 'github-001',
+    });
+    userRepository.update.mockResolvedValue({ affected: 1, raw: {}, generatedMaps: [] });
+    (bcrypt.hash as jest.Mock).mockResolvedValue('oauth-password-hash');
+
+    const user = await service.resolveOAuthUser('github', {
+      providerId: 'github-001',
+      email: 'oauth-user@example.com',
+      username: 'github_user',
+      nickname: 'GitHub 用户',
+      avatar: 'https://example.com/avatar.png',
+    });
+
+    expect(bcrypt.hash).toHaveBeenCalled();
+    expect(userRepository.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        username: 'github_user',
+        email: 'oauth-user@example.com',
+        oauthProvider: 'github',
+        oauthProviderId: 'github-001',
+      }),
+    );
+    expect(userRepository.update).toHaveBeenCalledWith(
+      baseUser.id,
+      expect.objectContaining({
+        lastLoginAt: expect.any(Date),
+      }),
+    );
+    expect(user).toEqual(
+      expect.objectContaining({
+        username: 'github_user',
+        email: 'oauth-user@example.com',
+      }),
+    );
+  });
+
+  it('应构造 OAuth 成功与失败跳转地址', () => {
+    configService.get.mockImplementation((key: string, defaultValue?: string) => {
+      if (key === 'oauth.clientUrl') {
+        return 'http://localhost:5173';
+      }
+
+      return defaultValue;
+    });
+
+    const successUrl = service.buildOAuthSuccessRedirect(
+      {
+        accessToken: 'oauth-token',
+        tokenType: 'Bearer',
+        expiresIn: '7d',
+        user: {
+          id: baseUser.id,
+          username: baseUser.username,
+          email: baseUser.email,
+          nickname: baseUser.nickname,
+          avatar: baseUser.avatar,
+          bio: baseUser.bio,
+          isActive: baseUser.isActive,
+          role: baseUser.role,
+          lastLoginAt: baseUser.lastLoginAt,
+          createdAt: baseUser.createdAt,
+          updatedAt: baseUser.updatedAt,
+        },
+      },
+      '/admin',
+    );
+    const failureUrl = service.buildOAuthFailureRedirect('GitHub OAuth 登录失败', '/profile');
+
+    expect(successUrl).toContain('/oauth/callback?');
+    expect(successUrl).toContain('token=oauth-token');
+    expect(successUrl).toContain('redirect=%2Fadmin');
+    expect(failureUrl).toContain('/login?');
+    expect(failureUrl).toContain('oauthError=');
+    expect(failureUrl).toContain('redirect=%2Fprofile');
+  });
 });

@@ -20,6 +20,7 @@ const userStatusTransformer = {
 @Index('idx_email', ['email'], { unique: true })
 @Index('idx_username', ['username'], { unique: true })
 @Index('idx_users_role_status', ['role', 'isActive'])
+@Index('idx_users_oauth_provider', ['oauthProvider', 'oauthProviderId'], { unique: true })
 export class User {
   @PrimaryGeneratedColumn('uuid')
   id: string;
@@ -41,6 +42,17 @@ export class User {
 
   @Column({ type: 'text', nullable: true })
   bio: string | null;
+
+  @Column({
+    name: 'oauth_provider',
+    type: 'enum',
+    enum: ['github', 'google'],
+    nullable: true,
+  })
+  oauthProvider?: 'github' | 'google' | null;
+
+  @Column({ name: 'oauth_provider_id', type: 'varchar', length: 120, nullable: true })
+  oauthProviderId?: string | null;
 
   @Column({
     name: 'status',

@@ -52,6 +52,19 @@ export const configuration = (): {
     secret: string | undefined;
     expiresIn: string;
   };
+  oauth: {
+    clientUrl: string;
+    github: {
+      clientId: string;
+      clientSecret: string;
+      callbackUrl: string;
+    };
+    google: {
+      clientId: string;
+      clientSecret: string;
+      callbackUrl: string;
+    };
+  };
   admin: {
     username: string | undefined;
     password: string | undefined;
@@ -102,6 +115,19 @@ export const configuration = (): {
   jwt: {
     secret: process.env.JWT_SECRET,
     expiresIn: process.env.JWT_EXPIRATION || '7d',
+  },
+  oauth: {
+    clientUrl: process.env.CLIENT_URL || 'http://localhost:5173',
+    github: {
+      clientId: process.env.GITHUB_CLIENT_ID || '',
+      clientSecret: process.env.GITHUB_CLIENT_SECRET || '',
+      callbackUrl: process.env.GITHUB_CALLBACK_URL || '',
+    },
+    google: {
+      clientId: process.env.GOOGLE_CLIENT_ID || '',
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET || '',
+      callbackUrl: process.env.GOOGLE_CALLBACK_URL || '',
+    },
   },
   admin: {
     username: process.env.ADMIN_USERNAME,

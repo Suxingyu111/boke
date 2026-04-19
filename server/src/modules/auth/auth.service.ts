@@ -20,6 +20,17 @@ const INVALID_CREDENTIALS_MESSAGE = '账号或密码错误';
 const USER_DISABLED_MESSAGE = '账号已被禁用';
 const USER_EXISTS_MESSAGE = '注册失败，请更换注册信息后重试';
 const INVALID_TOKEN_MESSAGE = '登录状态无效，请重新登录';
+const OAUTH_PROVIDERS = ['github', 'google'] as const;
+
+type OAuthProvider = (typeof OAUTH_PROVIDERS)[number];
+
+interface OAuthProfilePayload {
+  providerId: string;
+  email?: string | null;
+  username?: string | null;
+  nickname?: string | null;
+  avatar?: string | null;
+}
 
 @Injectable()
 export class AuthService {
@@ -109,6 +120,102 @@ export class AuthService {
     return user;
   }
 
+  getOAuthProviders() {
+    return {
+      github: this.isOAuthEnabled('github'),
+      google: this.isOAuthEnabled('google'),
+    };
+  }
+
+  isOAuthEnabled(provider: OAuthProvider): boolean {
+    const clientId = this.configService.get<string>(`oauth.${provider}.clientId`, '');
+    const clientSecret = this.configService.get<string>(`oauth.${provider}.clientSecret`, '');
+    const callbackUrl = this.configService.get<string>(`oauth.${provider}.callbackUrl`, '');
+
+    return Boolean(clientId && clientSecret && callbackUrl);
+  }
+
+  async resolveOAuthUser(
+    provider: OAuthProvider,
+    payload: OAuthProfilePayload,
+  ): Promise<User> {
+    const normalizedProviderId = payload.providerId.trim();
+    const normalizedEmail = this.normalizeOAuthEmail(provider, normalizedProviderId, payload.email);
+
+    let user =
+      (await this.userRepository.findOne({
+        where: {
+          oauthProvider: provider,
+          oauthProviderId: normalizedProviderId,
+        },
+      })) ?? (await this.userRepository.findOne({ where: { email: normalizedEmail } }));
+
+    if (!user) {
+      user = await this.createOAuthUser(provider, normalizedProviderId, normalizedEmail, payload);
+    } else {
+      user = await this.syncOAuthUser(user, provider, normalizedProviderId, payload);
+    }
+
+    if (!user.isActive) {
+      throw new ForbiddenException(USER_DISABLED_MESSAGE);
+    }
+
+    const lastLoginAt = new Date();
+    const updatePayload: Partial<User> = {
+      lastLoginAt,
+      oauthProvider: user.oauthProvider ?? provider,
+      oauthProviderId: user.oauthProviderId ?? normalizedProviderId,
+    };
+
+    if (!user.avatar && payload.avatar) {
+      updatePayload.avatar = payload.avatar;
+    }
+
+    if (!user.nickname && payload.nickname) {
+      updatePayload.nickname = payload.nickname;
+    }
+
+    const updateResult = await this.userRepository.update(user.id, updatePayload);
+    if (updateResult.affected && updateResult.affected > 0) {
+      Object.assign(user, updatePayload);
+    }
+
+    return user;
+  }
+
+  async buildOAuthAuthResponse(user: User): Promise<AuthResponseDto> {
+    return this.buildAuthResponse(user);
+  }
+
+  buildOAuthSuccessRedirect(
+    auth: AuthResponseDto,
+    redirectPath?: string,
+  ): string {
+    const clientUrl = this.configService.get<string>('oauth.clientUrl', 'http://localhost:5173');
+    const target = new URL('/oauth/callback', this.ensureTrailingSlash(clientUrl));
+    target.searchParams.set('token', auth.accessToken);
+
+    const safeRedirect = this.normalizeRedirectPath(redirectPath);
+    if (safeRedirect) {
+      target.searchParams.set('redirect', safeRedirect);
+    }
+
+    return target.toString();
+  }
+
+  buildOAuthFailureRedirect(message: string, redirectPath?: string): string {
+    const clientUrl = this.configService.get<string>('oauth.clientUrl', 'http://localhost:5173');
+    const target = new URL('/login', this.ensureTrailingSlash(clientUrl));
+    target.searchParams.set('oauthError', message);
+
+    const safeRedirect = this.normalizeRedirectPath(redirectPath);
+    if (safeRedirect) {
+      target.searchParams.set('redirect', safeRedirect);
+    }
+
+    return target.toString();
+  }
+
   private async ensureUserDoesNotExist(email: string, username: string): Promise<void> {
     const [existingEmailUser, existingUsernameUser] = await Promise.all([
       this.userRepository.findOne({ where: { email } }),
@@ -122,6 +229,95 @@ export class AuthService {
     if (existingUsernameUser) {
       throw new ConflictException(USER_EXISTS_MESSAGE);
     }
+  }
+
+  private async createOAuthUser(
+    provider: OAuthProvider,
+    providerId: string,
+    email: string,
+    payload: OAuthProfilePayload,
+  ): Promise<User> {
+    const passwordHash = await bcrypt.hash(
+      `${provider}:${providerId}:${Date.now().toString(36)}`,
+      PASSWORD_SALT_ROUNDS,
+    );
+    const username = await this.generateUniqueUsername(
+      payload.username ?? payload.nickname ?? email.split('@')[0] ?? provider,
+    );
+    const user = this.userRepository.create({
+      username,
+      email,
+      password: passwordHash,
+      nickname: payload.nickname?.trim() || payload.username?.trim() || null,
+      avatar: payload.avatar?.trim() || null,
+      bio: null,
+      oauthProvider: provider,
+      oauthProviderId: providerId,
+      role: 'user',
+      isActive: true,
+      lastLoginAt: null,
+    });
+
+    return this.userRepository.save(user);
+  }
+
+  private async syncOAuthUser(
+    user: User,
+    provider: OAuthProvider,
+    providerId: string,
+    payload: OAuthProfilePayload,
+  ): Promise<User> {
+    const nextUser: User = {
+      ...user,
+      oauthProvider: user.oauthProvider ?? provider,
+      oauthProviderId: user.oauthProviderId ?? providerId,
+      nickname: user.nickname ?? payload.nickname?.trim() ?? payload.username?.trim() ?? null,
+      avatar: user.avatar ?? payload.avatar?.trim() ?? null,
+    };
+
+    if (
+      nextUser.oauthProvider === user.oauthProvider &&
+      nextUser.oauthProviderId === user.oauthProviderId &&
+      nextUser.nickname === user.nickname &&
+      nextUser.avatar === user.avatar
+    ) {
+      return user;
+    }
+
+    return this.userRepository.save(nextUser);
+  }
+
+  private normalizeOAuthEmail(
+    provider: OAuthProvider,
+    providerId: string,
+    email?: string | null,
+  ): string {
+    const normalized = email?.trim().toLowerCase();
+    if (normalized) {
+      return normalized;
+    }
+
+    return `${provider}-${providerId}@oauth.local`;
+  }
+
+  private async generateUniqueUsername(value: string): Promise<string> {
+    const base =
+      value
+        .trim()
+        .toLowerCase()
+        .replace(/[^a-z0-9_]+/g, '_')
+        .replace(/^_+|_+$/g, '')
+        .slice(0, 30) || 'oauth_user';
+
+    let candidate = base;
+    let index = 2;
+
+    while (await this.userRepository.findOne({ where: { username: candidate } })) {
+      candidate = `${base}_${index}`.slice(0, 50);
+      index += 1;
+    }
+
+    return candidate;
   }
 
   private async buildAuthResponse(user: User): Promise<AuthResponseDto> {
@@ -145,5 +341,25 @@ export class AuthService {
       'code' in error &&
       error.code === 'ER_DUP_ENTRY'
     );
+  }
+
+  private ensureTrailingSlash(value: string): string {
+    return value.endsWith('/') ? value : `${value}/`;
+  }
+
+  private normalizeRedirectPath(value?: string): string | undefined {
+    if (!value || typeof value !== 'string') {
+      return undefined;
+    }
+
+    if (!value.startsWith('/')) {
+      return undefined;
+    }
+
+    if (value.startsWith('//')) {
+      return undefined;
+    }
+
+    return value;
   }
 }

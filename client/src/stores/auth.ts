@@ -47,6 +47,15 @@ function persistAuth(response: AuthResponse, remember: boolean) {
   otherStorage.removeItem(userStorageKey);
 }
 
+function persistToken(token: string, remember: boolean) {
+  const targetStorage = remember ? localStorage : sessionStorage;
+  const otherStorage = remember ? sessionStorage : localStorage;
+
+  targetStorage.setItem(remember ? persistentTokenKey : sessionTokenKey, token);
+  otherStorage.removeItem(remember ? sessionTokenKey : persistentTokenKey);
+  otherStorage.removeItem(userStorageKey);
+}
+
 function clearStoredAuth() {
   localStorage.removeItem(persistentTokenKey);
   localStorage.removeItem(userStorageKey);
@@ -88,6 +97,22 @@ export const useAuthStore = defineStore("auth", {
         const response = await authApi.register(payload);
         this.applyAuth(response, remember);
         return response;
+      } finally {
+        this.loading = false;
+      }
+    },
+    async completeOAuthLogin(token: string, remember = true) {
+      this.loading = true;
+      try {
+        this.token = token;
+        persistToken(token, remember);
+        const user = await authApi.getCurrentUser();
+        this.user = user;
+        this.persistUser(user);
+        return user;
+      } catch (error) {
+        this.logout();
+        throw error;
       } finally {
         this.loading = false;
       }

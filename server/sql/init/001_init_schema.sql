@@ -8,6 +8,8 @@ CREATE TABLE IF NOT EXISTS users (
   nickname VARCHAR(100) DEFAULT NULL,
   avatar_url VARCHAR(500) DEFAULT NULL,
   bio TEXT,
+  oauth_provider ENUM('github', 'google') DEFAULT NULL,
+  oauth_provider_id VARCHAR(120) DEFAULT NULL,
   role ENUM('super_admin', 'admin', 'author', 'user') NOT NULL DEFAULT 'user',
   status ENUM('active', 'disabled') NOT NULL DEFAULT 'active',
   last_login_at DATETIME DEFAULT NULL,
@@ -16,6 +18,7 @@ CREATE TABLE IF NOT EXISTS users (
   PRIMARY KEY (id),
   UNIQUE KEY idx_users_username (username),
   UNIQUE KEY idx_users_email (email),
+  UNIQUE KEY idx_users_oauth_provider (oauth_provider, oauth_provider_id),
   KEY idx_users_role_status (role, status)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 

@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { ref } from "vue";
+import { computed, onMounted, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
-import { getApiErrorMessage } from "@/api/auth";
+import { getApiErrorMessage, getOAuthProviders } from "@/api/auth";
 import { useTheme } from "@/composables/useTheme";
 import { useAuthStore } from "@/stores/auth";
+import type { OAuthProviders } from "@/types/blog";
 
 const route = useRoute();
 const router = useRouter();
@@ -13,6 +14,49 @@ const account = ref("");
 const password = ref("");
 const remember = ref(true);
 const errorMessage = ref("");
+const oauthProviders = ref<OAuthProviders>({
+  github: false,
+  google: false,
+});
+
+const oauthRedirect = computed(() =>
+  typeof route.query.redirect === "string" ? route.query.redirect : "",
+);
+
+const githubAuthUrl = computed(() => {
+  const query = oauthRedirect.value
+    ? `?redirect=${encodeURIComponent(oauthRedirect.value)}`
+    : "";
+  return `/api/auth/github${query}`;
+});
+
+const googleAuthUrl = computed(() => {
+  const query = oauthRedirect.value
+    ? `?redirect=${encodeURIComponent(oauthRedirect.value)}`
+    : "";
+  return `/api/auth/google${query}`;
+});
+
+watch(
+  () => route.query.oauthError,
+  (value) => {
+    if (typeof value === "string" && value.trim()) {
+      errorMessage.value = value;
+    }
+  },
+  { immediate: true },
+);
+
+onMounted(async () => {
+  try {
+    oauthProviders.value = await getOAuthProviders();
+  } catch {
+    oauthProviders.value = {
+      github: false,
+      google: false,
+    };
+  }
+});
 
 async function handleLogin() {
   errorMessage.value = "";
@@ -194,15 +238,19 @@ async function handleLogin() {
         <div class="mt-5 grid gap-3 sm:grid-cols-2">
           <a
             class="focus-ring min-h-11 rounded-md border border-line bg-white px-4 py-2 text-center text-sm font-semibold hover:border-brand hover:text-brand"
-            href="/api/auth/github"
+            :class="!oauthProviders.github && 'pointer-events-none cursor-not-allowed opacity-50'"
+            :href="oauthProviders.github ? githubAuthUrl : undefined"
+            :aria-disabled="!oauthProviders.github"
           >
-            GitHub 登录
+            {{ oauthProviders.github ? "GitHub 登录" : "GitHub 未配置" }}
           </a>
           <a
             class="focus-ring min-h-11 rounded-md border border-line bg-white px-4 py-2 text-center text-sm font-semibold hover:border-brand hover:text-brand"
-            href="/api/auth/google"
+            :class="!oauthProviders.google && 'pointer-events-none cursor-not-allowed opacity-50'"
+            :href="oauthProviders.google ? googleAuthUrl : undefined"
+            :aria-disabled="!oauthProviders.google"
           >
-            Google 登录
+            {{ oauthProviders.google ? "Google 登录" : "Google 未配置" }}
           </a>
         </div>
 

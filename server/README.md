@@ -92,6 +92,15 @@ JWT_SECRET=your_secret_key_here
 # 连接池与文档
 DB_POOL_SIZE=10
 SWAGGER_ENABLED=true
+
+# 前端地址与 OAuth（可选）
+CLIENT_URL=http://localhost:5173
+GITHUB_CLIENT_ID=
+GITHUB_CLIENT_SECRET=
+GITHUB_CALLBACK_URL=http://localhost:3000/api/auth/github/callback
+GOOGLE_CLIENT_ID=
+GOOGLE_CLIENT_SECRET=
+GOOGLE_CALLBACK_URL=http://localhost:3000/api/auth/google/callback
 ```
 
 ### 3. 初始化数据库
@@ -213,6 +222,7 @@ npm run migration:revert   # 回滚迁移
 7. 前端展示接口文档见 [server/docs/FRONTEND_DISPLAY_API.md](server/docs/FRONTEND_DISPLAY_API.md)
 8. 在线 Swagger 文档（启用时）见 `http://localhost:3000/api/docs`
 9. 订阅源接口：`/api/feed/rss`、`/api/feed/atom`
+10. OAuth 登录入口：`/api/auth/github`、`/api/auth/google`
 
 ```bash
 # 请求示例

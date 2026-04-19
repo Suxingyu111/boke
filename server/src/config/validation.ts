@@ -43,6 +43,15 @@ export const validationSchema = Joi.object({
     otherwise: Joi.string().required(),
   }),
   JWT_EXPIRATION: Joi.string().default('7d'),
+  CLIENT_URL: Joi.string().uri().default('http://localhost:5173'),
+
+  // OAuth（可选）
+  GITHUB_CLIENT_ID: Joi.string().allow('').optional().default(''),
+  GITHUB_CLIENT_SECRET: Joi.string().allow('').optional().default(''),
+  GITHUB_CALLBACK_URL: Joi.string().uri().allow('').optional().default(''),
+  GOOGLE_CLIENT_ID: Joi.string().allow('').optional().default(''),
+  GOOGLE_CLIENT_SECRET: Joi.string().allow('').optional().default(''),
+  GOOGLE_CALLBACK_URL: Joi.string().uri().allow('').optional().default(''),
 
   // Admin
   ADMIN_USERNAME: Joi.when('NODE_ENV', {

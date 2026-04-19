@@ -2,6 +2,7 @@ import axios from "axios";
 import { post, request } from "@/api/http";
 import type {
   AuthResponse,
+  OAuthProviders,
   AuthUser,
   LoginPayload,
   RegisterPayload,
@@ -30,6 +31,11 @@ export async function getCurrentUser() {
 
 export async function getCurrentAdminUser() {
   const response = await request<AuthUser>("/auth/admin/me");
+  return response.data;
+}
+
+export async function getOAuthProviders() {
+  const response = await request<OAuthProviders>("/auth/oauth/providers");
   return response.data;
 }
 

@@ -1,6 +1,8 @@
-import { Body, Controller, Get, HttpCode, HttpStatus, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, HttpStatus, Next, Post, Query, Req, Res, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
+import * as passport from 'passport';
+import { NextFunction, Request, Response } from 'express';
 import { User } from '@database/entities';
 import { AuthResponseDto } from './dto/auth-response.dto';
 import { AuthUserDto } from './dto/auth-user.dto';
@@ -51,5 +53,115 @@ export class AuthController {
   @ApiResponse({ status: 200, description: '获取成功', type: AuthUserDto })
   getAdminMe(@CurrentUser() user: User): AuthUserDto {
     return new AuthUserDto(user);
+  }
+
+  @Get('oauth/providers')
+  @ApiOperation({ summary: '获取 OAuth 提供商可用状态' })
+  @ApiResponse({ status: 200, description: '获取成功' })
+  getOAuthProviders() {
+    return this.authService.getOAuthProviders();
+  }
+
+  @Get('github')
+  @ApiOperation({ summary: '发起 GitHub OAuth 登录' })
+  async githubLogin(
+    @Req() req: Request,
+    @Res() res: Response,
+    @Next() next: NextFunction,
+    @Query('redirect') redirect?: string,
+  ): Promise<void> {
+    await this.startOAuth('github', ['user:email'], req, res, next, redirect);
+  }
+
+  @Get('github/callback')
+  @ApiOperation({ summary: '处理 GitHub OAuth 回调' })
+  async githubCallback(
+    @Req() req: Request,
+    @Res() res: Response,
+    @Next() next: NextFunction,
+    @Query('state') redirect?: string,
+  ): Promise<void> {
+    await this.finishOAuth('github', req, res, next, redirect);
+  }
+
+  @Get('google')
+  @ApiOperation({ summary: '发起 Google OAuth 登录' })
+  async googleLogin(
+    @Req() req: Request,
+    @Res() res: Response,
+    @Next() next: NextFunction,
+    @Query('redirect') redirect?: string,
+  ): Promise<void> {
+    await this.startOAuth('google', ['profile', 'email'], req, res, next, redirect);
+  }
+
+  @Get('google/callback')
+  @ApiOperation({ summary: '处理 Google OAuth 回调' })
+  async googleCallback(
+    @Req() req: Request,
+    @Res() res: Response,
+    @Next() next: NextFunction,
+    @Query('state') redirect?: string,
+  ): Promise<void> {
+    await this.finishOAuth('google', req, res, next, redirect);
+  }
+
+  private async startOAuth(
+    provider: 'github' | 'google',
+    scope: string[],
+    req: Request,
+    res: Response,
+    next: NextFunction,
+    redirect?: string,
+  ): Promise<void> {
+    const providerLabel = provider === 'github' ? 'GitHub' : 'Google';
+    if (!this.authService.isOAuthEnabled(provider)) {
+      res.redirect(this.authService.buildOAuthFailureRedirect(`${providerLabel} OAuth 未配置`, redirect));
+      return;
+    }
+
+    passport.authenticate(provider, {
+      scope,
+      session: false,
+      state: redirect,
+    })(req, res, next);
+  }
+
+  private async finishOAuth(
+    provider: 'github' | 'google',
+    req: Request,
+    res: Response,
+    next: NextFunction,
+    redirect?: string,
+  ): Promise<void> {
+    const providerLabel = provider === 'github' ? 'GitHub' : 'Google';
+    if (!this.authService.isOAuthEnabled(provider)) {
+      res.redirect(this.authService.buildOAuthFailureRedirect(`${providerLabel} OAuth 未配置`, redirect));
+      return;
+    }
+
+    await new Promise<void>((resolve, reject) => {
+      passport.authenticate(
+        provider,
+        { session: false },
+        async (error: unknown, user: User | false | null) => {
+          if (error || !user) {
+            res.redirect(
+              this.authService.buildOAuthFailureRedirect(`${providerLabel} OAuth 登录失败`, redirect),
+            );
+            resolve();
+            return;
+          }
+
+          try {
+            const authResponse = await this.authService.buildOAuthAuthResponse(user);
+            res.redirect(this.authService.buildOAuthSuccessRedirect(authResponse, redirect));
+            resolve();
+          } catch (authError) {
+            reject(authError);
+          }
+        },
+      )(req, res, next instanceof Function ? next : undefined);
+    });
   }
 }

@@ -147,6 +147,11 @@ export interface AuthResponse {
   user: AuthUser;
 }
 
+export interface OAuthProviders {
+  github: boolean;
+  google: boolean;
+}
+
 export interface LoginPayload {
   account: string;
   password: string;

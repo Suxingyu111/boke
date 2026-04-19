@@ -19,6 +19,7 @@ const PageDetailView = () => import("@/views/PageDetailView.vue");
 const ProfileView = () => import("@/views/ProfileView.vue");
 const SearchView = () => import("@/views/SearchView.vue");
 const NotFoundView = () => import("@/views/NotFoundView.vue");
+const OAuthCallbackView = () => import("@/views/OAuthCallbackView.vue");
 const SubscriptionStatusView = () =>
   import("@/views/SubscriptionStatusView.vue");
 const LoginView = () => import("@/views/admin/LoginView.vue");
@@ -77,6 +78,7 @@ const routes: RouteRecordRaw[] = [
   },
   { path: "/login", name: "login", component: LoginView },
   { path: "/register", name: "register", component: RegisterView },
+  { path: "/oauth/callback", name: "oauth-callback", component: OAuthCallbackView },
   {
     path: "/profile",
     name: "profile",

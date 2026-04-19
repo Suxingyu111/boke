@@ -81,4 +81,22 @@ describe('AuthController', () => {
 
     expect(controller.getAdminMe(currentUser)).toEqual(authResult.user);
   });
+
+  it('应返回 OAuth 提供商可用状态', () => {
+    const service = {
+      register: jest.fn(),
+      login: jest.fn(),
+      getOAuthProviders: jest.fn().mockReturnValue({
+        github: true,
+        google: false,
+      }),
+    } as unknown as AuthService;
+
+    const controller = new AuthController(service);
+
+    expect(controller.getOAuthProviders()).toEqual({
+      github: true,
+      google: false,
+    });
+  });
 });
