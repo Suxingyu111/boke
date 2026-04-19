@@ -18,6 +18,7 @@ export const useUserStore = defineStore("user", {
     unreadCount: 0,
     loading: false,
     saving: false,
+    avatarUploading: false,
     errorMessage: "",
     notice: "",
   }),
@@ -38,7 +39,9 @@ export const useUserStore = defineStore("user", {
       this.notice = "";
       this.errorMessage = "";
       try {
-        this.profile = await usersApi.updateProfile(payload);
+        const result = await usersApi.updateProfile(payload);
+        // 合并而非替换，避免丢失 favoriteCount / commentCount 等字段
+        this.profile = { ...this.profile, ...result } as UserProfile;
         this.notice = "个人资料已保存";
         return true;
       } catch (error) {
@@ -46,6 +49,24 @@ export const useUserStore = defineStore("user", {
         return false;
       } finally {
         this.saving = false;
+      }
+    },
+    async uploadAvatar(file: File) {
+      this.avatarUploading = true;
+      this.notice = "";
+      this.errorMessage = "";
+      try {
+        const result = await usersApi.uploadAvatar(file);
+        if (this.profile) {
+          this.profile = { ...this.profile, avatar: result.url };
+        }
+        this.notice = "头像上传成功";
+        return result.url;
+      } catch (error) {
+        this.errorMessage = getApiErrorMessage(error, "头像上传失败");
+        return null;
+      } finally {
+        this.avatarUploading = false;
       }
     },
     async changePassword(payload: usersApi.ChangePasswordPayload) {

@@ -1,16 +1,42 @@
 import {
   BadRequestException,
+  ConflictException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import * as bcrypt from 'bcrypt';
+import sharp from 'sharp';
 import { User, Favorite, Article, Guestbook } from '@database/entities';
+import { MediaAssetsService, UploadedMediaFile } from '../media-assets/media-assets.service';
 import { UpdateProfileDto } from './dto/update-profile.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
 
 const PASSWORD_SALT_ROUNDS = 10;
+const AVATAR_ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+
+/** 将头像压缩为 WebP，最长边限制 1024 px，质量 85 */
+async function compressAvatar(file: UploadedMediaFile): Promise<UploadedMediaFile> {
+  // GIF 不做压缩（保留动图）
+  if (file.mimetype === 'image/gif') return file;
+
+  const compressed = await sharp(file.buffer)
+    .rotate()                        // 自动修正 EXIF 旋转方向
+    .resize(1024, 1024, {
+      fit: 'inside',
+      withoutEnlargement: true,      // 小图不放大
+    })
+    .webp({ quality: 85 })
+    .toBuffer();
+
+  return {
+    originalname: file.originalname.replace(/\.[^.]+$/, '.webp'),
+    mimetype: 'image/webp',
+    size: compressed.length,
+    buffer: compressed,
+  };
+}
 
 @Injectable()
 export class UsersService {
@@ -23,6 +49,7 @@ export class UsersService {
     private readonly articleRepository: Repository<Article>,
     @InjectRepository(Guestbook)
     private readonly guestbookRepository: Repository<Guestbook>,
+    private readonly mediaAssetsService: MediaAssetsService,
   ) {}
 
   /** 获取用户个人资料 */
@@ -37,40 +64,57 @@ export class UsersService {
       this.guestbookRepository.count({ where: { nickname: user.nickname || user.username } }),
     ]);
 
-    return {
-      id: user.id,
-      username: user.username,
-      email: user.email,
-      nickname: user.nickname,
-      avatar: user.avatar,
-      bio: user.bio,
-      role: user.role,
-      createdAt: user.createdAt,
-      favoriteCount,
-      commentCount,
-    };
+    return this.buildProfileResponse(user, favoriteCount, commentCount);
   }
 
-  /** 更新用户资料 */
+  /** 更新用户资料（undefined = 不更新；null = 清空；string = 更新） */
   async updateProfile(userId: string, dto: UpdateProfileDto) {
     const user = await this.userRepository.findOne({ where: { id: userId } });
     if (!user) {
       throw new NotFoundException('用户不存在');
     }
 
-    if (dto.nickname !== undefined) user.nickname = dto.nickname.trim();
-    if (dto.avatar !== undefined) user.avatar = dto.avatar.trim();
-    if (dto.bio !== undefined) user.bio = dto.bio.trim();
+    // 邮箱更新：检查冲突
+    if (dto.email !== undefined) {
+      const newEmail = dto.email.toLowerCase();
+      if (newEmail !== user.email) {
+        const conflict = await this.userRepository.findOne({ where: { email: newEmail } });
+        if (conflict) {
+          throw new ConflictException('该邮箱已被其他账号使用');
+        }
+        user.email = newEmail;
+      }
+    }
+
+    if (dto.nickname !== undefined) user.nickname = dto.nickname ?? null;
+    if (dto.avatar !== undefined) user.avatar = dto.avatar ?? null;
+    if (dto.bio !== undefined) user.bio = dto.bio ?? null;
 
     const savedUser = await this.userRepository.save(user);
-    return {
-      id: savedUser.id,
-      username: savedUser.username,
-      email: savedUser.email,
-      nickname: savedUser.nickname,
-      avatar: savedUser.avatar,
-      bio: savedUser.bio,
-    };
+
+    const [favoriteCount, commentCount] = await Promise.all([
+      this.favoriteRepository.count({ where: { userId } }),
+      this.guestbookRepository.count({ where: { nickname: savedUser.nickname || savedUser.username } }),
+    ]);
+
+    return this.buildProfileResponse(savedUser, favoriteCount, commentCount);
+  }
+
+  /** 上传并更新用户头像，返回新的头像 URL */
+  async uploadAvatar(currentUser: User, file: UploadedMediaFile) {
+    if (!file) {
+      throw new BadRequestException('请选择要上传的图片');
+    }
+
+    if (!AVATAR_ALLOWED_TYPES.includes(file.mimetype)) {
+      throw new BadRequestException('头像只支持 JPG、PNG、WebP、GIF 格式');
+    }
+
+    const compressed = await compressAvatar(file);
+    const asset = await this.mediaAssetsService.upload(compressed, currentUser, '用户头像');
+    await this.userRepository.update(currentUser.id, { avatar: asset.fileUrl });
+
+    return { url: asset.fileUrl };
   }
 
   /** 修改密码 */
@@ -131,6 +175,21 @@ export class UsersService {
       page,
       pageSize,
       totalPages: Math.ceil(total / pageSize),
+    };
+  }
+
+  private buildProfileResponse(user: User, favoriteCount: number, commentCount: number) {
+    return {
+      id: user.id,
+      username: user.username,
+      email: user.email,
+      nickname: user.nickname,
+      avatar: user.avatar,
+      bio: user.bio,
+      role: user.role,
+      createdAt: user.createdAt,
+      favoriteCount,
+      commentCount,
     };
   }
 }

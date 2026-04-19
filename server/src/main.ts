@@ -1,5 +1,6 @@
 import 'reflect-metadata';
 import helmet from 'helmet';
+import { json, urlencoded } from 'express';
 import { NestFactory } from '@nestjs/core';
 import { Logger, ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
@@ -20,6 +21,10 @@ async function bootstrap(): Promise<void> {
   );
 
   app.use(helmet());
+
+  // 允许最大 50 MB 的 JSON / urlencoded 请求体（multipart 由 multer 单独控制）
+  app.use(json({ limit: '50mb' }));
+  app.use(urlencoded({ extended: true, limit: '50mb' }));
 
   // 启用 CORS
   app.enableCors(

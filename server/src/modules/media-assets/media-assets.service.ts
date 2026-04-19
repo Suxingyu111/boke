@@ -24,7 +24,7 @@ const MEDIA_ASSET_NOT_FOUND_MESSAGE = '媒体资源不存在';
 const MEDIA_FILE_NOT_FOUND_MESSAGE = '媒体文件不存在';
 const INVALID_MEDIA_FILE_MESSAGE = '不支持的文件类型';
 const EMPTY_MEDIA_FILE_MESSAGE = '上传文件不能为空';
-const MAX_MEDIA_FILE_SIZE = 5 * 1024 * 1024;
+const MAX_MEDIA_FILE_SIZE = 50 * 1024 * 1024;
 const MEDIA_FILE_URL_PREFIX = '/api/media-assets/files';
 
 const ALLOWED_MEDIA_TYPES: Record<string, string[]> = {
@@ -158,7 +158,7 @@ export class MediaAssetsService {
     }
 
     if (file.size > MAX_MEDIA_FILE_SIZE) {
-      throw new BadRequestException('文件大小不能超过 5MB');
+      throw new BadRequestException('文件大小不能超过 50MB');
     }
 
     const fileExt = path.extname(file.originalname).toLowerCase();

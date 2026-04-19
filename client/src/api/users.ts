@@ -1,5 +1,5 @@
-import { put, request } from "@/api/http";
-import type { FavoriteArticle, UserProfile } from "@/types/blog";
+import { http, put, request } from "@/api/http";
+import type { ApiResponse, FavoriteArticle, UserProfile } from "@/types/blog";
 
 export interface FavoriteArticlesResponse {
   items: FavoriteArticle[];
@@ -10,9 +10,10 @@ export interface FavoriteArticlesResponse {
 }
 
 export interface UpdateProfilePayload {
-  nickname?: string;
-  avatar?: string;
-  bio?: string;
+  nickname?: string | null;
+  avatar?: string | null;
+  bio?: string | null;
+  email?: string | null;
 }
 
 export interface ChangePasswordPayload {
@@ -29,6 +30,17 @@ export async function updateProfile(payload: UpdateProfilePayload) {
   const response = await put<UserProfile, UpdateProfilePayload>(
     "/users/profile",
     payload,
+  );
+  return response.data;
+}
+
+/** 上传头像图片，自动更新用户 avatar，返回 { url } */
+export async function uploadAvatar(file: File) {
+  const formData = new FormData();
+  formData.append("file", file);
+  const response = await http.post<unknown, ApiResponse<{ url: string }>>(
+    "/users/avatar",
+    formData,
   );
   return response.data;
 }
