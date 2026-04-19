@@ -9,6 +9,7 @@ const contentStore = useContentStore();
 const route = useRoute();
 const router = useRouter();
 const articlesSection = ref<HTMLElement | null>(null);
+const syncingFromRoute = ref(false);
 
 const categories = computed(() => contentStore.visibleCategories);
 const tags = computed(() => contentStore.tagCloud);
@@ -229,6 +230,10 @@ const selectedTagNames = computed(() =>
 
 // ─── URL 状态持久化 ───────────────────────────────────────────
 function syncToUrl() {
+  if (syncingFromRoute.value) {
+    return;
+  }
+
   const catSlugs = categories.value
     .filter((c) => selectedCatIds.value.has(c.id))
     .map((c) => c.slug)
@@ -241,13 +246,25 @@ function syncToUrl() {
   if (catSlugs) query.cats = catSlugs;
   if (tagSlugs) query.tags = tagSlugs;
   if (tagFilterMode.value === "and") query.mode = "and";
+  const activePage = hasAnySelection.value ? filteredPage.value : currentPage.value;
+  if (activePage > 1) query.page = String(activePage);
   router.replace({ query: Object.keys(query).length ? query : {} });
 }
 
 function restoreFromUrl() {
+  syncingFromRoute.value = true;
   const catsParam = typeof route.query.cats === "string" ? route.query.cats : undefined;
   const tagsParam = typeof route.query.tags === "string" ? route.query.tags : undefined;
   const modeParam = typeof route.query.mode === "string" ? route.query.mode : undefined;
+  const pageParam = Number.parseInt(String(route.query.page ?? "1"), 10);
+  const restoredPage = Number.isFinite(pageParam) && pageParam > 0 ? pageParam : 1;
+
+  selectedCatIds.value = new Set();
+  selectedTagIds.value = new Set();
+  tagFilterMode.value = "or";
+  currentPage.value = restoredPage;
+  filteredPage.value = restoredPage;
+
   if (modeParam === "and") tagFilterMode.value = "and";
   if (catsParam) {
     const ids = catsParam
@@ -265,11 +282,31 @@ function restoreFromUrl() {
       .filter((id): id is string => !!id);
     if (ids.length) selectedTagIds.value = new Set(ids);
   }
+  syncingFromRoute.value = false;
 }
 
 onMounted(async () => {
   await contentStore.loadPublicContent();
   restoreFromUrl();
+});
+
+watch(
+  () => route.query,
+  () => {
+    restoreFromUrl();
+  },
+);
+
+watch(currentPage, () => {
+  if (!hasAnySelection.value) {
+    syncToUrl();
+  }
+});
+
+watch(filteredPage, () => {
+  if (hasAnySelection.value) {
+    syncToUrl();
+  }
 });
 </script>
 
