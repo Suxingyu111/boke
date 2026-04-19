@@ -4,6 +4,23 @@ import markdownItFootnote from "markdown-it-footnote";
 import markdownItTaskLists from "markdown-it-task-lists";
 import hljs from "highlight.js/lib/common";
 
+interface MarkdownLightboxItem {
+  src: string;
+  alt: string;
+}
+
+interface MarkdownLightboxState {
+  items: MarkdownLightboxItem[];
+  index: number;
+  root: HTMLElement;
+  image: HTMLImageElement;
+  caption: HTMLElement;
+  counter: HTMLElement;
+  previousButton: HTMLButtonElement;
+  nextButton: HTMLButtonElement;
+  handleKeydown: (event: KeyboardEvent) => void;
+}
+
 function escapeHtml(value: string) {
   return value
     .replace(/&/g, "&amp;")
@@ -92,6 +109,12 @@ const defaultLinkOpenRenderer =
   markdownRenderer.renderer.rules.link_open ??
   ((tokens, index, options, _env, self) =>
     self.renderToken(tokens, index, options));
+const defaultImageRenderer =
+  markdownRenderer.renderer.rules.image ??
+  ((tokens, index, options, _env, self) =>
+    self.renderToken(tokens, index, options));
+
+let activeLightbox: MarkdownLightboxState | null = null;
 
 markdownRenderer.renderer.rules.link_open = (
   tokens,
@@ -108,8 +131,133 @@ markdownRenderer.renderer.rules.link_open = (
   return defaultLinkOpenRenderer(tokens, index, options, env, self);
 };
 
+markdownRenderer.renderer.rules.image = (tokens, index, options, env, self) => {
+  const token = tokens[index];
+  const currentClass = token.attrGet("class");
+  token.attrSet(
+    "class",
+    [currentClass, "markdown-image-zoomable"].filter(Boolean).join(" "),
+  );
+  token.attrSet("data-markdown-lightbox", "true");
+  token.attrSet("loading", token.attrGet("loading") || "lazy");
+  token.attrSet("tabindex", "0");
+  return defaultImageRenderer(tokens, index, options, env, self);
+};
+
 export function renderMarkdown(markdown: string) {
   return markdownRenderer.render(markdown || "");
+}
+
+function closeMarkdownLightbox() {
+  if (!activeLightbox) {
+    return;
+  }
+
+  document.body.style.removeProperty("overflow");
+  document.removeEventListener("keydown", activeLightbox.handleKeydown);
+  activeLightbox.root.remove();
+  activeLightbox = null;
+}
+
+function syncMarkdownLightboxView() {
+  if (!activeLightbox) {
+    return;
+  }
+
+  const currentItem = activeLightbox.items[activeLightbox.index];
+  activeLightbox.image.src = currentItem.src;
+  activeLightbox.image.alt = currentItem.alt;
+  activeLightbox.caption.textContent = currentItem.alt || "图片预览";
+  activeLightbox.counter.textContent = `${activeLightbox.index + 1} / ${activeLightbox.items.length}`;
+  activeLightbox.previousButton.disabled = activeLightbox.items.length <= 1;
+  activeLightbox.nextButton.disabled = activeLightbox.items.length <= 1;
+}
+
+function moveMarkdownLightbox(step: number) {
+  if (!activeLightbox || activeLightbox.items.length <= 1) {
+    return;
+  }
+
+  activeLightbox.index =
+    (activeLightbox.index + step + activeLightbox.items.length) %
+    activeLightbox.items.length;
+  syncMarkdownLightboxView();
+}
+
+function openMarkdownLightbox(items: MarkdownLightboxItem[], index: number) {
+  closeMarkdownLightbox();
+
+  const root = document.createElement("div");
+  root.className = "markdown-lightbox";
+  root.innerHTML = `
+    <div class="markdown-lightbox__backdrop" data-lightbox-close></div>
+    <div class="markdown-lightbox__dialog" role="dialog" aria-modal="true" aria-label="图片预览">
+      <button class="markdown-lightbox__close" type="button" aria-label="关闭预览" data-lightbox-close>×</button>
+      <button class="markdown-lightbox__nav markdown-lightbox__nav--prev" type="button" aria-label="查看上一张">‹</button>
+      <figure class="markdown-lightbox__figure">
+        <img class="markdown-lightbox__image" alt="" />
+        <figcaption class="markdown-lightbox__caption"></figcaption>
+      </figure>
+      <button class="markdown-lightbox__nav markdown-lightbox__nav--next" type="button" aria-label="查看下一张">›</button>
+      <div class="markdown-lightbox__counter"></div>
+    </div>
+  `;
+
+  const image = root.querySelector<HTMLImageElement>(".markdown-lightbox__image");
+  const caption = root.querySelector<HTMLElement>(".markdown-lightbox__caption");
+  const counter = root.querySelector<HTMLElement>(".markdown-lightbox__counter");
+  const previousButton = root.querySelector<HTMLButtonElement>(".markdown-lightbox__nav--prev");
+  const nextButton = root.querySelector<HTMLButtonElement>(".markdown-lightbox__nav--next");
+  const closeTriggers = root.querySelectorAll<HTMLElement>("[data-lightbox-close]");
+
+  if (!image || !caption || !counter || !previousButton || !nextButton) {
+    return;
+  }
+
+  const handleKeydown = (event: KeyboardEvent) => {
+    if (event.key === "Escape") {
+      closeMarkdownLightbox();
+      return;
+    }
+
+    if (event.key === "ArrowLeft") {
+      moveMarkdownLightbox(-1);
+      return;
+    }
+
+    if (event.key === "ArrowRight") {
+      moveMarkdownLightbox(1);
+    }
+  };
+
+  activeLightbox = {
+    items,
+    index,
+    root,
+    image,
+    caption,
+    counter,
+    previousButton,
+    nextButton,
+    handleKeydown,
+  };
+
+  previousButton.addEventListener("click", () => moveMarkdownLightbox(-1));
+  nextButton.addEventListener("click", () => moveMarkdownLightbox(1));
+  closeTriggers.forEach((trigger) =>
+    trigger.addEventListener("click", closeMarkdownLightbox),
+  );
+
+  root.addEventListener("click", (event) => {
+    if (event.target === root) {
+      closeMarkdownLightbox();
+    }
+  });
+
+  syncMarkdownLightboxView();
+  document.body.appendChild(root);
+  document.body.style.overflow = "hidden";
+  document.addEventListener("keydown", handleKeydown);
 }
 
 export async function handleMarkdownInteraction(event: MouseEvent) {
@@ -120,7 +268,33 @@ export async function handleMarkdownInteraction(event: MouseEvent) {
 
   const copyButton = target.closest<HTMLElement>("[data-copy-code]");
   if (!copyButton) {
-    return false;
+    const image = target.closest<HTMLImageElement>("img[data-markdown-lightbox]");
+    if (!image) {
+      return false;
+    }
+
+    const container = image.closest(".markdown-body");
+    const items = Array.from(
+      container?.querySelectorAll<HTMLImageElement>("img[data-markdown-lightbox]") ??
+        [],
+    )
+      .map((item) => ({
+        src: item.currentSrc || item.src,
+        alt: item.alt || "",
+      }))
+      .filter((item) => Boolean(item.src));
+    const currentSrc = image.currentSrc || image.src;
+    const currentIndex = Math.max(
+      items.findIndex((item) => item.src === currentSrc),
+      0,
+    );
+
+    if (items.length === 0) {
+      return false;
+    }
+
+    openMarkdownLightbox(items, currentIndex);
+    return true;
   }
 
   const codeElement = copyButton
