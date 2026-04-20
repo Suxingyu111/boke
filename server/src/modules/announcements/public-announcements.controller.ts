@@ -1,4 +1,4 @@
-import { Controller, Get, Query } from '@nestjs/common';
+import { Controller, DefaultValuePipe, Get, ParseIntPipe, Query } from '@nestjs/common';
 import { AnnouncementsService } from './announcements.service';
 
 @Controller('announcements')
@@ -8,8 +8,8 @@ export class PublicAnnouncementsController {
   /** 获取已发布的公告列表 */
   @Get()
   getPublishedAnnouncements(
-    @Query('page') page = 1,
-    @Query('pageSize') pageSize = 10,
+    @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
+    @Query('pageSize', new DefaultValuePipe(10), ParseIntPipe) pageSize: number,
   ) {
     return this.announcementsService.getPublishedAnnouncements(page, pageSize);
   }

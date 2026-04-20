@@ -1,9 +1,11 @@
 import {
   Body,
   Controller,
+  DefaultValuePipe,
   Delete,
   Get,
   Param,
+  ParseIntPipe,
   ParseUUIDPipe,
   Post,
   Put,
@@ -28,8 +30,8 @@ export class AdminAnnouncementsController {
   /** 获取全部公告 */
   @Get()
   getAnnouncements(
-    @Query('page') page = 1,
-    @Query('pageSize') pageSize = 20,
+    @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
+    @Query('pageSize', new DefaultValuePipe(20), ParseIntPipe) pageSize: number,
   ) {
     return this.announcementsService.adminGetAnnouncements(page, pageSize);
   }
