@@ -139,13 +139,15 @@ describe('Security cache integration', () => {
     await app.close();
   });
 
-  it('公开缓存接口应写入缓存控制头并返回统一缓存标识', async () => {
-    const response = await request(app.getHttpServer()).get('/api/public/cache').expect(200);
+  it('公开缓存接口应在重复访问时返回 HIT', async () => {
+    const first = await request(app.getHttpServer()).get('/api/public/cache').expect(200);
+    const second = await request(app.getHttpServer()).get('/api/public/cache').expect(200);
 
-    expect(response.headers['x-cache']).toBe('MISS');
-    expect(response.headers['cache-control']).toContain('public');
+    expect(first.headers['x-cache']).toBe('MISS');
+    expect(second.headers['x-cache']).toBe('HIT');
+    expect(first.headers['cache-control']).toContain('public');
     expect(redisClient.store.size).toBeGreaterThan(0);
-    expect(response.body.data).toEqual({ value: 1 });
+    expect(second.body.data).toEqual({ value: 1 });
   });
 
   it('敏感接口应返回 no-store 头并跳过缓存', async () => {

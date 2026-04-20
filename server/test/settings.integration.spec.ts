@@ -1,5 +1,6 @@
 import 'reflect-metadata';
 import { CanActivate, ExecutionContext, INestApplication, ValidationPipe } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import request from 'supertest';
@@ -7,6 +8,9 @@ import { ObjectLiteral, Repository } from 'typeorm';
 import { SiteSetting, User } from '../src/database/entities';
 import { HttpExceptionFilter } from '../src/common/filters/http-exception.filter';
 import { ResponseInterceptor } from '../src/common/interceptors/response.interceptor';
+import { ResponseCacheInterceptor } from '../src/common/security/response-cache.interceptor';
+import { ResponseCacheService } from '../src/common/security/response-cache.service';
+import { ResponseSecurityInterceptor } from '../src/common/security/response-security.interceptor';
 import { SettingsController } from '../src/modules/settings/settings.controller';
 import { SettingsService } from '../src/modules/settings/settings.service';
 import { JwtAuthGuard } from '../src/modules/auth/guards/jwt-auth.guard';
@@ -115,6 +119,31 @@ class MockJwtAuthGuard implements CanActivate {
 describe('Settings integration', () => {
   let app: INestApplication;
   let settingRepository: RepositoryMock<SiteSetting>;
+  const redisStore = new Map<string, string>();
+
+  const redisClient = {
+    get: jest.fn(async (key: string) => redisStore.get(key) ?? null),
+    set: jest.fn(async (key: string, value: string) => {
+      redisStore.set(key, value);
+      return 'OK';
+    }),
+    del: jest.fn(async (keys: string | string[]) => {
+      for (const key of Array.isArray(keys) ? keys : [keys]) {
+        redisStore.delete(key);
+      }
+      return 1;
+    }),
+    scan: jest.fn(async (_cursor: number, options?: { MATCH?: string }) => {
+      const pattern = options?.MATCH ?? '*';
+      const regex = new RegExp(
+        `^${pattern.replace(/[.+?^${}()|[\]\\]/g, '\\$&').replace(/\*/g, '.*')}$`,
+      );
+      return {
+        cursor: 0,
+        keys: [...redisStore.keys()].filter(key => regex.test(key)),
+      };
+    }),
+  };
 
   beforeAll(async () => {
     settingRepository = createRepositoryMock<SiteSetting>();
@@ -123,10 +152,34 @@ describe('Settings integration', () => {
       controllers: [SettingsController],
       providers: [
         SettingsService,
+        ResponseCacheService,
+        ResponseSecurityInterceptor,
+        ResponseCacheInterceptor,
         RolesGuard,
         {
           provide: getRepositoryToken(SiteSetting),
           useValue: settingRepository,
+        },
+        {
+          provide: 'REDIS_CLIENT',
+          useValue: redisClient,
+        },
+        {
+          provide: ConfigService,
+          useValue: {
+            get: jest.fn((key: string, defaultValue?: unknown) => {
+              const config: Record<string, unknown> = {
+                'cache.enabled': true,
+                'cache.keyNamespace': 'settings-test-cache',
+                'cache.nullTtlSeconds': 15,
+                'cache.lockTtlMs': 1000,
+                'cache.waitTimeoutMs': 100,
+                'cache.ttlJitterSeconds': 0,
+              };
+
+              return key in config ? config[key] : defaultValue;
+            }),
+          },
         },
       ],
     })
@@ -148,8 +201,16 @@ describe('Settings integration', () => {
       }),
     );
     app.useGlobalFilters(new HttpExceptionFilter());
-    app.useGlobalInterceptors(new ResponseInterceptor());
+    app.useGlobalInterceptors(
+      moduleRef.get(ResponseSecurityInterceptor),
+      new ResponseInterceptor(),
+      moduleRef.get(ResponseCacheInterceptor),
+    );
     await app.init();
+  });
+
+  beforeEach(() => {
+    redisStore.clear();
   });
 
   afterAll(async () => {
@@ -219,6 +280,27 @@ describe('Settings integration', () => {
         },
       }),
     );
+  });
+
+  it('公开设置接口重复访问时应命中缓存', async () => {
+    settingRepository.items.push(
+      {
+        id: 100,
+        settingKey: 'site_title',
+        settingValue: '缓存验证博客',
+        valueType: 'string',
+        groupName: 'general',
+        description: '站点标题',
+        isPublic: true,
+      } as SiteSetting,
+    );
+
+    const first = await request(app.getHttpServer()).get('/api/settings').expect(200);
+    const second = await request(app.getHttpServer()).get('/api/settings').expect(200);
+
+    expect(first.headers['x-cache']).toBe('MISS');
+    expect(second.headers['x-cache']).toBe('HIT');
+    expect(second.body.data.site_title).toBe('缓存验证博客');
   });
 
   it('应允许可选站点设置保存为空字符串', async () => {

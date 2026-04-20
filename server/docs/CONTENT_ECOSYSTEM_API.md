@@ -24,6 +24,16 @@
 
 ---
 
+## 缓存与安全说明
+
+- 公开 GET 接口 `/api/archives`、`/api/archives/articles`、`/api/search` 已启用服务端缓存
+- 重复访问时响应头可能出现 `X-Cache: HIT`
+- 上述接口会返回 `Cache-Control: public, max-age=...`
+- 带 `Authorization` 头的请求不参与缓存
+- 搜索关键字 `keyword` 最长 100 个字符
+
+---
+
 ## 一、文章归档
 
 ### 1.1 获取归档概览
@@ -37,6 +47,8 @@ GET /api/archives
 ```
 
 **权限**：无需登录
+
+**缓存说明**：已启用短 TTL 缓存，重复访问可能返回 `X-Cache: HIT`
 
 **响应示例**
 
@@ -63,6 +75,8 @@ GET /api/archives/articles?year=2026&month=4&pageSize=20
 ```
 
 **权限**：无需登录
+
+**缓存说明**：已启用短 TTL 缓存，重复访问可能返回 `X-Cache: HIT`
 
 **Query 参数**
 
@@ -112,12 +126,14 @@ GET /api/search?keyword=NestJS&categoryId=uuid&page=1&pageSize=10
 
 | 参数 | 类型 | 必填 | 说明 |
 |------|------|------|------|
-| keyword | string | 否 | 搜索关键词 |
+| keyword | string | 否 | 搜索关键词，最长 100 个字符 |
 | categoryId | UUID | 否 | 按分类筛选 |
 | page | int | 否 | 页码，默认 1 |
 | pageSize | int | 否 | 每页条数，默认 10，上限 50 |
 
 **搜索权重**：标题 ×3 > 摘要 ×2 > 正文 ×1
+
+**缓存说明**：已启用短 TTL 缓存，重复访问可能返回 `X-Cache: HIT`
 
 **响应示例**
 

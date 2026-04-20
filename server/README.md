@@ -228,6 +228,7 @@ npm run migration:revert   # 回滚迁移
 12. 导出文件位置：`server/docs/openapi.json`
 13. 订阅源接口：`/api/feed/rss`、`/api/feed/atom`
 14. OAuth 登录入口：`/api/auth/github`、`/api/auth/google`
+15. 安全与缓存设计说明：`server/docs/security-design.md`
 
 ```bash
 # 请求示例

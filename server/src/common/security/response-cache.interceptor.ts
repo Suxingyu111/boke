@@ -79,9 +79,8 @@ export class ResponseCacheInterceptor implements NestInterceptor {
   }
 
   private buildCacheIdentifier(request: Request): string {
-    const host = request.get('host')?.toLowerCase() ?? '';
     const acceptLanguage = request.get('accept-language')?.toLowerCase() ?? '';
-    return `${request.method}:${host}:${request.originalUrl}:${acceptLanguage}`;
+    return `${request.method}:${request.originalUrl}:${acceptLanguage}`;
   }
 
   private applyCacheHeaders(
