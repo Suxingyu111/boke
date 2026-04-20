@@ -1,10 +1,23 @@
-import { Body, Controller, Delete, Get, Param, Post, Query, UseGuards } from '@nestjs/common';
+import { BadRequestException, Body, Controller, Delete, Get, Param, Post, Query, UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { NotificationsService } from './notifications.service';
 import { SubscriptionService } from './subscription.service';
 import { SendNotificationDto } from './dto/send-notification.dto';
+
+function parsePositiveInt(value: string | undefined, fallback: number, field: string): number {
+  if (value === undefined || value === null || value === '') {
+    return fallback;
+  }
+
+  const parsed = Number(value);
+  if (!Number.isInteger(parsed) || parsed <= 0) {
+    throw new BadRequestException(`${field} 必须为正整数`);
+  }
+
+  return parsed;
+}
 
 @Controller('admin/notifications')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -39,13 +52,19 @@ export class AdminNotificationsController {
   /** 获取通知列表 */
   @Get()
   getNotifications(@Query('page') page?: string, @Query('pageSize') pageSize?: string) {
-    return this.notificationsService.getNotifications(Number(page) || 1, Number(pageSize) || 20);
+    return this.notificationsService.getNotifications(
+      parsePositiveInt(page, 1, 'page'),
+      parsePositiveInt(pageSize, 20, 'pageSize'),
+    );
   }
 
   /** 获取订阅者列表 */
   @Get('subscribers')
   getSubscribers(@Query('page') page?: string, @Query('pageSize') pageSize?: string) {
-    return this.subscriptionService.getSubscribers(Number(page) || 1, Number(pageSize) || 20);
+    return this.subscriptionService.getSubscribers(
+      parsePositiveInt(page, 1, 'page'),
+      parsePositiveInt(pageSize, 20, 'pageSize'),
+    );
   }
 
   /** 删除订阅者 */
