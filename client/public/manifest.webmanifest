@@ -1,0 +1,26 @@
+{
+  "name": "纸上码头",
+  "short_name": "纸上码头",
+  "description": "一座安静但能持续生长的个人博客，支持安装到桌面并离线访问已浏览内容。",
+  "lang": "zh-CN",
+  "dir": "ltr",
+  "start_url": ".",
+  "scope": ".",
+  "display": "standalone",
+  "background_color": "#eef2f6",
+  "theme_color": "#1f4d6d",
+  "icons": [
+    {
+      "src": "pwa-192.svg",
+      "sizes": "192x192",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "pwa-512.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

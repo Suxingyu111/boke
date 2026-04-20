@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192" role="img" aria-labelledby="title desc">
+  <title id="title">纸上码头 PWA 图标</title>
+  <desc id="desc">用于博客系统离线安装的应用图标。</desc>
+  <defs>
+    <linearGradient id="bg" x1="24" y1="20" x2="168" y2="172" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#1f4d6d" />
+      <stop offset="1" stop-color="#3f7aa0" />
+    </linearGradient>
+  </defs>
+  <rect width="192" height="192" rx="42" fill="url(#bg)" />
+  <rect x="42" y="38" width="108" height="116" rx="18" fill="#fff8ec" />
+  <rect x="56" y="56" width="80" height="10" rx="5" fill="#1f4d6d" opacity="0.92" />
+  <rect x="56" y="78" width="60" height="8" rx="4" fill="#6f8aa0" opacity="0.9" />
+  <rect x="56" y="96" width="80" height="8" rx="4" fill="#6f8aa0" opacity="0.9" />
+  <rect x="56" y="114" width="50" height="8" rx="4" fill="#6f8aa0" opacity="0.9" />
+  <path d="M66 152c11-16 22-24 34-24s23 8 34 24H66Z" fill="#e5b86f" />
+  <circle cx="138" cy="54" r="14" fill="#f0c15f" />
+</svg>

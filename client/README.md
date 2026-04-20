@@ -50,6 +50,13 @@ npm run typecheck  # 仅运行类型检查
 npm run format     # 格式化 src 下的代码
 ```
 
+## PWA 与离线支持
+
+- 生产构建后会自动注册 `public/sw.js`，缓存应用壳、站点图标与已访问过的静态资源。
+- 导航请求采用 `network-first`，断网时会回退到已缓存的 `index.html`，已浏览页面可继续离线打开。
+- `GET /api` 不会被 Service Worker 缓存，避免离线数据误导后台与联调结果。
+- 本地验证可使用 `npm run build && npm run preview`，再通过浏览器开发者工具切换离线模式检查。
+
 ## 后续接入点
 
 - 将 `src/services/blog.ts` 中的演示数据替换为真实 API 请求。
