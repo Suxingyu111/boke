@@ -2,7 +2,7 @@ import { ApiProperty } from '@nestjs/swagger';
 import { IsString, Length } from 'class-validator';
 
 export class LoginDto {
-  @ApiProperty({ description: '用户名或邮箱', example: 'admin_manager' })
+  @ApiProperty({ description: '用户名、邮箱或手机号', example: 'admin_manager' })
   @IsString()
   @Length(3, 255)
   account: string;

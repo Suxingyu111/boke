@@ -56,6 +56,28 @@ async function ensureUsersCompatibility(connection: Connection): Promise<void> {
   const existingColumns = await getExistingColumns(connection, 'users');
   const alterFragments: string[] = [];
 
+  if (!existingColumns.has('phone')) {
+    alterFragments.push('ADD COLUMN `phone` VARCHAR(20) DEFAULT NULL AFTER `email`');
+  }
+
+  if (!existingColumns.has('registration_type')) {
+    alterFragments.push(
+      "ADD COLUMN `registration_type` ENUM('email', 'phone', 'oauth') NOT NULL DEFAULT 'email' AFTER `nickname`",
+    );
+  }
+
+  if (!existingColumns.has('email_verified_at')) {
+    alterFragments.push(
+      'ADD COLUMN `email_verified_at` DATETIME DEFAULT NULL AFTER `registration_type`',
+    );
+  }
+
+  if (!existingColumns.has('phone_verified_at')) {
+    alterFragments.push(
+      'ADD COLUMN `phone_verified_at` DATETIME DEFAULT NULL AFTER `email_verified_at`',
+    );
+  }
+
   if (!existingColumns.has('oauth_provider')) {
     alterFragments.push(
       "ADD COLUMN `oauth_provider` ENUM('github', 'google') DEFAULT NULL AFTER `bio`",
@@ -68,11 +90,35 @@ async function ensureUsersCompatibility(connection: Connection): Promise<void> {
     );
   }
 
+  if (!existingColumns.has('password_changed_at')) {
+    alterFragments.push(
+      'ADD COLUMN `password_changed_at` DATETIME DEFAULT NULL AFTER `last_login_at`',
+    );
+  }
+
   if (alterFragments.length > 0) {
     await connection.query(`ALTER TABLE \`users\` ${alterFragments.join(', ')}`);
   }
 
   const existingIndexes = await getExistingIndexes(connection, 'users');
+  if (!existingIndexes.has('idx_users_phone')) {
+    await connection.query('ALTER TABLE `users` ADD UNIQUE INDEX `idx_users_phone` (`phone`)');
+  }
+
+  if (!existingIndexes.has('idx_users_nickname')) {
+    await connection.query('ALTER TABLE `users` ADD UNIQUE INDEX `idx_users_nickname` (`nickname`)');
+  }
+
+  if (!existingIndexes.has('idx_users_role_status')) {
+    await connection.query('ALTER TABLE `users` ADD INDEX `idx_users_role_status` (`role`, `status`)');
+  }
+
+  if (!existingIndexes.has('idx_users_registration_type_status')) {
+    await connection.query(
+      'ALTER TABLE `users` ADD INDEX `idx_users_registration_type_status` (`registration_type`, `status`)',
+    );
+  }
+
   if (!existingIndexes.has('idx_users_oauth_provider')) {
     await connection.query(
       'ALTER TABLE `users` ADD UNIQUE INDEX `idx_users_oauth_provider` (`oauth_provider`, `oauth_provider_id`)',

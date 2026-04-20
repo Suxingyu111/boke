@@ -85,6 +85,13 @@ export const configuration = (): {
     pass: string;
     from: string;
   };
+  registration: {
+    codeTtlSeconds: number;
+    codeCooldownSeconds: number;
+    maxVerifyAttempts: number;
+    verificationTokenTtl: string;
+    exposeDebugCode: boolean;
+  };
 } => ({
   nodeEnv: process.env.NODE_ENV || 'development',
   port: parseNumber(process.env.PORT, 3000),
@@ -148,5 +155,15 @@ export const configuration = (): {
     user: process.env.SMTP_USER || '',
     pass: process.env.SMTP_PASS || '',
     from: process.env.SMTP_FROM || process.env.SMTP_USER || 'noreply@blog.local',
+  },
+  registration: {
+    codeTtlSeconds: parseNumber(process.env.REGISTRATION_CODE_TTL_SECONDS, 600),
+    codeCooldownSeconds: parseNumber(process.env.REGISTRATION_CODE_COOLDOWN_SECONDS, 60),
+    maxVerifyAttempts: parseNumber(process.env.REGISTRATION_MAX_VERIFY_ATTEMPTS, 5),
+    verificationTokenTtl: process.env.REGISTRATION_VERIFICATION_TOKEN_TTL || '30m',
+    exposeDebugCode:
+      process.env.REGISTRATION_EXPOSE_DEBUG_CODE !== undefined
+        ? process.env.REGISTRATION_EXPOSE_DEBUG_CODE === 'true'
+        : (process.env.NODE_ENV || 'development') !== 'production',
   },
 });

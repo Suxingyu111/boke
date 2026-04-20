@@ -76,5 +76,10 @@ export const validationSchema = Joi.object({
   SMTP_USER: Joi.string().allow('').optional().default(''),
   SMTP_PASS: Joi.string().allow('').optional().default(''),
   SMTP_FROM: Joi.string().allow('').optional().default(''),
+  REGISTRATION_CODE_TTL_SECONDS: Joi.number().integer().min(60).default(600),
+  REGISTRATION_CODE_COOLDOWN_SECONDS: Joi.number().integer().min(10).default(60),
+  REGISTRATION_MAX_VERIFY_ATTEMPTS: Joi.number().integer().min(1).max(10).default(5),
+  REGISTRATION_VERIFICATION_TOKEN_TTL: Joi.string().default('30m'),
+  REGISTRATION_EXPOSE_DEBUG_CODE: Joi.boolean().optional(),
   SWAGGER_ENABLED: Joi.boolean().optional(),
 });

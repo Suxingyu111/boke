@@ -3,9 +3,13 @@ SET NAMES utf8mb4;
 CREATE TABLE IF NOT EXISTS users (
   id CHAR(36) NOT NULL,
   username VARCHAR(50) NOT NULL,
-  email VARCHAR(255) NOT NULL,
+  email VARCHAR(255) DEFAULT NULL,
+  phone VARCHAR(20) DEFAULT NULL,
   password_hash VARCHAR(255) NOT NULL,
   nickname VARCHAR(100) DEFAULT NULL,
+  registration_type ENUM('email', 'phone', 'oauth') NOT NULL DEFAULT 'email',
+  email_verified_at DATETIME DEFAULT NULL,
+  phone_verified_at DATETIME DEFAULT NULL,
   avatar_url VARCHAR(500) DEFAULT NULL,
   bio TEXT,
   oauth_provider ENUM('github', 'google') DEFAULT NULL,
@@ -13,13 +17,39 @@ CREATE TABLE IF NOT EXISTS users (
   role ENUM('super_admin', 'admin', 'author', 'user') NOT NULL DEFAULT 'user',
   status ENUM('active', 'disabled') NOT NULL DEFAULT 'active',
   last_login_at DATETIME DEFAULT NULL,
+  password_changed_at DATETIME DEFAULT NULL,
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (id),
   UNIQUE KEY idx_users_username (username),
   UNIQUE KEY idx_users_email (email),
+  UNIQUE KEY idx_users_phone (phone),
+  UNIQUE KEY idx_users_nickname (nickname),
   UNIQUE KEY idx_users_oauth_provider (oauth_provider, oauth_provider_id),
-  KEY idx_users_role_status (role, status)
+  KEY idx_users_role_status (role, status),
+  KEY idx_users_registration_type_status (registration_type, status)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS verification_codes (
+  id CHAR(36) NOT NULL,
+  target_type ENUM('email', 'phone') NOT NULL,
+  target_value VARCHAR(255) NOT NULL,
+  purpose ENUM('registration') NOT NULL DEFAULT 'registration',
+  code_hash VARCHAR(255) NOT NULL,
+  send_count INT NOT NULL DEFAULT 1,
+  verify_attempts INT NOT NULL DEFAULT 0,
+  max_attempts INT NOT NULL DEFAULT 5,
+  last_sent_at DATETIME NOT NULL,
+  expires_at DATETIME NOT NULL,
+  verified_at DATETIME DEFAULT NULL,
+  consumed_at DATETIME DEFAULT NULL,
+  request_ip VARCHAR(45) DEFAULT NULL,
+  user_agent VARCHAR(500) DEFAULT NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  KEY idx_verification_codes_target (target_type, target_value, purpose),
+  KEY idx_verification_codes_expires_at (expires_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS categories (

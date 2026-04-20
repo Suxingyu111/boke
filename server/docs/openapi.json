@@ -46,6 +46,102 @@
         "summary": "GET /api/feed/atom"
       }
     },
+    "/api/auth/register/check-availability": {
+      "post": {
+        "operationId": "AuthController_checkAvailability",
+        "summary": "检查注册字段可用性",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegisterAvailabilityDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "检查成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RegistrationAvailabilityResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/api/auth/register/send-code": {
+      "post": {
+        "operationId": "AuthController_sendRegistrationCode",
+        "summary": "发送注册验证码",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SendRegistrationCodeDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "验证码已发送",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RegistrationCodeSentDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/api/auth/register/verify-code": {
+      "post": {
+        "operationId": "AuthController_verifyRegistrationCode",
+        "summary": "校验注册验证码",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VerifyRegistrationCodeDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "验证码校验成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RegistrationVerificationResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "auth"
+        ]
+      }
+    },
     "/api/auth/register": {
       "post": {
         "operationId": "AuthController_register",
@@ -3837,18 +3933,227 @@
       }
     },
     "schemas": {
+      "RegisterAvailabilityDto": {
+        "type": "object",
+        "properties": {
+          "registerType": {
+            "type": "string",
+            "description": "注册方式",
+            "enum": [
+              "email",
+              "phone"
+            ],
+            "example": "email"
+          },
+          "contact": {
+            "type": "string",
+            "description": "待检查的联系地址（邮箱或手机号）",
+            "example": "coder@example.com"
+          },
+          "username": {
+            "type": "string",
+            "description": "待检查的用户名",
+            "example": "coder_su"
+          },
+          "nickname": {
+            "type": "string",
+            "description": "待检查的昵称",
+            "example": "苏同学"
+          }
+        }
+      },
+      "RegistrationAvailabilityFieldDto": {
+        "type": "object",
+        "properties": {
+          "available": {
+            "type": "boolean",
+            "example": true
+          },
+          "message": {
+            "type": "object",
+            "example": "用户名可用",
+            "nullable": true
+          },
+          "normalizedValue": {
+            "type": "object",
+            "example": "coder_su",
+            "nullable": true
+          }
+        },
+        "required": [
+          "available"
+        ]
+      },
+      "RegistrationAvailabilityResponseDto": {
+        "type": "object",
+        "properties": {
+          "contact": {
+            "nullable": true,
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/RegistrationAvailabilityFieldDto"
+              }
+            ]
+          },
+          "username": {
+            "nullable": true,
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/RegistrationAvailabilityFieldDto"
+              }
+            ]
+          },
+          "nickname": {
+            "nullable": true,
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/RegistrationAvailabilityFieldDto"
+              }
+            ]
+          }
+        }
+      },
+      "SendRegistrationCodeDto": {
+        "type": "object",
+        "properties": {
+          "registerType": {
+            "type": "string",
+            "description": "注册方式",
+            "enum": [
+              "email",
+              "phone"
+            ],
+            "example": "email"
+          },
+          "contact": {
+            "type": "string",
+            "description": "邮箱地址或手机号",
+            "example": "coder@example.com"
+          }
+        },
+        "required": [
+          "registerType",
+          "contact"
+        ]
+      },
+      "RegistrationCodeSentDto": {
+        "type": "object",
+        "properties": {
+          "registerType": {
+            "type": "string",
+            "enum": [
+              "email",
+              "phone"
+            ],
+            "example": "email"
+          },
+          "maskedContact": {
+            "type": "string",
+            "example": "co***@example.com"
+          },
+          "expiresInSeconds": {
+            "type": "number",
+            "example": 600
+          },
+          "cooldownSeconds": {
+            "type": "number",
+            "example": 60
+          },
+          "debugCode": {
+            "type": "object",
+            "example": "238901",
+            "nullable": true
+          }
+        },
+        "required": [
+          "registerType",
+          "maskedContact",
+          "expiresInSeconds",
+          "cooldownSeconds"
+        ]
+      },
+      "VerifyRegistrationCodeDto": {
+        "type": "object",
+        "properties": {
+          "registerType": {
+            "type": "string",
+            "description": "注册方式",
+            "enum": [
+              "email",
+              "phone"
+            ],
+            "example": "email"
+          },
+          "contact": {
+            "type": "string",
+            "description": "邮箱地址或手机号",
+            "example": "coder@example.com"
+          },
+          "code": {
+            "type": "string",
+            "description": "6 位验证码",
+            "example": "238901"
+          }
+        },
+        "required": [
+          "registerType",
+          "contact",
+          "code"
+        ]
+      },
+      "RegistrationVerificationResponseDto": {
+        "type": "object",
+        "properties": {
+          "registerType": {
+            "type": "string",
+            "enum": [
+              "email",
+              "phone"
+            ],
+            "example": "email"
+          },
+          "maskedContact": {
+            "type": "string",
+            "example": "co***@example.com"
+          },
+          "verificationToken": {
+            "type": "string",
+            "description": "验证码校验成功后用于最终注册的令牌",
+            "example": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.registration"
+          },
+          "expiresIn": {
+            "type": "string",
+            "example": "30m"
+          }
+        },
+        "required": [
+          "registerType",
+          "maskedContact",
+          "verificationToken",
+          "expiresIn"
+        ]
+      },
       "RegisterDto": {
         "type": "object",
         "properties": {
+          "registerType": {
+            "type": "string",
+            "description": "注册方式",
+            "enum": [
+              "email",
+              "phone"
+            ],
+            "example": "email"
+          },
+          "verificationToken": {
+            "type": "string",
+            "description": "验证码校验成功后返回的注册令牌",
+            "example": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.registration"
+          },
           "username": {
             "type": "string",
             "description": "用户名",
             "example": "coder_su"
-          },
-          "email": {
-            "type": "string",
-            "description": "邮箱地址",
-            "example": "coder@example.com"
           },
           "password": {
             "type": "string",
@@ -3862,8 +4167,9 @@
           }
         },
         "required": [
+          "registerType",
+          "verificationToken",
           "username",
-          "email",
           "password"
         ]
       },
@@ -3879,8 +4185,14 @@
             "example": "author"
           },
           "email": {
-            "type": "string",
-            "example": "author@example.com"
+            "type": "object",
+            "example": "author@example.com",
+            "nullable": true
+          },
+          "phone": {
+            "type": "object",
+            "example": "+8613800138000",
+            "nullable": true
           },
           "nickname": {
             "type": "object",
@@ -3896,6 +4208,23 @@
             "type": "object",
             "example": "持续写作与构建产品。",
             "nullable": true
+          },
+          "registrationType": {
+            "type": "string",
+            "example": "email",
+            "enum": [
+              "email",
+              "phone",
+              "oauth"
+            ]
+          },
+          "emailVerified": {
+            "type": "boolean",
+            "example": true
+          },
+          "phoneVerified": {
+            "type": "boolean",
+            "example": false
           },
           "isActive": {
             "type": "boolean",
@@ -3925,9 +4254,13 @@
           "id",
           "username",
           "email",
+          "phone",
           "nickname",
           "avatar",
           "bio",
+          "registrationType",
+          "emailVerified",
+          "phoneVerified",
           "isActive",
           "role",
           "lastLoginAt",
@@ -3966,7 +4299,7 @@
         "properties": {
           "account": {
             "type": "string",
-            "description": "用户名或邮箱",
+            "description": "用户名、邮箱或手机号",
             "example": "admin_manager"
           },
           "password": {

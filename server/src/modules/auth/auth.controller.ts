@@ -7,7 +7,13 @@ import { User } from '@database/entities';
 import { AuthResponseDto } from './dto/auth-response.dto';
 import { AuthUserDto } from './dto/auth-user.dto';
 import { LoginDto } from './dto/login.dto';
+import { RegisterAvailabilityDto } from './dto/register-availability.dto';
 import { RegisterDto } from './dto/register.dto';
+import { RegistrationAvailabilityResponseDto } from './dto/registration-availability-response.dto';
+import { RegistrationCodeSentDto } from './dto/registration-code-sent.dto';
+import { RegistrationVerificationResponseDto } from './dto/registration-verification-response.dto';
+import { SendRegistrationCodeDto } from './dto/send-registration-code.dto';
+import { VerifyRegistrationCodeDto } from './dto/verify-registration-code.dto';
 import { AuthService } from './auth.service';
 import { CurrentUser } from './decorators/current-user.decorator';
 import { Roles } from './decorators/roles.decorator';
@@ -18,6 +24,40 @@ import { RolesGuard } from './guards/roles.guard';
 @Controller('auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
+
+  @Post('register/check-availability')
+  @HttpCode(HttpStatus.OK)
+  @Throttle({ default: { limit: 20, ttl: 60000 } })
+  @ApiOperation({ summary: '检查注册字段可用性' })
+  @ApiResponse({ status: 200, description: '检查成功', type: RegistrationAvailabilityResponseDto })
+  checkAvailability(@Body() dto: RegisterAvailabilityDto): Promise<RegistrationAvailabilityResponseDto> {
+    return this.authService.checkRegistrationAvailability(dto);
+  }
+
+  @Post('register/send-code')
+  @Throttle({ default: { limit: 6, ttl: 60000 } })
+  @ApiOperation({ summary: '发送注册验证码' })
+  @ApiResponse({ status: 201, description: '验证码已发送', type: RegistrationCodeSentDto })
+  sendRegistrationCode(
+    @Body() dto: SendRegistrationCodeDto,
+    @Req() req: Request,
+  ): Promise<RegistrationCodeSentDto> {
+    return this.authService.sendRegistrationCode(dto, {
+      ip: req.ip ?? null,
+      userAgent: req.headers['user-agent'] ?? null,
+    });
+  }
+
+  @Post('register/verify-code')
+  @HttpCode(HttpStatus.OK)
+  @Throttle({ default: { limit: 12, ttl: 60000 } })
+  @ApiOperation({ summary: '校验注册验证码' })
+  @ApiResponse({ status: 200, description: '验证码校验成功', type: RegistrationVerificationResponseDto })
+  verifyRegistrationCode(
+    @Body() dto: VerifyRegistrationCodeDto,
+  ): Promise<RegistrationVerificationResponseDto> {
+    return this.authService.verifyRegistrationCode(dto);
+  }
 
   @Post('register')
   @Throttle({ default: { limit: 3, ttl: 60000 } })

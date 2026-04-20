@@ -6,14 +6,22 @@ export class AuthUserDto {
   id: string;
   @ApiProperty({ example: 'author' })
   username: string;
-  @ApiProperty({ example: 'author@example.com' })
-  email: string;
+  @ApiProperty({ example: 'author@example.com', nullable: true })
+  email: string | null;
+  @ApiProperty({ example: '+8613800138000', nullable: true })
+  phone: string | null;
   @ApiProperty({ example: '博主', nullable: true })
   nickname: string | null;
   @ApiProperty({ example: 'https://example.com/avatar.png', nullable: true })
   avatar: string | null;
   @ApiProperty({ example: '持续写作与构建产品。', nullable: true })
   bio: string | null;
+  @ApiProperty({ example: 'email', enum: ['email', 'phone', 'oauth'] })
+  registrationType: User['registrationType'];
+  @ApiProperty({ example: true })
+  emailVerified: boolean;
+  @ApiProperty({ example: false })
+  phoneVerified: boolean;
   @ApiProperty({ example: true })
   isActive: boolean;
   @ApiProperty({ example: 'author' })
@@ -29,9 +37,13 @@ export class AuthUserDto {
     this.id = user.id;
     this.username = user.username;
     this.email = user.email;
+    this.phone = user.phone;
     this.nickname = user.nickname;
     this.avatar = user.avatar;
     this.bio = user.bio;
+    this.registrationType = user.registrationType;
+    this.emailVerified = Boolean(user.emailVerifiedAt);
+    this.phoneVerified = Boolean(user.phoneVerifiedAt);
     this.isActive = user.isActive;
     this.role = user.role;
     this.lastLoginAt = user.lastLoginAt;

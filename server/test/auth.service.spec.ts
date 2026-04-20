@@ -5,7 +5,8 @@ import { getRepositoryToken } from '@nestjs/typeorm';
 import { Test, TestingModule } from '@nestjs/testing';
 import * as bcrypt from 'bcrypt';
 import { Repository } from 'typeorm';
-import { User } from '../src/database/entities';
+import { User, VerificationCode } from '../src/database/entities';
+import { NotificationsService } from '../src/modules/notifications/notifications.service';
 import { AuthService } from '../src/modules/auth/auth.service';
 import { LoginDto } from '../src/modules/auth/dto/login.dto';
 import { RegisterDto } from '../src/modules/auth/dto/register.dto';
@@ -20,12 +21,15 @@ describe('AuthService', () => {
   let userRepository: jest.Mocked<Repository<User>> & {
     createQueryBuilder: jest.Mock;
   };
-  let jwtService: { signAsync: jest.Mock };
+  let verificationCodeRepository: jest.Mocked<Repository<VerificationCode>>;
+  let jwtService: { signAsync: jest.Mock; verifyAsync: jest.Mock };
   let configService: { get: jest.Mock };
+  let notificationsService: { sendNotification: jest.Mock };
 
   const registerDto: RegisterDto = {
+    registerType: 'email',
+    verificationToken: 'verified-token',
     username: 'new_user',
-    email: 'new-user@example.com',
     password: 'SecurePass123',
     nickname: '新用户',
   };
@@ -39,16 +43,40 @@ describe('AuthService', () => {
     id: 'user-id',
     username: 'new_user',
     email: 'new-user@example.com',
+    phone: null,
     password: 'hashed-password',
     nickname: '新用户',
+    registrationType: 'email',
+    emailVerifiedAt: new Date('2026-04-15T00:00:00.000Z'),
+    phoneVerifiedAt: null,
     avatar: null,
     bio: null,
     isActive: true,
     role: 'user',
     lastLoginAt: null,
+    passwordChangedAt: new Date('2026-04-15T00:00:00.000Z'),
     createdAt: new Date('2026-04-15T00:00:00.000Z'),
     updatedAt: new Date('2026-04-15T00:00:00.000Z'),
   };
+
+  const createVerifiedCode = (): VerificationCode => ({
+    id: 'verification-1',
+    targetType: 'email',
+    targetValue: 'new-user@example.com',
+    purpose: 'registration',
+    codeHash: 'hash',
+    sendCount: 1,
+    verifyAttempts: 0,
+    maxAttempts: 5,
+    lastSentAt: new Date(),
+    expiresAt: new Date(Date.now() + 10 * 60 * 1000),
+    verifiedAt: new Date(),
+    consumedAt: null,
+    requestIp: null,
+    userAgent: null,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  });
 
   beforeEach(async () => {
     userRepository = {
@@ -59,8 +87,22 @@ describe('AuthService', () => {
       createQueryBuilder: jest.fn(),
     } as unknown as typeof userRepository;
 
+    verificationCodeRepository = {
+      findOne: jest.fn(),
+      create: jest.fn(),
+      save: jest.fn(),
+    } as unknown as typeof verificationCodeRepository;
+    verificationCodeRepository.findOne.mockResolvedValue(createVerifiedCode());
+    verificationCodeRepository.save.mockImplementation(async value => value as VerificationCode);
+
     jwtService = {
       signAsync: jest.fn().mockResolvedValue('signed-token'),
+      verifyAsync: jest.fn().mockResolvedValue({
+        purpose: 'registration-verification',
+        verificationId: 'verification-1',
+        registerType: 'email',
+        contact: 'new-user@example.com',
+      }),
     };
 
     configService = {
@@ -68,9 +110,16 @@ describe('AuthService', () => {
         if (key === 'jwt.expiresIn') {
           return '7d';
         }
+        if (key === 'registration.verificationTokenTtl') {
+          return '30m';
+        }
 
         return defaultValue;
       }),
+    };
+
+    notificationsService = {
+      sendNotification: jest.fn(),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -81,12 +130,20 @@ describe('AuthService', () => {
           useValue: userRepository,
         },
         {
+          provide: getRepositoryToken(VerificationCode),
+          useValue: verificationCodeRepository,
+        },
+        {
           provide: JwtService,
           useValue: jwtService,
         },
         {
           provide: ConfigService,
           useValue: configService,
+        },
+        {
+          provide: NotificationsService,
+          useValue: notificationsService,
         },
       ],
     }).compile();
@@ -110,7 +167,7 @@ describe('AuthService', () => {
     expect(userRepository.create).toHaveBeenCalledWith(
       expect.objectContaining({
         username: registerDto.username,
-        email: registerDto.email,
+        email: 'new-user@example.com',
         nickname: registerDto.nickname,
         password: 'hashed-password',
         role: 'user',
@@ -130,9 +187,13 @@ describe('AuthService', () => {
         id: baseUser.id,
         username: baseUser.username,
         email: baseUser.email,
+        phone: baseUser.phone,
         nickname: baseUser.nickname,
         avatar: baseUser.avatar,
         bio: baseUser.bio,
+        registrationType: baseUser.registrationType,
+        emailVerified: true,
+        phoneVerified: false,
         isActive: baseUser.isActive,
         role: baseUser.role,
         lastLoginAt: baseUser.lastLoginAt,
@@ -176,8 +237,12 @@ describe('AuthService', () => {
     const result = await service.login(loginDto);
 
     expect(queryBuilder.where).toHaveBeenCalledWith(
-      'LOWER(user.email) = :email OR user.username = :account',
-      { email: loginDto.account.toLowerCase(), account: loginDto.account },
+      'LOWER(user.email) = :email OR user.phone = :phone OR user.username = :account',
+      {
+        email: loginDto.account.toLowerCase(),
+        phone: '__not_a_phone__',
+        account: loginDto.account,
+      },
     );
     expect(bcrypt.compare).toHaveBeenCalledWith(loginDto.password, baseUser.password);
     expect(userRepository.update).toHaveBeenCalledWith(
@@ -251,8 +316,12 @@ describe('AuthService', () => {
     const result = await service.login(usernameLoginDto);
 
     expect(queryBuilder.where).toHaveBeenCalledWith(
-      'LOWER(user.email) = :email OR user.username = :account',
-      { email: baseUser.username.toLowerCase(), account: baseUser.username },
+      'LOWER(user.email) = :email OR user.phone = :phone OR user.username = :account',
+      {
+        email: baseUser.username.toLowerCase(),
+        phone: '__not_a_phone__',
+        account: baseUser.username,
+      },
     );
     expect(result.accessToken).toBe('signed-token');
   });
@@ -370,9 +439,13 @@ describe('AuthService', () => {
           id: baseUser.id,
           username: baseUser.username,
           email: baseUser.email,
+          phone: baseUser.phone,
           nickname: baseUser.nickname,
           avatar: baseUser.avatar,
           bio: baseUser.bio,
+          registrationType: baseUser.registrationType,
+          emailVerified: true,
+          phoneVerified: false,
           isActive: baseUser.isActive,
           role: baseUser.role,
           lastLoginAt: baseUser.lastLoginAt,

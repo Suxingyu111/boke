@@ -17,6 +17,20 @@ const passwordError = ref("");
 
 const displayName = computed(() => userStore.profile?.nickname || authStore.displayName || "我");
 const avatarInitial = computed(() => displayName.value.slice(0, 1).toUpperCase());
+const primaryContact = computed(
+  () => userStore.profile?.phone || userStore.profile?.email || authStore.user?.phone || authStore.user?.email || "暂未绑定联系方式",
+);
+const contactVerificationLabel = computed(() => {
+  if (userStore.profile?.phone) {
+    return userStore.profile.phoneVerified ? "手机号已认证" : "手机号未认证";
+  }
+  if (userStore.profile?.email || authStore.user?.email) {
+    return userStore.profile?.emailVerified || authStore.user?.emailVerified
+      ? "邮箱已认证"
+      : "邮箱未认证";
+  }
+  return "未绑定联系方式";
+});
 
 const passwordStrength = computed(() => {
   const pw = passwordForm.newPassword;
@@ -55,7 +69,18 @@ async function saveProfile() {
   });
   if (saved) {
     if (userStore.profile && authStore.user) {
-      authStore.persistUser({ ...authStore.user, nickname: userStore.profile.nickname, avatar: userStore.profile.avatar });
+      authStore.persistUser({
+        ...authStore.user,
+        email: userStore.profile.email,
+        phone: userStore.profile.phone,
+        nickname: userStore.profile.nickname,
+        avatar: userStore.profile.avatar,
+        emailVerified: userStore.profile.emailVerified,
+        phoneVerified: userStore.profile.phoneVerified,
+      });
+    }
+    if (userStore.profile) {
+      syncProfileForm();
     }
     mode.value = "view";
   }
@@ -119,7 +144,8 @@ onMounted(async () => {
               </div>
               <div class="min-w-0">
                 <h2 class="truncate font-display text-4xl text-brand">{{ displayName }}</h2>
-                <p class="mt-1 text-sm text-ink/56">{{ userStore.profile?.email || authStore.user?.email }}</p>
+                <p class="mt-1 text-sm text-ink/56">{{ primaryContact }}</p>
+                <p class="mt-0.5 text-xs text-ink/40">{{ contactVerificationLabel }}</p>
                 <p class="mt-0.5 text-xs text-ink/40">@{{ userStore.profile?.username || authStore.user?.username }}</p>
               </div>
             </div>
@@ -180,6 +206,11 @@ onMounted(async () => {
               <label>
                 <span class="text-sm font-semibold text-ink/60">邮箱</span>
                 <input v-model="profileForm.email" class="focus-ring mt-2 w-full rounded-md border border-line px-3 py-2" type="email" maxlength="255" placeholder="your@email.com" />
+                <p class="mt-1 text-xs text-ink/40">手机号注册账号可在这里补充邮箱；修改后需重新认证。</p>
+              </label>
+              <label v-if="userStore.profile?.phone">
+                <span class="text-sm font-semibold text-ink/60">手机号</span>
+                <input :value="userStore.profile.phone" class="mt-2 w-full rounded-md border border-line bg-paper px-3 py-2 text-ink/60" type="text" readonly />
               </label>
               <!-- 简介 -->
               <label>

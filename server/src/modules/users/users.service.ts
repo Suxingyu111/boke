@@ -83,10 +83,20 @@ export class UsersService {
           throw new ConflictException('该邮箱已被其他账号使用');
         }
         user.email = newEmail;
+        user.emailVerifiedAt = null;
       }
     }
 
-    if (dto.nickname !== undefined) user.nickname = dto.nickname ?? null;
+    if (dto.nickname !== undefined) {
+      const nextNickname = dto.nickname ?? null;
+      if (nextNickname !== user.nickname && nextNickname) {
+        const conflict = await this.userRepository.findOne({ where: { nickname: nextNickname } });
+        if (conflict) {
+          throw new ConflictException('该昵称已被其他账号使用');
+        }
+      }
+      user.nickname = nextNickname;
+    }
     if (dto.avatar !== undefined) user.avatar = dto.avatar ?? null;
     if (dto.bio !== undefined) user.bio = dto.bio ?? null;
 
@@ -183,9 +193,13 @@ export class UsersService {
       id: user.id,
       username: user.username,
       email: user.email,
+      phone: user.phone,
       nickname: user.nickname,
       avatar: user.avatar,
       bio: user.bio,
+      registrationType: user.registrationType,
+      emailVerified: Boolean(user.emailVerifiedAt),
+      phoneVerified: Boolean(user.phoneVerifiedAt),
       role: user.role,
       createdAt: user.createdAt,
       favoriteCount,

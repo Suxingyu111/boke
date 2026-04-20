@@ -1,20 +1,45 @@
 <script setup lang="ts">
-import { computed, ref } from "vue";
+import { computed, onBeforeUnmount, reactive, ref, watch } from "vue";
 import { useRouter } from "vue-router";
-import { getApiErrorMessage } from "@/api/auth";
+import {
+  checkRegistrationAvailability,
+  getApiErrorMessage,
+  sendRegistrationCode,
+  verifyRegistrationCode,
+} from "@/api/auth";
 import { useTheme } from "@/composables/useTheme";
 import { useAuthStore } from "@/stores/auth";
+import type { RegisterType } from "@/types/blog";
+
+type FieldState = {
+  kind: "idle" | "checking" | "success" | "error";
+  message: string;
+};
 
 const router = useRouter();
 const authStore = useAuthStore();
 const { cycleTheme, themeIcon, themeLabel } = useTheme();
 
+const registerType = ref<RegisterType>("email");
+const contact = ref("");
+const verificationCode = ref("");
 const username = ref("");
-const email = ref("");
 const nickname = ref("");
 const password = ref("");
 const confirmPassword = ref("");
 const errorMessage = ref("");
+const noticeMessage = ref("");
+const verificationToken = ref("");
+const sendCodeCooldown = ref(0);
+const maskedContact = ref("");
+
+const fieldState = reactive<Record<"contact" | "username" | "nickname", FieldState>>({
+  contact: { kind: "idle", message: "" },
+  username: { kind: "idle", message: "" },
+  nickname: { kind: "idle", message: "" },
+});
+
+let cooldownTimer: number | null = null;
 
 const passwordHint = computed(() => {
   const hasLetter = /[A-Za-z]/.test(password.value);
@@ -28,33 +53,214 @@ const passwordHint = computed(() => {
   ];
 });
 
-async function handleRegister() {
-  errorMessage.value = "";
+const contactLabel = computed(() =>
+  registerType.value === "email" ? "邮箱" : "手机号",
+);
+const contactPlaceholder = computed(() =>
+  registerType.value === "email" ? "hello@example.com" : "13800138000",
+);
+const contactAutocomplete = computed(() =>
+  registerType.value === "email" ? "email" : "tel",
+);
+const contactHelp = computed(() =>
+  registerType.value === "email"
+    ? "验证码会发送到该邮箱。"
+    : "验证码会发送到该手机号。开发环境下会在页面提示验证码。",
+);
+const isContactVerified = computed(() => Boolean(verificationToken.value));
 
-  if (!/^[a-zA-Z0-9_]{3,50}$/.test(username.value.trim())) {
-    errorMessage.value = "用户名需为 3-50 位字母、数字或下划线";
-    return;
+function setFieldState(
+  field: "contact" | "username" | "nickname",
+  kind: FieldState["kind"],
+  message: string,
+) {
+  fieldState[field] = { kind, message };
+}
+
+function clearCooldown() {
+  if (cooldownTimer !== null) {
+    window.clearInterval(cooldownTimer);
+    cooldownTimer = null;
+  }
+}
+
+function startCooldown(seconds: number) {
+  clearCooldown();
+  sendCodeCooldown.value = seconds;
+  cooldownTimer = window.setInterval(() => {
+    sendCodeCooldown.value -= 1;
+    if (sendCodeCooldown.value <= 0) {
+      sendCodeCooldown.value = 0;
+      clearCooldown();
+    }
+  }, 1000);
+}
+
+function normalizeContact(value: string, type: RegisterType) {
+  const trimmed = value.trim();
+  if (!trimmed) {
+    throw new Error(type === "email" ? "请输入邮箱" : "请输入手机号");
   }
 
-  if (!email.value.includes("@")) {
-    errorMessage.value = "请输入有效邮箱";
-    return;
+  if (type === "email") {
+    const normalized = trimmed.toLowerCase();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalized)) {
+      throw new Error("请输入有效邮箱");
+    }
+    return normalized;
+  }
+
+  const digits = trimmed.replace(/[^\d]/g, "");
+  if (digits.length < 7 || digits.length > 15) {
+    throw new Error("请输入有效手机号");
+  }
+  return `+${digits}`;
+}
+
+function ensureLocalValidation() {
+  if (!/^[a-zA-Z0-9_]{3,50}$/.test(username.value.trim())) {
+    throw new Error("用户名需为 3-50 位字母、数字或下划线");
+  }
+
+  if (nickname.value.trim() && nickname.value.trim().length < 2) {
+    throw new Error("昵称至少需要 2 个字符");
   }
 
   if (!passwordHint.value.every((item) => item.active)) {
-    errorMessage.value = "密码需至少 8 位，并同时包含字母和数字";
-    return;
+    throw new Error("密码需至少 8 位，并同时包含字母和数字");
   }
 
   if (password.value !== confirmPassword.value) {
-    errorMessage.value = "两次输入的密码不一致";
+    throw new Error("两次输入的密码不一致");
+  }
+
+  if (!verificationToken.value) {
+    throw new Error("请先完成邮箱或手机号验证码认证");
+  }
+}
+
+async function checkAvailability(field: "username" | "nickname") {
+  const value = field === "username" ? username.value.trim() : nickname.value.trim();
+  if (!value) {
+    setFieldState(field, "idle", "");
+    return true;
+  }
+
+  setFieldState(field, "checking", "检查中...");
+  try {
+    const response = await checkRegistrationAvailability({ [field]: value });
+    const result = response[field];
+    if (!result) {
+      setFieldState(field, "idle", "");
+      return true;
+    }
+    setFieldState(field, result.available ? "success" : "error", result.message ?? "");
+    return result.available;
+  } catch (error) {
+    setFieldState(field, "error", getApiErrorMessage(error, "检查失败，请稍后重试"));
+    return false;
+  }
+}
+
+async function handleSendCode() {
+  errorMessage.value = "";
+  noticeMessage.value = "";
+  setFieldState("contact", "idle", "");
+
+  let normalizedContact = "";
+  try {
+    normalizedContact = normalizeContact(contact.value, registerType.value);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "联系方式格式不正确";
+    errorMessage.value = message;
+    setFieldState("contact", "error", message);
+    return;
+  }
+
+  try {
+    const response = await sendRegistrationCode({
+      registerType: registerType.value,
+      contact: normalizedContact,
+    });
+    maskedContact.value = response.maskedContact;
+    verificationToken.value = "";
+    verificationCode.value = "";
+    setFieldState("contact", "success", `验证码已发送至 ${response.maskedContact}`);
+    if (response.debugCode) {
+      noticeMessage.value = `开发验证码：${response.debugCode}`;
+    } else {
+      noticeMessage.value = `验证码已发送至 ${response.maskedContact}`;
+    }
+    startCooldown(response.cooldownSeconds);
+  } catch (error) {
+    const message = getApiErrorMessage(error, "验证码发送失败，请稍后重试");
+    errorMessage.value = message;
+    setFieldState("contact", "error", message);
+  }
+}
+
+async function handleVerifyCode() {
+  errorMessage.value = "";
+  noticeMessage.value = "";
+
+  let normalizedContact = "";
+  try {
+    normalizedContact = normalizeContact(contact.value, registerType.value);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "联系方式格式不正确";
+    errorMessage.value = message;
+    setFieldState("contact", "error", message);
+    return;
+  }
+
+  if (!/^\d{6}$/.test(verificationCode.value.trim())) {
+    errorMessage.value = "请输入 6 位数字验证码";
+    return;
+  }
+
+  try {
+    const response = await verifyRegistrationCode({
+      registerType: registerType.value,
+      contact: normalizedContact,
+      code: verificationCode.value.trim(),
+    });
+    verificationToken.value = response.verificationToken;
+    maskedContact.value = response.maskedContact;
+    setFieldState("contact", "success", `${response.maskedContact} 已认证，可继续注册`);
+    noticeMessage.value = `${response.maskedContact} 已完成认证`;
+  } catch (error) {
+    const message = getApiErrorMessage(error, "验证码校验失败，请稍后重试");
+    errorMessage.value = message;
+    setFieldState("contact", "error", message);
+  }
+}
+
+async function handleRegister() {
+  errorMessage.value = "";
+  noticeMessage.value = "";
+
+  try {
+    ensureLocalValidation();
+  } catch (error) {
+    errorMessage.value = error instanceof Error ? error.message : "注册信息填写有误";
+    return;
+  }
+
+  const [usernameAvailable, nicknameAvailable] = await Promise.all([
+    checkAvailability("username"),
+    nickname.value.trim() ? checkAvailability("nickname") : Promise.resolve(true),
+  ]);
+
+  if (!usernameAvailable || !nicknameAvailable) {
+    errorMessage.value = "请先修正已存在的用户名或昵称";
     return;
   }
 
   try {
     const response = await authStore.register({
+      registerType: registerType.value,
+      verificationToken: verificationToken.value,
       username: username.value.trim(),
-      email: email.value.trim(),
       password: password.value,
       nickname: nickname.value.trim() || undefined,
     });
@@ -67,6 +273,26 @@ async function handleRegister() {
   } catch (error) {
     errorMessage.value = getApiErrorMessage(error, "注册失败，请稍后再试");
   }
+}
+
+watch([registerType, contact], () => {
+  verificationToken.value = "";
+  verificationCode.value = "";
+  maskedContact.value = "";
+  errorMessage.value = "";
+  noticeMessage.value = "";
+  setFieldState("contact", "idle", "");
+});
+
+onBeforeUnmount(() => {
+  clearCooldown();
+});
+
+function fieldClass(field: FieldState["kind"]) {
+  if (field === "success") return "border-moss/30 bg-moss/10 text-moss";
+  if (field === "error") return "border-coral/30 bg-coral/10 text-coral";
+  if (field === "checking") return "border-brand/20 bg-brand/10 text-brand";
+  return "border-line text-ink/45";
 }
 </script>
 
@@ -99,11 +325,30 @@ async function handleRegister() {
 
         <p class="eyebrow mt-8">Register</p>
         <h1 class="mt-2 font-display text-5xl leading-none text-brand">
-          开一个新账号
+          双通道注册
         </h1>
         <p class="mt-4 text-sm leading-6 text-ink/60">
-          注册成功后会自动登录。默认角色为普通用户，管理员权限由后端分配。
+          先选择邮箱或手机号完成验证码认证，再创建账号。用户名、昵称和联系方式都会校验唯一性。
         </p>
+
+        <div class="mt-6 grid grid-cols-2 gap-2 rounded-xl border border-line bg-paper p-1">
+          <button
+            class="focus-ring rounded-lg px-4 py-3 text-sm font-semibold transition"
+            :class="registerType === 'email' ? 'bg-brand text-white shadow-soft' : 'text-ink/60 hover:text-ink'"
+            type="button"
+            @click="registerType = 'email'"
+          >
+            邮箱注册
+          </button>
+          <button
+            class="focus-ring rounded-lg px-4 py-3 text-sm font-semibold transition"
+            :class="registerType === 'phone' ? 'bg-brand text-white shadow-soft' : 'text-ink/60 hover:text-ink'"
+            type="button"
+            @click="registerType = 'phone'"
+          >
+            手机号注册
+          </button>
+        </div>
 
         <p
           v-if="errorMessage"
@@ -111,8 +356,69 @@ async function handleRegister() {
         >
           {{ errorMessage }}
         </p>
+        <p
+          v-if="noticeMessage"
+          class="mt-4 rounded-md border border-moss/25 bg-white px-3 py-2 text-sm text-moss"
+        >
+          {{ noticeMessage }}
+        </p>
 
         <div class="mt-6 grid gap-4">
+          <label class="block">
+            <span class="text-sm font-semibold text-ink/60">{{ contactLabel }}</span>
+            <div class="mt-2 flex gap-2">
+              <input
+                v-model="contact"
+                :autocomplete="contactAutocomplete"
+                class="focus-ring min-w-0 flex-1 rounded-md border border-line px-3 py-3"
+                :placeholder="contactPlaceholder"
+                :type="registerType === 'email' ? 'email' : 'tel'"
+              />
+              <button
+                class="focus-ring rounded-md border border-line px-3 py-3 text-sm font-semibold text-brand disabled:cursor-not-allowed disabled:opacity-55"
+                :disabled="sendCodeCooldown > 0 || authStore.loading"
+                type="button"
+                @click="handleSendCode"
+              >
+                {{ sendCodeCooldown > 0 ? `${sendCodeCooldown}s` : "发送验证码" }}
+              </button>
+            </div>
+            <p class="mt-1 text-xs text-ink/40">{{ contactHelp }}</p>
+          </label>
+
+          <p
+            v-if="fieldState.contact.message"
+            class="rounded-md border px-3 py-2 text-sm"
+            :class="fieldClass(fieldState.contact.kind)"
+          >
+            {{ fieldState.contact.message }}
+          </p>
+
+          <label class="block">
+            <span class="text-sm font-semibold text-ink/60">验证码</span>
+            <div class="mt-2 flex gap-2">
+              <input
+                v-model="verificationCode"
+                autocomplete="one-time-code"
+                class="focus-ring min-w-0 flex-1 rounded-md border border-line px-3 py-3 tracking-[0.35em]"
+                maxlength="6"
+                placeholder="6 位数字"
+                type="text"
+              />
+              <button
+                class="focus-ring rounded-md bg-brand px-4 py-3 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-55"
+                :disabled="authStore.loading"
+                type="button"
+                @click="handleVerifyCode"
+              >
+                {{ isContactVerified ? "重新校验" : "校验验证码" }}
+              </button>
+            </div>
+            <p class="mt-1 text-xs text-ink/40">
+              {{ isContactVerified ? `已认证：${maskedContact}` : "需先完成认证才能提交注册" }}
+            </p>
+          </label>
+
           <label class="block">
             <span class="text-sm font-semibold text-ink/60">用户名</span>
             <input
@@ -121,19 +427,16 @@ async function handleRegister() {
               class="focus-ring mt-2 w-full rounded-md border border-line px-3 py-3"
               placeholder="letters_2026"
               type="text"
+              @blur="checkAvailability('username')"
             />
           </label>
-
-          <label class="block">
-            <span class="text-sm font-semibold text-ink/60">邮箱</span>
-            <input
-              v-model="email"
-              autocomplete="email"
-              class="focus-ring mt-2 w-full rounded-md border border-line px-3 py-3"
-              placeholder="hello@example.com"
-              type="email"
-            />
-          </label>
+          <p
+            v-if="fieldState.username.message"
+            class="rounded-md border px-3 py-2 text-sm"
+            :class="fieldClass(fieldState.username.kind)"
+          >
+            {{ fieldState.username.message }}
+          </p>
 
           <label class="block">
             <span class="text-sm font-semibold text-ink/60">昵称</span>
@@ -141,10 +444,18 @@ async function handleRegister() {
               v-model="nickname"
               autocomplete="nickname"
               class="focus-ring mt-2 w-full rounded-md border border-line px-3 py-3"
-              placeholder="可选"
+              placeholder="可选，但若填写必须唯一"
               type="text"
+              @blur="checkAvailability('nickname')"
             />
           </label>
+          <p
+            v-if="fieldState.nickname.message"
+            class="rounded-md border px-3 py-2 text-sm"
+            :class="fieldClass(fieldState.nickname.kind)"
+          >
+            {{ fieldState.nickname.message }}
+          </p>
 
           <label class="block">
             <span class="text-sm font-semibold text-ink/60">密码</span>
@@ -230,26 +541,30 @@ async function handleRegister() {
           <p
             class="text-sm font-semibold uppercase tracking-[0.15em] text-citron"
           >
-            new author
+            safe onboarding
           </p>
           <h2 class="mt-5 font-display text-7xl leading-[1.04]">
-            写作账户，从第一枚铅字开始。
+            先认证，再开通。
           </h2>
           <p class="ml-auto mt-6 max-w-xl text-lg text-white/82">
-            账号创建后可以参与登录态交互，后续接入用户中心、评论、收藏和多作者权限。
+            注册流程同时校验联系方式、用户名和昵称，避免重复账号，也把验证码和冷却机制一起补齐。
           </p>
         </div>
 
         <div
-          class="ml-auto grid max-w-xl grid-cols-2 overflow-hidden rounded-[14px] border border-white/22 text-sm backdrop-blur"
+          class="ml-auto grid max-w-xl grid-cols-3 overflow-hidden rounded-[14px] border border-white/22 text-sm backdrop-blur"
         >
           <div class="bg-white/10 p-4">
-            <p class="text-white/55">Username</p>
-            <p class="mt-1 text-citron">字母 / 数字 / 下划线</p>
+            <p class="text-white/55">Channel</p>
+            <p class="mt-1 text-citron">邮箱 / 手机号</p>
           </div>
           <div class="border-l border-white/22 bg-white/10 p-4">
-            <p class="text-white/55">Password</p>
-            <p class="mt-1 text-citron">字母 + 数字</p>
+            <p class="text-white/55">Verify</p>
+            <p class="mt-1 text-citron">6 位验证码</p>
+          </div>
+          <div class="border-l border-white/22 bg-white/10 p-4">
+            <p class="text-white/55">Safety</p>
+            <p class="mt-1 text-citron">唯一性 + 冷却</p>
           </div>
         </div>
       </div>

@@ -5,7 +5,13 @@ import type {
   OAuthProviders,
   AuthUser,
   LoginPayload,
+  RegistrationAvailability,
+  RegistrationAvailabilityPayload,
+  RegistrationCodeSentResponse,
   RegisterPayload,
+  RegistrationVerificationResponse,
+  SendRegistrationCodePayload,
+  VerifyRegistrationCodePayload,
 } from "@/types/blog";
 
 export async function login(payload: LoginPayload) {
@@ -21,6 +27,34 @@ export async function register(payload: RegisterPayload) {
     "/auth/register",
     payload,
   );
+  return response.data;
+}
+
+export async function checkRegistrationAvailability(
+  payload: RegistrationAvailabilityPayload,
+) {
+  const response = await post<
+    RegistrationAvailability,
+    RegistrationAvailabilityPayload
+  >("/auth/register/check-availability", payload);
+  return response.data;
+}
+
+export async function sendRegistrationCode(payload: SendRegistrationCodePayload) {
+  const response = await post<
+    RegistrationCodeSentResponse,
+    SendRegistrationCodePayload
+  >("/auth/register/send-code", payload);
+  return response.data;
+}
+
+export async function verifyRegistrationCode(
+  payload: VerifyRegistrationCodePayload,
+) {
+  const response = await post<
+    RegistrationVerificationResponse,
+    VerifyRegistrationCodePayload
+  >("/auth/register/verify-code", payload);
   return response.data;
 }
 

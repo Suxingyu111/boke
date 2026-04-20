@@ -56,7 +56,7 @@ function syncIdentityFields() {
   }
 
   form.authorName = authStore.displayName;
-  form.authorEmail = authStore.user.email;
+  form.authorEmail = authStore.user.email ?? "";
 }
 
 function formatDate(value: string) {

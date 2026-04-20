@@ -6,8 +6,9 @@ import { RegisterDto } from '../src/modules/auth/dto/register.dto';
 
 describe('AuthController', () => {
   const registerDto: RegisterDto = {
+    registerType: 'email',
+    verificationToken: 'verified-token',
     username: 'new_user',
-    email: 'new-user@example.com',
     password: 'SecurePass123',
     nickname: '新用户',
   };
@@ -25,9 +26,13 @@ describe('AuthController', () => {
       id: 'user-id',
       username: 'new_user',
       email: 'new-user@example.com',
+      phone: null,
       nickname: '新用户',
       avatar: null,
       bio: null,
+      registrationType: 'email',
+      emailVerified: true,
+      phoneVerified: false,
       isActive: true,
       role: 'user',
       lastLoginAt: null,
@@ -35,8 +40,13 @@ describe('AuthController', () => {
       updatedAt: new Date('2026-04-15T00:00:00.000Z'),
     },
   };
-
-  const currentUser = authResult.user as User;
+  const currentUser = {
+    ...authResult.user,
+    password: 'hashed-password',
+    emailVerifiedAt: new Date('2026-04-15T00:00:00.000Z'),
+    phoneVerifiedAt: null,
+    passwordChangedAt: new Date('2026-04-15T00:00:00.000Z'),
+  } as User;
 
   it('应调用 service.register 完成注册', async () => {
     const service = {

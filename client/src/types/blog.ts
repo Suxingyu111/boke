@@ -129,10 +129,14 @@ export interface SiteSettings {
 export interface AuthUser {
   id: string;
   username: string;
-  email: string;
+  email: string | null;
+  phone: string | null;
   nickname: string | null;
   avatar: string | null;
   bio: string | null;
+  registrationType: RegisterType | "oauth";
+  emailVerified: boolean;
+  phoneVerified: boolean;
   isActive: boolean;
   role: UserRole;
   lastLoginAt: string | null;
@@ -157,20 +161,72 @@ export interface LoginPayload {
   password: string;
 }
 
+export type RegisterType = "email" | "phone";
+
 export interface RegisterPayload {
+  registerType: RegisterType;
+  verificationToken: string;
   username: string;
-  email: string;
   password: string;
   nickname?: string;
+}
+
+export interface RegistrationAvailabilityField {
+  available: boolean;
+  message: string | null;
+  normalizedValue?: string | null;
+}
+
+export interface RegistrationAvailability {
+  contact?: RegistrationAvailabilityField;
+  username?: RegistrationAvailabilityField;
+  nickname?: RegistrationAvailabilityField;
+}
+
+export interface RegistrationAvailabilityPayload {
+  registerType?: RegisterType;
+  contact?: string;
+  username?: string;
+  nickname?: string;
+}
+
+export interface SendRegistrationCodePayload {
+  registerType: RegisterType;
+  contact: string;
+}
+
+export interface RegistrationCodeSentResponse {
+  registerType: RegisterType;
+  maskedContact: string;
+  expiresInSeconds: number;
+  cooldownSeconds: number;
+  debugCode?: string | null;
+}
+
+export interface VerifyRegistrationCodePayload {
+  registerType: RegisterType;
+  contact: string;
+  code: string;
+}
+
+export interface RegistrationVerificationResponse {
+  registerType: RegisterType;
+  maskedContact: string;
+  verificationToken: string;
+  expiresIn: string;
 }
 
 export interface UserProfile {
   id: string;
   username: string;
-  email: string;
+  email: string | null;
+  phone: string | null;
   nickname: string | null;
   avatar: string | null;
   bio: string | null;
+  registrationType: RegisterType | "oauth";
+  emailVerified: boolean;
+  phoneVerified: boolean;
   role: UserRole;
   createdAt: string;
   favoriteCount: number;

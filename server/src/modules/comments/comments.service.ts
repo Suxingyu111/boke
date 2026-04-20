@@ -116,7 +116,10 @@ export class CommentsService {
     }
 
     const authorName = currentUser?.nickname?.trim() || currentUser?.username || dto.authorName.trim();
-    const authorEmail = currentUser?.email || dto.authorEmail.trim();
+    const authorEmail =
+      currentUser?.email ||
+      dto.authorEmail?.trim() ||
+      (currentUser ? this.buildInternalCommentEmail(currentUser.id) : '');
 
     const comment = this.commentRepository.create({
       articleId,
@@ -213,7 +216,7 @@ export class CommentsService {
       parentId: parentComment.id,
       userId: currentUser.id,
       authorName: currentUser.nickname?.trim() || currentUser.username,
-      authorEmail: currentUser.email,
+      authorEmail: currentUser.email ?? this.buildInternalCommentEmail(currentUser.id),
       authorWebsite: null,
       content: dto.content.trim(),
       ipAddress: null,
@@ -428,5 +431,9 @@ export class CommentsService {
     } catch (error) {
       this.logger.warn(`创建站内通知失败: ${(error as Error).message}`);
     }
+  }
+
+  private buildInternalCommentEmail(userId: string): string {
+    return `user-${userId}@member.local`;
   }
 }
