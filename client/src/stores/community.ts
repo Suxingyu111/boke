@@ -53,7 +53,7 @@ export const useCommunityStore = defineStore("community", {
       try {
         const message = await communityApi.createGuestbookMessage(payload);
         this.guestbookMessages.unshift(message);
-        this.notice = "留言已发布，感谢你把声音留在这里。";
+        this.notice = "留言已提交，审核通过后会展示在留言板。";
         return message;
       } catch (error) {
         this.errorMessage = getApiErrorMessage(error, "留言提交失败");

@@ -1,5 +1,5 @@
 import { post, put, remove, request } from "@/api/http";
-import type { Announcement } from "@/types/blog";
+import type { AnnouncementPageData, AnnouncementRecord } from "@/types/blog";
 
 export interface AnnouncementPayload {
   title: string;
@@ -8,21 +8,13 @@ export interface AnnouncementPayload {
   isPinned: boolean;
 }
 
-export interface AnnouncementPage {
-  items: Announcement[];
-  total: number;
-  page: number;
-  pageSize: number;
-  totalPages: number;
-}
-
 export async function getAdminAnnouncements() {
-  const response = await request<AnnouncementPage>("/admin/announcements");
+  const response = await request<AnnouncementPageData>("/admin/announcements");
   return response.data;
 }
 
 export async function createAnnouncement(payload: AnnouncementPayload) {
-  const response = await post<Announcement, AnnouncementPayload>(
+  const response = await post<AnnouncementRecord, AnnouncementPayload>(
     "/admin/announcements",
     payload,
   );
@@ -33,7 +25,7 @@ export async function updateAnnouncement(
   id: string,
   payload: Partial<AnnouncementPayload>,
 ) {
-  const response = await put<Announcement, Partial<AnnouncementPayload>>(
+  const response = await put<AnnouncementRecord, Partial<AnnouncementPayload>>(
     `/admin/announcements/${id}`,
     payload,
   );

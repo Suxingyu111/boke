@@ -218,6 +218,36 @@ export interface GuestbookMessage {
   status: "published" | "pending";
 }
 
+export interface GuestbookEntryRecord {
+  id: string;
+  nickname: string;
+  email?: string | null;
+  website?: string | null;
+  avatarUrl?: string | null;
+  content: string;
+  parentId: string | null;
+  status: "approved" | "pending" | "rejected";
+  isAdminReply?: boolean;
+  createdAt: string;
+  replies?: GuestbookEntryRecord[];
+}
+
+export interface GuestbookPageData {
+  items: GuestbookEntryRecord[];
+  total: number;
+  page: number;
+  pageSize: number;
+  totalPages: number;
+}
+
+export interface GuestbookCreateResult {
+  id: string;
+  nickname: string;
+  content: string;
+  createdAt: string;
+  message: string;
+}
+
 export type CommentStatus = "pending" | "approved" | "spam" | "rejected";
 
 export interface PublicComment {
@@ -283,6 +313,26 @@ export interface Announcement {
   status?: "draft" | "published";
   isPinned?: boolean;
   createdAt?: string;
+}
+
+export interface AnnouncementRecord {
+  id: string;
+  title: string;
+  content: string;
+  status: "draft" | "published" | "archived";
+  isPinned: boolean;
+  publishedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+  createdBy: string;
+}
+
+export interface AnnouncementPageData {
+  items: AnnouncementRecord[];
+  total: number;
+  page: number;
+  pageSize: number;
+  totalPages: number;
 }
 
 export interface VisitorStats {

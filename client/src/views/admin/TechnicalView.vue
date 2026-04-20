@@ -9,7 +9,7 @@ import { useCommunityStore } from "@/stores/community";
 import { useI18nStore } from "@/stores/i18n";
 import { useSiteStore } from "@/stores/site";
 import type { SitemapUrl } from "@/api/seo";
-import type { Announcement } from "@/types/blog";
+import type { AnnouncementRecord } from "@/types/blog";
 
 const siteStore = useSiteStore();
 const i18nStore = useI18nStore();
@@ -17,7 +17,7 @@ const communityStore = useCommunityStore();
 
 const backups = ref<backupApi.BackupFile[]>([]);
 const sitemap = ref<SitemapUrl[]>([]);
-const adminAnnouncements = ref<Announcement[]>([]);
+const adminAnnouncements = ref<AnnouncementRecord[]>([]);
 const notice = ref("");
 const errorMessage = ref("");
 const loading = ref(false);
@@ -472,7 +472,7 @@ onMounted(() => {
             <div class="flex flex-wrap items-center justify-between gap-2">
               <h3 class="font-semibold text-brand">{{ announcement.title }}</h3>
               <span class="text-xs text-ink/50">
-                {{ announcement.status || (announcement.isActive ? "published" : "draft") }}
+                {{ announcement.status }}
               </span>
             </div>
             <p class="mt-2 line-clamp-2 text-sm leading-6 text-ink/62">
