@@ -1,8 +1,21 @@
-import { Controller, Get, Query, UseGuards } from '@nestjs/common';
+import { BadRequestException, Controller, Get, Query, UseGuards } from '@nestjs/common';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { VisitorStatsService } from './visitor-stats.service';
+
+function parsePositiveInt(value: string | undefined, fallback: number, field: string): number {
+  if (value === undefined || value === null || value === '') {
+    return fallback;
+  }
+
+  const parsed = Number(value);
+  if (!Number.isInteger(parsed) || parsed <= 0) {
+    throw new BadRequestException(`${field} 必须为正整数`);
+  }
+
+  return parsed;
+}
 
 @Controller('admin/stats')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -28,21 +41,24 @@ export class AdminVisitorStatsController {
   /** 获取热门页面 */
   @Get('top-pages')
   getTopPages(
-    @Query('limit') limit = 20,
-    @Query('days') days = 30,
+    @Query('limit') limit?: string,
+    @Query('days') days?: string,
   ) {
-    return this.visitorStatsService.getTopPages(limit, days);
+    return this.visitorStatsService.getTopPages(
+      parsePositiveInt(limit, 20, 'limit'),
+      parsePositiveInt(days, 30, 'days'),
+    );
   }
 
   /** 获取来源统计 */
   @Get('referers')
-  getRefererStats(@Query('days') days = 30) {
-    return this.visitorStatsService.getRefererStats(days);
+  getRefererStats(@Query('days') days?: string) {
+    return this.visitorStatsService.getRefererStats(parsePositiveInt(days, 30, 'days'));
   }
 
   /** 获取设备/浏览器/系统统计 */
   @Get('devices')
-  getDeviceStats(@Query('days') days = 30) {
-    return this.visitorStatsService.getDeviceStats(days);
+  getDeviceStats(@Query('days') days?: string) {
+    return this.visitorStatsService.getDeviceStats(parsePositiveInt(days, 30, 'days'));
   }
 }

@@ -166,8 +166,8 @@ export class VisitorStatsService {
     if (!ua) return { device: null, browser: null, os: null };
 
     let device = 'Desktop';
-    if (/mobile/i.test(ua)) device = 'Mobile';
-    else if (/tablet|ipad/i.test(ua)) device = 'Tablet';
+    if (/tablet|ipad/i.test(ua)) device = 'Tablet';
+    else if (/mobile|iphone|android/i.test(ua)) device = 'Mobile';
 
     let browser = 'Other';
     if (/chrome/i.test(ua) && !/edg/i.test(ua)) browser = 'Chrome';
@@ -176,11 +176,11 @@ export class VisitorStatsService {
     else if (/edg/i.test(ua)) browser = 'Edge';
 
     let os = 'Other';
-    if (/windows/i.test(ua)) os = 'Windows';
+    if (/ios|iphone|ipad/i.test(ua)) os = 'iOS';
+    else if (/android/i.test(ua)) os = 'Android';
+    else if (/windows/i.test(ua)) os = 'Windows';
     else if (/mac os/i.test(ua)) os = 'macOS';
     else if (/linux/i.test(ua)) os = 'Linux';
-    else if (/android/i.test(ua)) os = 'Android';
-    else if (/ios|iphone|ipad/i.test(ua)) os = 'iOS';
 
     return { device, browser, os };
   }
