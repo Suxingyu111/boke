@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Controller,
   Delete,
   Get,
@@ -13,6 +14,35 @@ import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { UserNotificationsService } from './user-notifications.service';
 
+function parsePositiveInt(value: string | undefined, fallback: number, field: string): number {
+  if (value === undefined || value === null || value === '') {
+    return fallback;
+  }
+
+  const parsed = Number(value);
+  if (!Number.isInteger(parsed) || parsed <= 0) {
+    throw new BadRequestException(`${field} 必须为正整数`);
+  }
+
+  return parsed;
+}
+
+function parseBoolean(value: string | undefined, fallback = false): boolean {
+  if (value === undefined || value === null || value === '') {
+    return fallback;
+  }
+
+  if (value === 'true') {
+    return true;
+  }
+
+  if (value === 'false') {
+    return false;
+  }
+
+  throw new BadRequestException('unreadOnly 必须为 true 或 false');
+}
+
 @Controller('notifications')
 @UseGuards(JwtAuthGuard)
 export class UserNotificationsController {
@@ -22,11 +52,16 @@ export class UserNotificationsController {
   @Get()
   getMyNotifications(
     @CurrentUser() user: User,
-    @Query('page') page = 1,
-    @Query('pageSize') pageSize = 20,
-    @Query('unreadOnly') unreadOnly = false,
+    @Query('page') page?: string,
+    @Query('pageSize') pageSize?: string,
+    @Query('unreadOnly') unreadOnly?: string,
   ) {
-    return this.notificationsService.getUserNotifications(user.id, page, pageSize, unreadOnly);
+    return this.notificationsService.getUserNotifications(
+      user.id,
+      parsePositiveInt(page, 1, 'page'),
+      parsePositiveInt(pageSize, 20, 'pageSize'),
+      parseBoolean(unreadOnly, false),
+    );
   }
 
   /** 获取未读通知数量 */
