@@ -3,8 +3,10 @@ import { computed, onMounted, reactive, ref, watch } from "vue";
 import { getApiErrorMessage } from "@/api/auth";
 import ConfirmDialog from "@/components/ConfirmDialog.vue";
 import Pagination from "@/components/Pagination.vue";
+import { useAuthStore } from "@/stores/auth";
 import { useContentStore, type ArticleMutationPayload } from "@/stores/content";
 import type { Article, ArticleStatus, Category, Tag } from "@/types/blog";
+import { canAccessAdminFeatures } from "@/utils/permissions";
 import { handleMarkdownInteraction, renderMarkdown } from "@/utils/markdown";
 
 type PanelKey = "articles" | "categories" | "tags";
@@ -37,13 +39,19 @@ interface ConfirmRequest {
 const defaultCover =
   "https://images.unsplash.com/photo-1499750310107-5fef28a66643?auto=format&fit=crop&w=1400&q=80";
 const pageSize = 5;
+const authStore = useAuthStore();
 const contentStore = useContentStore();
+const canManageTaxonomy = computed(() => canAccessAdminFeatures(authStore.user));
 
-const panels: { key: PanelKey; label: string }[] = [
+const panels = computed<{ key: PanelKey; label: string }[]>(() => [
   { key: "articles", label: "文章" },
-  { key: "categories", label: "分类" },
-  { key: "tags", label: "标签" },
-];
+  ...(canManageTaxonomy.value
+    ? [
+        { key: "categories" as const, label: "分类" },
+        { key: "tags" as const, label: "标签" },
+      ]
+    : []),
+]);
 const activePanel = ref<PanelKey>("articles");
 const articleSearch = ref("");
 const statusFilter = ref<StatusFilter>("all");
@@ -141,6 +149,15 @@ watch(
       articleForm.categoryId = contentStore.categories[0]?.id ?? "";
     }
   },
+);
+watch(
+  canManageTaxonomy,
+  (allowed) => {
+    if (!allowed && activePanel.value !== "articles") {
+      activePanel.value = "articles";
+    }
+  },
+  { immediate: true },
 );
 
 onMounted(() => {
@@ -523,7 +540,7 @@ async function executeConfirmDialog() {
         <p class="eyebrow">Editorial Desk</p>
         <h1 class="mt-2 font-display text-5xl text-brand">文章管理</h1>
         <p class="mt-3 max-w-2xl text-ink/65">
-          发布、草稿、定时、分类与标签都在这里收束。
+          发布、草稿、定时都在这里收束；分类与标签能力会按角色开放。
         </p>
       </div>
       <button
@@ -551,6 +568,13 @@ async function executeConfirmDialog() {
         {{ panel.label }}
       </button>
     </div>
+
+    <p
+      v-if="!canManageTaxonomy"
+      class="mt-4 rounded-md border border-cobalt/20 bg-cobalt/5 px-4 py-3 text-sm text-cobalt"
+    >
+      当前账号可管理自己的文章；分类与标签由管理员统一维护。
+    </p>
 
     <p
       v-if="notice"

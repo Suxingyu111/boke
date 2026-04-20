@@ -73,4 +73,19 @@ describe("useAuthStore", () => {
     expect(sessionStorage.getItem("blog_session_token")).toBe("oauth-token");
     expect(localStorage.getItem("blog_token")).toBeNull();
   });
+
+  it("exposes management access by role", () => {
+    const store = useAuthStore();
+
+    store.applyAuth({
+      ...mockResponse,
+      user: {
+        ...mockUser,
+        role: "author",
+      },
+    });
+
+    expect(store.canAccessManagement).toBe(true);
+    expect(store.canAccessAdmin).toBe(false);
+  });
 });

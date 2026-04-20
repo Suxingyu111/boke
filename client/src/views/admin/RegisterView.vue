@@ -10,6 +10,7 @@ import {
 import { useTheme } from "@/composables/useTheme";
 import { useAuthStore } from "@/stores/auth";
 import type { RegisterType } from "@/types/blog";
+import { getDefaultAuthorizedRoute } from "@/utils/permissions";
 
 type FieldState = {
   kind: "idle" | "checking" | "success" | "error";
@@ -265,11 +266,7 @@ async function handleRegister() {
       nickname: nickname.value.trim() || undefined,
     });
 
-    await router.push(
-      response.user.role === "admin" || response.user.role === "super_admin"
-        ? "/admin"
-        : "/",
-    );
+    await router.push(getDefaultAuthorizedRoute(response.user));
   } catch (error) {
     errorMessage.value = getApiErrorMessage(error, "注册失败，请稍后再试");
   }

@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  ForbiddenException,
   Inject,
   Injectable,
   NotFoundException,
@@ -23,6 +24,7 @@ export interface UploadedMediaFile {
 
 const MEDIA_ASSET_NOT_FOUND_MESSAGE = '媒体资源不存在';
 const MEDIA_FILE_NOT_FOUND_MESSAGE = '媒体文件不存在';
+const MEDIA_ASSET_PERMISSION_DENIED_MESSAGE = '无权操作该媒体资源';
 const INVALID_MEDIA_FILE_MESSAGE = '不支持的文件类型';
 const EMPTY_MEDIA_FILE_MESSAGE = '上传文件不能为空';
 const MAX_MEDIA_FILE_SIZE = 10 * 1024 * 1024;
@@ -79,9 +81,22 @@ export class MediaAssetsService {
     return this.mediaAssetRepository.save(mediaAsset);
   }
 
-  async list(page = 1, pageSize = 10, mimeType?: string) {
+  async list(page = 1, pageSize = 10, mimeType: string | undefined, currentUser: User) {
+    const where: {
+      mimeType?: string;
+      uploadedBy?: string;
+    } = {};
+
+    if (mimeType) {
+      where.mimeType = mimeType;
+    }
+
+    if (!this.canManageAllAssets(currentUser)) {
+      where.uploadedBy = currentUser.id;
+    }
+
     const [items, total] = await this.mediaAssetRepository.findAndCount({
-      where: mimeType ? { mimeType } : undefined,
+      where: Object.keys(where).length > 0 ? where : undefined,
       order: { createdAt: 'DESC' },
       skip: (page - 1) * pageSize,
       take: pageSize,
@@ -98,12 +113,12 @@ export class MediaAssetsService {
     };
   }
 
-  async findById(id: string) {
-    return this.findAssetOrFail(id);
+  async findById(id: string, currentUser: User) {
+    return this.findManagedAssetOrFail(id, currentUser);
   }
 
-  async update(id: string, altText?: string) {
-    const asset = await this.findAssetOrFail(id);
+  async update(id: string, altText: string | undefined, currentUser: User) {
+    const asset = await this.findManagedAssetOrFail(id, currentUser);
 
     return this.mediaAssetRepository.save({
       ...asset,
@@ -112,8 +127,8 @@ export class MediaAssetsService {
     });
   }
 
-  async remove(id: string) {
-    const asset = await this.findAssetOrFail(id);
+  async remove(id: string, currentUser: User) {
+    const asset = await this.findManagedAssetOrFail(id, currentUser);
     await this.safeRemoveFile(asset.filePath);
     await this.mediaAssetRepository.delete(asset.id);
 
@@ -150,6 +165,16 @@ export class MediaAssetsService {
     return asset;
   }
 
+  private async findManagedAssetOrFail(id: string, currentUser: User): Promise<MediaAsset> {
+    const asset = await this.findAssetOrFail(id);
+
+    if (!this.canManageAsset(asset, currentUser)) {
+      throw new ForbiddenException(MEDIA_ASSET_PERMISSION_DENIED_MESSAGE);
+    }
+
+    return asset;
+  }
+
   private validateFile(file?: UploadedMediaFile): void {
     if (!file || !file.buffer || file.size <= 0) {
       throw new BadRequestException(EMPTY_MEDIA_FILE_MESSAGE);
@@ -171,6 +196,18 @@ export class MediaAssetsService {
 
   private async ensureStorageRoot(): Promise<void> {
     await fs.mkdir(this.storageRoot, { recursive: true });
+  }
+
+  private canManageAsset(asset: MediaAsset, currentUser: User): boolean {
+    if (this.canManageAllAssets(currentUser)) {
+      return true;
+    }
+
+    return asset.uploadedBy === currentUser.id;
+  }
+
+  private canManageAllAssets(currentUser: User): boolean {
+    return currentUser.role === 'admin' || currentUser.role === 'super_admin';
   }
 
   private resolveAbsolutePath(fileName: string): string {

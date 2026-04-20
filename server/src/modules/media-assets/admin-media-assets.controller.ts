@@ -44,22 +44,31 @@ export class AdminMediaAssetsController {
   }
 
   @Get()
-  findList(@Query() query: ListMediaAssetsDto) {
-    return this.mediaAssetsService.list(query.page ?? 1, query.pageSize ?? 10, query.mimeType);
+  findList(@Query() query: ListMediaAssetsDto, @CurrentUser() currentUser: User) {
+    return this.mediaAssetsService.list(
+      query.page ?? 1,
+      query.pageSize ?? 10,
+      query.mimeType,
+      currentUser,
+    );
   }
 
   @Get(':id')
-  findDetail(@Param('id') id: string) {
-    return this.mediaAssetsService.findById(id);
+  findDetail(@Param('id') id: string, @CurrentUser() currentUser: User) {
+    return this.mediaAssetsService.findById(id, currentUser);
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() dto: UpdateMediaAssetDto) {
-    return this.mediaAssetsService.update(id, dto.altText);
+  update(
+    @Param('id') id: string,
+    @Body() dto: UpdateMediaAssetDto,
+    @CurrentUser() currentUser: User,
+  ) {
+    return this.mediaAssetsService.update(id, dto.altText, currentUser);
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.mediaAssetsService.remove(id);
+  remove(@Param('id') id: string, @CurrentUser() currentUser: User) {
+    return this.mediaAssetsService.remove(id, currentUser);
   }
 }

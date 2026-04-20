@@ -5,6 +5,7 @@ import { getApiErrorMessage, getOAuthProviders } from "@/api/auth";
 import { useTheme } from "@/composables/useTheme";
 import { useAuthStore } from "@/stores/auth";
 import type { OAuthProviders } from "@/types/blog";
+import { getDefaultAuthorizedRoute } from "@/utils/permissions";
 
 const route = useRoute();
 const router = useRouter();
@@ -90,11 +91,7 @@ async function handleLogin() {
       return;
     }
 
-    await router.push(
-      response.user.role === "admin" || response.user.role === "super_admin"
-        ? "/admin"
-        : "/",
-    );
+    await router.push(getDefaultAuthorizedRoute(response.user));
   } catch (error) {
     errorMessage.value = getApiErrorMessage(
       error,
@@ -155,7 +152,7 @@ async function handleLogin() {
           </div>
           <div class="border-l border-white/22 bg-white/10 p-4">
             <p class="text-white/55">Role</p>
-            <p class="mt-1 text-citron">admin/user</p>
+            <p class="mt-1 text-citron">author/admin</p>
           </div>
         </div>
       </div>

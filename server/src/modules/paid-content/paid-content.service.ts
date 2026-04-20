@@ -1,6 +1,6 @@
 import {
-  BadRequestException,
   ConflictException,
+  ForbiddenException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
@@ -36,7 +36,7 @@ export class PaidContentService {
       currentUser.role !== 'admin' &&
       currentUser.role !== 'super_admin'
     ) {
-      throw new BadRequestException('无权设置该文章的付费状态');
+      throw new ForbiddenException('无权设置该文章的付费状态');
     }
 
     let paidContent = await this.paidContentRepository.findOne({ where: { articleId } });
@@ -71,7 +71,7 @@ export class PaidContentService {
       currentUser.role !== 'admin' &&
       currentUser.role !== 'super_admin'
     ) {
-      throw new BadRequestException('无权操作');
+      throw new ForbiddenException('无权操作');
     }
 
     const paidContent = await this.paidContentRepository.findOne({ where: { articleId } });

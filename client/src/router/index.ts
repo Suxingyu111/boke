@@ -4,8 +4,8 @@ import {
   type RouteRecordRaw,
 } from "vue-router";
 import BlogLayout from "@/layouts/BlogLayout.vue";
-import { getApiStatusCode } from "@/api/auth";
 import { useAuthStore } from "@/stores/auth";
+import { getDefaultAuthorizedRoute, hasMinimumRole, resolveMinimumRole } from "@/utils/permissions";
 import HomeView from "@/views/HomeView.vue";
 
 // 懒加载：非首屏路由按需加载，减少首屏 JS 体积
@@ -88,29 +88,43 @@ const routes: RouteRecordRaw[] = [
   {
     path: "/admin",
     component: AdminLayout,
-    meta: { requiresAuth: true, requiresAdmin: true },
+    meta: { requiresAuth: true },
     children: [
-      { path: "", name: "admin-dashboard", component: DashboardView },
+      {
+        path: "",
+        name: "admin-dashboard",
+        component: DashboardView,
+        meta: { minRole: "admin" },
+      },
       {
         path: "articles",
         name: "admin-articles",
         component: ArticleManageView,
+        meta: { minRole: "author" },
       },
       {
         path: "comments",
         name: "admin-comments",
         component: CommentManageView,
+        meta: { minRole: "admin" },
       },
       {
         path: "pages",
         name: "admin-pages",
         component: PageManageView,
+        meta: { minRole: "admin" },
       },
-      { path: "settings", name: "admin-settings", component: SettingsView },
+      {
+        path: "settings",
+        name: "admin-settings",
+        component: SettingsView,
+        meta: { minRole: "admin" },
+      },
       {
         path: "technical",
         name: "admin-technical",
         component: TechnicalView,
+        meta: { minRole: "admin" },
       },
     ],
   },
@@ -132,6 +146,10 @@ const router = createRouter({
 
 router.beforeEach(async (to) => {
   const authStore = useAuthStore();
+  const requiresAuth = to.matched.some((record) => record.meta.requiresAuth);
+  const minimumRole = resolveMinimumRole(
+    to.matched.map((record) => record.meta.minRole),
+  );
 
   if (authStore.token && !authStore.user) {
     try {
@@ -141,39 +159,27 @@ router.beforeEach(async (to) => {
     }
   }
 
-  if (to.meta.requiresAuth && !authStore.isAuthenticated) {
+  if ((requiresAuth || minimumRole) && !authStore.isAuthenticated) {
     return {
       name: "login",
       query: { redirect: to.fullPath },
     };
   }
 
-  if (to.meta.requiresAdmin && authStore.isAuthenticated) {
-    try {
-      await authStore.refreshCurrentAdminUser();
-    } catch (error) {
-      if (getApiStatusCode(error) === 401) {
-        authStore.logout();
-        return {
-          name: "login",
-          query: { redirect: to.fullPath },
-        };
-      }
-
-      return { name: "home" };
-    }
-
-    if (!authStore.canAccessAdmin) {
-      return { name: "home" };
-    }
-  }
-
   if (
     (to.name === "login" || to.name === "register") &&
     authStore.isAuthenticated
   ) {
-    return authStore.canAccessAdmin
-      ? { name: "admin-dashboard" }
+    return getDefaultAuthorizedRoute(authStore.user);
+  }
+
+  if (
+    minimumRole &&
+    authStore.isAuthenticated &&
+    !hasMinimumRole(authStore.user, minimumRole)
+  ) {
+    return authStore.canAccessManagement
+      ? getDefaultAuthorizedRoute(authStore.user)
       : { name: "home" };
   }
 });

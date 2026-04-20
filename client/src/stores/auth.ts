@@ -6,6 +6,10 @@ import type {
   LoginPayload,
   RegisterPayload,
 } from "@/types/blog";
+import {
+  canAccessAdminFeatures,
+  canAccessManagement,
+} from "@/utils/permissions";
 
 const persistentTokenKey = "blog_token";
 const sessionTokenKey = "blog_session_token";
@@ -71,8 +75,8 @@ export const useAuthStore = defineStore("auth", {
   }),
   getters: {
     isAuthenticated: (state) => Boolean(state.token),
-    canAccessAdmin: (state) =>
-      state.user?.role === "admin" || state.user?.role === "super_admin",
+    canAccessManagement: (state) => canAccessManagement(state.user),
+    canAccessAdmin: (state) => canAccessAdminFeatures(state.user),
     displayName: (state) => state.user?.nickname ?? state.user?.username ?? "",
   },
   actions: {

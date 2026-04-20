@@ -3,6 +3,7 @@ import { onMounted, ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { getApiErrorMessage } from "@/api/auth";
 import { useAuthStore } from "@/stores/auth";
+import { getDefaultAuthorizedRoute } from "@/utils/permissions";
 
 const route = useRoute();
 const router = useRouter();
@@ -21,7 +22,7 @@ function resolveRedirectTarget() {
     return redirect;
   }
 
-  return authStore.canAccessAdmin ? "/admin" : "/";
+  return getDefaultAuthorizedRoute(authStore.user);
 }
 
 onMounted(async () => {

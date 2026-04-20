@@ -78,7 +78,21 @@ const createRepositoryMock = <T extends ObjectLiteral & { id?: string }>(
 
       return { affected: targets.length, raw: {} };
     }),
-    findAndCount: jest.fn().mockResolvedValue([items, items.length]),
+    findAndCount: jest.fn().mockImplementation(
+      async (options?: {
+        where?: Partial<T> | Array<Partial<T>>;
+        skip?: number;
+        take?: number;
+      }) => {
+        const matched = items.filter(item =>
+          matchWhere(item as Record<string, unknown>, options?.where),
+        );
+        const skip = options?.skip ?? 0;
+        const take = options?.take ?? matched.length;
+
+        return [matched.slice(skip, skip + take), matched.length];
+      },
+    ),
   };
 };
 
@@ -149,10 +163,112 @@ describe('MediaAssetsService', () => {
     const absolutePath = path.join(storageRoot, created.fileName);
     await fs.access(absolutePath);
 
-    await service.remove(created.id);
+    await service.remove(created.id, {
+      id: 'author-1',
+      role: 'author',
+    } as User);
 
     await expect(fs.access(absolutePath)).rejects.toThrow();
     expect(mediaAssetRepository.items).toHaveLength(0);
+  });
+
+  it('作者仅能查看自己的媒体列表', async () => {
+    await service.upload(
+      {
+        originalname: 'author-file.png',
+        mimetype: 'image/png',
+        size: PNG_BUFFER.length,
+        buffer: Buffer.concat([PNG_BUFFER, Buffer.from('01', 'hex')]),
+      } as UploadedMediaFile,
+      {
+        id: 'author-1',
+        role: 'author',
+      } as User,
+      '作者文件',
+    );
+    await service.upload(
+      {
+        originalname: 'admin-file.png',
+        mimetype: 'image/png',
+        size: PNG_BUFFER.length,
+        buffer: Buffer.concat([PNG_BUFFER, Buffer.from('02', 'hex')]),
+      } as UploadedMediaFile,
+      {
+        id: 'admin-1',
+        role: 'admin',
+      } as User,
+      '管理员文件',
+    );
+
+    const authorList = await service.list(
+      1,
+      10,
+      undefined,
+      {
+        id: 'author-1',
+        role: 'author',
+      } as User,
+    );
+    const adminList = await service.list(
+      1,
+      10,
+      undefined,
+      {
+        id: 'admin-1',
+        role: 'admin',
+      } as User,
+    );
+
+    expect(authorList.items).toHaveLength(1);
+    expect(authorList.items[0].uploadedBy).toBe('author-1');
+    expect(adminList.items).toHaveLength(2);
+  });
+
+  it('作者不能修改或删除其他人的媒体资源', async () => {
+    const created = await service.upload(
+      {
+        originalname: 'admin-file.png',
+        mimetype: 'image/png',
+        size: PNG_BUFFER.length,
+        buffer: Buffer.concat([PNG_BUFFER, Buffer.from('03', 'hex')]),
+      } as UploadedMediaFile,
+      {
+        id: 'admin-1',
+        role: 'admin',
+      } as User,
+      '管理员文件',
+    );
+
+    await expect(
+      service.findById(
+        created.id,
+        {
+          id: 'author-1',
+          role: 'author',
+        } as User,
+      ),
+    ).rejects.toThrow('无权操作该媒体资源');
+
+    await expect(
+      service.update(
+        created.id,
+        '新的描述',
+        {
+          id: 'author-1',
+          role: 'author',
+        } as User,
+      ),
+    ).rejects.toThrow('无权操作该媒体资源');
+
+    await expect(
+      service.remove(
+        created.id,
+        {
+          id: 'author-1',
+          role: 'author',
+        } as User,
+      ),
+    ).rejects.toThrow('无权操作该媒体资源');
   });
 
   it('文件扩展名与内容签名不一致时应拒绝上传', async () => {

@@ -1,11 +1,12 @@
 <script setup lang="ts">
-import { nextTick, onMounted, onUnmounted, ref, watch } from "vue";
+import { computed, nextTick, onMounted, onUnmounted, ref, watch } from "vue";
 import { useRouter } from "vue-router";
 import { useTheme } from "@/composables/useTheme";
 import { useSiteStore } from "@/stores/site";
 import { useAuthStore } from "@/stores/auth";
 import { useI18nStore } from "@/stores/i18n";
 import { useUserStore } from "@/stores/user";
+import { getDefaultAuthorizedRoute } from "@/utils/permissions";
 
 const siteStore = useSiteStore();
 const authStore = useAuthStore();
@@ -13,6 +14,7 @@ const i18nStore = useI18nStore();
 const userStore = useUserStore();
 const router = useRouter();
 const { cycleTheme, themeIcon, themeLabel } = useTheme();
+const managementRoute = computed(() => getDefaultAuthorizedRoute(authStore.user));
 const searchTerm = ref("");
 const searchOpen = ref(false);
 const searchInputRef = ref<HTMLInputElement | null>(null);
@@ -280,9 +282,9 @@ watch(
                 个人中心
               </RouterLink>
               <RouterLink
-                v-if="authStore.canAccessAdmin"
+                v-if="authStore.canAccessManagement"
                 class="dropdown-item"
-                to="/admin"
+                :to="managementRoute"
                 role="menuitem"
                 @click="closeUserMenu"
               >
