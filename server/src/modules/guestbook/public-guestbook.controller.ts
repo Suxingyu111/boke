@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Post, Query, Req } from '@nestjs/common';
+import { Body, Controller, DefaultValuePipe, Get, ParseIntPipe, Post, Query, Req } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
 import { Request } from 'express';
 import { CreateGuestbookDto } from './dto/create-guestbook.dto';
@@ -11,8 +11,8 @@ export class PublicGuestbookController {
   /** 获取已审核的留言列表 */
   @Get()
   getMessages(
-    @Query('page') page = 1,
-    @Query('pageSize') pageSize = 20,
+    @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
+    @Query('pageSize', new DefaultValuePipe(20), ParseIntPipe) pageSize: number,
   ) {
     return this.guestbookService.getApprovedMessages(page, pageSize);
   }

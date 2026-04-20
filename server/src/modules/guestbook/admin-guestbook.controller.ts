@@ -1,9 +1,11 @@
 import {
   Body,
   Controller,
+  DefaultValuePipe,
   Delete,
   Get,
   Param,
+  ParseIntPipe,
   ParseUUIDPipe,
   Put,
   Post,
@@ -24,8 +26,8 @@ export class AdminGuestbookController {
   /** 获取全部留言（含待审核） */
   @Get()
   getMessages(
-    @Query('page') page = 1,
-    @Query('pageSize') pageSize = 20,
+    @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
+    @Query('pageSize', new DefaultValuePipe(20), ParseIntPipe) pageSize: number,
     @Query('status') status?: string,
   ) {
     return this.guestbookService.adminGetMessages(page, pageSize, status);
