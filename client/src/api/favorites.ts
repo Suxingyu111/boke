@@ -1,7 +1,7 @@
 import { post, remove, request } from "@/api/http";
 
 export async function addFavorite(articleId: string) {
-  const response = await post<unknown, undefined>(
+  const response = await post<{ message: string; articleId: string }, undefined>(
     `/favorites/${articleId}`,
     undefined,
   );

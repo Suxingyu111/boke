@@ -31,8 +31,10 @@ interface SearchResult {
   title: string;
   slug: string;
   excerpt?: string | null;
+  contentHighlight?: string | null;
   publishedAt?: string | null;
   viewCount?: number;
+  score?: number;
   category?: { id: string; name: string; slug: string } | null;
 }
 
@@ -57,6 +59,8 @@ interface Purchase {
   articleSlug?: string;
   purchasedAt: string;
   price: number;
+  paidAmount?: number;
+  paymentMethod?: string;
 }
 
 function asRecord(v: unknown) {
@@ -106,8 +110,11 @@ function mapSearchResult(raw: unknown): SearchResult {
     title: asString(r.title, "无标题"),
     slug: asString(r.slug),
     excerpt: typeof r.excerpt === "string" ? r.excerpt : null,
+    contentHighlight:
+      typeof r.contentHighlight === "string" ? r.contentHighlight : null,
     publishedAt: typeof r.publishedAt === "string" ? r.publishedAt : null,
     viewCount: typeof r.viewCount === "number" ? r.viewCount : undefined,
+    score: typeof r.score === "number" ? r.score : undefined,
     category: cat
       ? { id: asString(cat.id), name: asString(cat.name), slug: asString(cat.slug) }
       : null,
@@ -124,6 +131,9 @@ function mapPurchase(raw: unknown): Purchase {
     articleSlug: article ? asString(article.slug) : undefined,
     purchasedAt: asString(r.purchasedAt ?? r.createdAt, new Date().toISOString()),
     price: asNumber(r.price ?? r.amount),
+    paidAmount: asNumber(r.paidAmount ?? r.amount ?? r.price),
+    paymentMethod:
+      typeof r.paymentMethod === "string" ? r.paymentMethod : undefined,
   };
 }
 

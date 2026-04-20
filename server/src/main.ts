@@ -4,10 +4,14 @@ import { json, urlencoded } from 'express';
 import { NestFactory } from '@nestjs/core';
 import { Logger, ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { AppModule } from './app.module';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 import { ResponseInterceptor } from './common/interceptors/response.interceptor';
+import {
+  createSwaggerDocument,
+  getSwaggerUiPath,
+  setupSwagger,
+} from './common/swagger/swagger-document';
 import { buildCorsOptions } from './config/cors.config';
 
 const bootstrapLogger = new Logger('Bootstrap');
@@ -65,23 +69,9 @@ async function bootstrap(): Promise<void> {
   app.useGlobalInterceptors(new ResponseInterceptor());
 
   if (swaggerEnabled) {
-    const swaggerConfig = new DocumentBuilder()
-      .setTitle('Blog API')
-      .setDescription('博客系统后端接口文档')
-      .setVersion('1.0.0')
-      .addBearerAuth(
-        {
-          type: 'http',
-          scheme: 'bearer',
-          bearerFormat: 'JWT',
-          in: 'header',
-        },
-        'bearer',
-      )
-      .build();
-    const document = SwaggerModule.createDocument(app, swaggerConfig);
-    SwaggerModule.setup('api/docs', app, document);
-    bootstrapLogger.log('Swagger 文档已启用: /api/docs');
+    const document = createSwaggerDocument(app, configService);
+    setupSwagger(app, document);
+    bootstrapLogger.log(`Swagger 文档已启用: /${getSwaggerUiPath()}`);
   }
 
   const port = configService.get<number>('port', 3000);

@@ -37,6 +37,49 @@ async function getExistingColumns(connection: Connection, tableName: string): Pr
   );
 }
 
+async function getExistingIndexes(connection: Connection, tableName: string): Promise<Set<string>> {
+  const [rows] = await connection.query(`SHOW INDEX FROM \`${tableName}\``);
+  return new Set(
+    Array.isArray(rows)
+      ? rows
+          .map(row =>
+            typeof row === 'object' && row !== null
+              ? String((row as { Key_name?: string }).Key_name ?? '')
+              : '',
+          )
+          .filter(Boolean)
+      : [],
+  );
+}
+
+async function ensureUsersCompatibility(connection: Connection): Promise<void> {
+  const existingColumns = await getExistingColumns(connection, 'users');
+  const alterFragments: string[] = [];
+
+  if (!existingColumns.has('oauth_provider')) {
+    alterFragments.push(
+      "ADD COLUMN `oauth_provider` ENUM('github', 'google') DEFAULT NULL AFTER `bio`",
+    );
+  }
+
+  if (!existingColumns.has('oauth_provider_id')) {
+    alterFragments.push(
+      'ADD COLUMN `oauth_provider_id` VARCHAR(120) DEFAULT NULL AFTER `oauth_provider`',
+    );
+  }
+
+  if (alterFragments.length > 0) {
+    await connection.query(`ALTER TABLE \`users\` ${alterFragments.join(', ')}`);
+  }
+
+  const existingIndexes = await getExistingIndexes(connection, 'users');
+  if (!existingIndexes.has('idx_users_oauth_provider')) {
+    await connection.query(
+      'ALTER TABLE `users` ADD UNIQUE INDEX `idx_users_oauth_provider` (`oauth_provider`, `oauth_provider_id`)',
+    );
+  }
+}
+
 async function ensureArticleVersionsCompatibility(connection: Connection): Promise<void> {
   const missingColumnDefinitions = [
     ['slug', "`slug` VARCHAR(255) NOT NULL DEFAULT '' AFTER `title`"],
@@ -106,6 +149,7 @@ async function bootstrap(): Promise<void> {
     for (const statement of statements) {
       await connection.query(statement);
     }
+    await ensureUsersCompatibility(connection);
     await ensureArticleVersionsCompatibility(connection);
 
     const [rows] = await connection.query('SHOW TABLES');

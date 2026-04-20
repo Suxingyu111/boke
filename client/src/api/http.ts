@@ -7,6 +7,33 @@ const pageCacheTtl = Number(import.meta.env.VITE_PAGE_CACHE_TTL || 60000);
 const pageCacheMaxEntries = Number(import.meta.env.VITE_PAGE_CACHE_MAX_ENTRIES || 80);
 const csrfStorageKey = "blog_csrf_token";
 const getCache = new Map<string, { expiresAt: number; value: ApiResponse<unknown> }>();
+const devProxyRetryDelaysMs = import.meta.env.DEV
+  ? [1000, 2000, 4000, 8000, 12000, 15000]
+  : [];
+
+function wait(ms: number) {
+  return new Promise<void>((resolve) => {
+    globalThis.setTimeout(resolve, ms);
+  });
+}
+
+function shouldRetryGetRequest(error: unknown, attempt: number) {
+  if (attempt >= devProxyRetryDelaysMs.length || !axios.isAxiosError(error)) {
+    return false;
+  }
+
+  const method = (error.config?.method ?? "get").toLowerCase();
+  if (method !== "get") {
+    return false;
+  }
+
+  const status = error.response?.status;
+  if (status && [502, 503, 504].includes(status)) {
+    return true;
+  }
+
+  return ["ECONNREFUSED", "ECONNRESET", "ERR_NETWORK"].includes(error.code ?? "");
+}
 
 function getCsrfToken() {
   const existing = sessionStorage.getItem(csrfStorageKey);
@@ -112,7 +139,25 @@ export async function request<T>(
     return cached.value as ApiResponse<T>;
   }
 
-  const response = await http.get<unknown, ApiResponse<T>>(url, { params });
+  let response: ApiResponse<T> | null = null;
+
+  for (let attempt = 0; attempt <= devProxyRetryDelaysMs.length; attempt += 1) {
+    try {
+      response = await http.get<unknown, ApiResponse<T>>(url, { params });
+      break;
+    } catch (error) {
+      if (!shouldRetryGetRequest(error, attempt)) {
+        throw error;
+      }
+
+      await wait(devProxyRetryDelaysMs[attempt]);
+    }
+  }
+
+  if (!response) {
+    throw new Error(`GET ${url} failed without a response`);
+  }
+
   if (pageCacheTtl > 0) {
     trimGetCacheSize();
     getCache.set(cacheKey, {

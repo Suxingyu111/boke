@@ -3,6 +3,7 @@ import { computed, onMounted, onUnmounted, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { getApiErrorMessage } from "@/api/auth";
 import * as contentApi from "@/api/content";
+import EmptyState from "@/components/EmptyState.vue";
 import type { Article } from "@/types/blog";
 import { mapArticle } from "@/stores/content";
 
@@ -252,11 +253,11 @@ onUnmounted(() => {
   <!-- Empty state -->
   <section v-else class="home-empty">
     <div class="content-shell">
-      <div class="ui-surface p-6 md:p-8">
-        <p class="eyebrow">Content</p>
-        <h1 class="mt-2 font-display text-5xl">还没有公开文章</h1>
-        <p class="mt-4 max-w-2xl text-ink/66">文章发布后会出现在这里。</p>
-      </div>
+      <EmptyState
+        eyebrow="Content"
+        title="还没有公开文章"
+        description="文章发布后会出现在这里。"
+      />
     </div>
   </section>
 
@@ -326,9 +327,12 @@ onUnmounted(() => {
         </RouterLink>
       </div>
 
-      <div v-else-if="!loading" class="ui-surface p-5 mt-5">
-        <p class="font-display text-2xl">暂无文章</p>
-      </div>
+      <EmptyState
+        v-else-if="!loading"
+        compact
+        title="暂无文章"
+        description="继续写作并发布后，最新内容会自动出现在这里。"
+      />
     </div>
   </section>
 </template>

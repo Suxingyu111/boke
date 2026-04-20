@@ -1,0 +1,4172 @@
+{
+  "openapi": "3.0.0",
+  "paths": {
+    "/api/health": {
+      "get": {
+        "operationId": "HealthController_check",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "health"
+        ],
+        "summary": "GET /api/health"
+      }
+    },
+    "/api/feed/rss": {
+      "get": {
+        "operationId": "FeedController_getRss",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "feed"
+        ],
+        "summary": "GET /api/feed/rss"
+      }
+    },
+    "/api/feed/atom": {
+      "get": {
+        "operationId": "FeedController_getAtom",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "feed"
+        ],
+        "summary": "GET /api/feed/atom"
+      }
+    },
+    "/api/auth/register": {
+      "post": {
+        "operationId": "AuthController_register",
+        "summary": "注册账号",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegisterDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "注册成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/api/auth/login": {
+      "post": {
+        "operationId": "AuthController_login",
+        "summary": "账号登录",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "登录成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/api/auth/me": {
+      "get": {
+        "operationId": "AuthController_getMe",
+        "summary": "获取当前登录用户信息",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "获取成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthUserDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "auth"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/api/auth/admin/me": {
+      "get": {
+        "operationId": "AuthController_getAdminMe",
+        "summary": "获取当前管理员信息",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "获取成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthUserDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "auth"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/api/auth/oauth/providers": {
+      "get": {
+        "operationId": "AuthController_getOAuthProviders",
+        "summary": "获取 OAuth 提供商可用状态",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "获取成功"
+          }
+        },
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/api/auth/github": {
+      "get": {
+        "operationId": "AuthController_githubLogin",
+        "summary": "发起 GitHub OAuth 登录",
+        "parameters": [
+          {
+            "name": "redirect",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/api/auth/github/callback": {
+      "get": {
+        "operationId": "AuthController_githubCallback",
+        "summary": "处理 GitHub OAuth 回调",
+        "parameters": [
+          {
+            "name": "state",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/api/auth/google": {
+      "get": {
+        "operationId": "AuthController_googleLogin",
+        "summary": "发起 Google OAuth 登录",
+        "parameters": [
+          {
+            "name": "redirect",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/api/auth/google/callback": {
+      "get": {
+        "operationId": "AuthController_googleCallback",
+        "summary": "处理 Google OAuth 回调",
+        "parameters": [
+          {
+            "name": "state",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/api/categories": {
+      "get": {
+        "operationId": "CategoriesController_findPublicList",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "categories"
+        ],
+        "summary": "GET /api/categories"
+      }
+    },
+    "/api/admin/categories": {
+      "get": {
+        "operationId": "CategoriesController_findAdminList",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "admin/categories"
+        ],
+        "summary": "GET /api/admin/categories"
+      },
+      "post": {
+        "operationId": "CategoriesController_create",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateCategoryDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "admin/categories"
+        ],
+        "summary": "POST /api/admin/categories"
+      }
+    },
+    "/api/admin/categories/{id}": {
+      "get": {
+        "operationId": "CategoriesController_findById",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "admin/categories"
+        ],
+        "summary": "GET /api/admin/categories/{id}"
+      },
+      "patch": {
+        "operationId": "CategoriesController_update",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateCategoryDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "admin/categories"
+        ],
+        "summary": "PATCH /api/admin/categories/{id}"
+      },
+      "delete": {
+        "operationId": "CategoriesController_remove",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "admin/categories"
+        ],
+        "summary": "DELETE /api/admin/categories/{id}"
+      }
+    },
+    "/api/tags": {
+      "get": {
+        "operationId": "TagsController_findPublicList",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "tags"
+        ],
+        "summary": "GET /api/tags"
+      }
+    },
+    "/api/admin/tags": {
+      "get": {
+        "operationId": "TagsController_findAdminList",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "admin/tags"
+        ],
+        "summary": "GET /api/admin/tags"
+      },
+      "post": {
+        "operationId": "TagsController_create",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateTagDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "admin/tags"
+        ],
+        "summary": "POST /api/admin/tags"
+      }
+    },
+    "/api/admin/tags/{id}": {
+      "get": {
+        "operationId": "TagsController_findById",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "admin/tags"
+        ],
+        "summary": "GET /api/admin/tags/{id}"
+      },
+      "patch": {
+        "operationId": "TagsController_update",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateTagDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "admin/tags"
+        ],
+        "summary": "PATCH /api/admin/tags/{id}"
+      },
+      "delete": {
+        "operationId": "TagsController_remove",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "admin/tags"
+        ],
+        "summary": "DELETE /api/admin/tags/{id}"
+      }
+    },
+    "/api/admin/articles": {
+      "post": {
+        "operationId": "AdminArticlesController_create",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateArticleDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "admin/articles"
+        ],
+        "summary": "POST /api/admin/articles"
+      },
+      "get": {
+        "operationId": "AdminArticlesController_findList",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "admin/articles"
+        ],
+        "summary": "GET /api/admin/articles"
+      }
+    },
+    "/api/admin/articles/{id}": {
+      "get": {
+        "operationId": "AdminArticlesController_findDetail",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "admin/articles"
+        ],
+        "summary": "GET /api/admin/articles/{id}"
+      },
+      "patch": {
+        "operationId": "AdminArticlesController_update",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateArticleDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "admin/articles"
+        ],
+        "summary": "PATCH /api/admin/articles/{id}"
+      },
+      "delete": {
+        "operationId": "AdminArticlesController_remove",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "admin/articles"
+        ],
+        "summary": "DELETE /api/admin/articles/{id}"
+      }
+    },
+    "/api/admin/articles/{id}/export": {
+      "get": {
+        "operationId": "AdminArticlesController_exportArticle",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "admin/articles"
+        ],
+        "summary": "GET /api/admin/articles/{id}/export"
+      }
+    },
+    "/api/admin/articles/{id}/permanent": {
+      "delete": {
+        "operationId": "AdminArticlesController_permanentRemove",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "admin/articles"
+        ],
+        "summary": "DELETE /api/admin/articles/{id}/permanent"
+      }
+    },
+    "/api/admin/articles/{articleId}/versions": {
+      "get": {
+        "operationId": "AdminArticleVersionsController_findList",
+        "parameters": [
+          {
+            "name": "articleId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "admin/articles"
+        ],
+        "summary": "GET /api/admin/articles/{articleId}/versions"
+      }
+    },
+    "/api/admin/articles/{articleId}/versions/{versionId}": {
+      "get": {
+        "operationId": "AdminArticleVersionsController_findDetail",
+        "parameters": [
+          {
+            "name": "articleId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "versionId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "admin/articles"
+        ],
+        "summary": "GET /api/admin/articles/{articleId}/versions/{versionId}"
+      }
+    },
+    "/api/admin/articles/{articleId}/versions/{versionId}/restore": {
+      "post": {
+        "operationId": "AdminArticleVersionsController_restore",
+        "parameters": [
+          {
+            "name": "articleId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "versionId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RestoreArticleVersionDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "admin/articles"
+        ],
+        "summary": "POST /api/admin/articles/{articleId}/versions/{versionId}/restore"
+      }
+    },
+    "/api/articles": {
+      "get": {
+        "operationId": "PublicArticlesController_findList",
+        "summary": "获取公开文章列表",
+        "parameters": [
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "description": "页码",
+            "schema": {
+              "example": 1,
+              "type": "number"
+            }
+          },
+          {
+            "name": "pageSize",
+            "required": false,
+            "in": "query",
+            "description": "每页数量",
+            "schema": {
+              "example": 10,
+              "type": "number"
+            }
+          },
+          {
+            "name": "categoryId",
+            "required": false,
+            "in": "query",
+            "description": "分类 ID",
+            "schema": {
+              "example": "0f4c5af2-1111-4444-8888-123456789abc",
+              "type": "string"
+            }
+          },
+          {
+            "name": "tagId",
+            "required": false,
+            "in": "query",
+            "description": "标签 ID",
+            "schema": {
+              "example": "0f4c5af2-2222-4444-8888-123456789abc",
+              "type": "string"
+            }
+          },
+          {
+            "name": "keyword",
+            "required": false,
+            "in": "query",
+            "description": "搜索关键字",
+            "schema": {
+              "example": "NestJS",
+              "type": "string"
+            }
+          },
+          {
+            "name": "sortBy",
+            "required": false,
+            "in": "query",
+            "description": "排序字段",
+            "schema": {
+              "enum": [
+                "createdAt",
+                "updatedAt",
+                "publishedAt",
+                "viewCount"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "name": "order",
+            "required": false,
+            "in": "query",
+            "description": "排序方向",
+            "schema": {
+              "enum": [
+                "ASC",
+                "DESC"
+              ],
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "获取成功"
+          }
+        },
+        "tags": [
+          "articles"
+        ]
+      }
+    },
+    "/api/articles/{id}/like": {
+      "get": {
+        "operationId": "PublicArticlesController_getLikeStatus",
+        "summary": "获取文章点赞状态",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "文章 ID",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "获取成功"
+          }
+        },
+        "tags": [
+          "articles"
+        ]
+      },
+      "post": {
+        "operationId": "PublicArticlesController_likeArticle",
+        "summary": "点赞文章",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "文章 ID",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "点赞成功"
+          }
+        },
+        "tags": [
+          "articles"
+        ]
+      },
+      "delete": {
+        "operationId": "PublicArticlesController_unlikeArticle",
+        "summary": "取消点赞文章",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "文章 ID",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "取消成功"
+          }
+        },
+        "tags": [
+          "articles"
+        ]
+      }
+    },
+    "/api/articles/{slug}": {
+      "get": {
+        "operationId": "PublicArticlesController_findDetail",
+        "summary": "获取文章详情",
+        "parameters": [
+          {
+            "name": "slug",
+            "required": true,
+            "in": "path",
+            "description": "文章 slug",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "获取成功"
+          }
+        },
+        "tags": [
+          "articles"
+        ]
+      }
+    },
+    "/api/admin/pages": {
+      "post": {
+        "operationId": "AdminPagesController_createPage",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreatePageDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "admin/pages"
+        ],
+        "summary": "POST /api/admin/pages"
+      },
+      "get": {
+        "operationId": "AdminPagesController_findPages",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "admin/pages"
+        ],
+        "summary": "GET /api/admin/pages"
+      }
+    },
+    "/api/admin/pages/{id}": {
+      "get": {
+        "operationId": "AdminPagesController_findPageById",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "admin/pages"
+        ],
+        "summary": "GET /api/admin/pages/{id}"
+      },
+      "patch": {
+        "operationId": "AdminPagesController_updatePage",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdatePageDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "admin/pages"
+        ],
+        "summary": "PATCH /api/admin/pages/{id}"
+      },
+      "delete": {
+        "operationId": "AdminPagesController_removePage",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "admin/pages"
+        ],
+        "summary": "DELETE /api/admin/pages/{id}"
+      }
+    },
+    "/api/admin/friend-links": {
+      "post": {
+        "operationId": "AdminPagesController_createFriendLink",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateFriendLinkDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "admin/friend-links"
+        ],
+        "summary": "POST /api/admin/friend-links"
+      },
+      "get": {
+        "operationId": "AdminPagesController_findFriendLinks",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "admin/friend-links"
+        ],
+        "summary": "GET /api/admin/friend-links"
+      }
+    },
+    "/api/admin/friend-links/{id}": {
+      "get": {
+        "operationId": "AdminPagesController_findFriendLinkById",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "admin/friend-links"
+        ],
+        "summary": "GET /api/admin/friend-links/{id}"
+      },
+      "patch": {
+        "operationId": "AdminPagesController_updateFriendLink",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateFriendLinkDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "admin/friend-links"
+        ],
+        "summary": "PATCH /api/admin/friend-links/{id}"
+      },
+      "delete": {
+        "operationId": "AdminPagesController_removeFriendLink",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "admin/friend-links"
+        ],
+        "summary": "DELETE /api/admin/friend-links/{id}"
+      }
+    },
+    "/api/pages/about": {
+      "get": {
+        "operationId": "PublicPagesController_findAboutPage",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "pages"
+        ],
+        "summary": "GET /api/pages/about"
+      }
+    },
+    "/api/pages/{slug}": {
+      "get": {
+        "operationId": "PublicPagesController_findPageBySlug",
+        "parameters": [
+          {
+            "name": "slug",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "pages"
+        ],
+        "summary": "GET /api/pages/{slug}"
+      }
+    },
+    "/api/friend-links": {
+      "get": {
+        "operationId": "PublicPagesController_findFriendLinks",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "friend-links"
+        ],
+        "summary": "GET /api/friend-links"
+      }
+    },
+    "/api/friend-links/applications": {
+      "post": {
+        "operationId": "PublicPagesController_applyFriendLink",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ApplyFriendLinkDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "friend-links"
+        ],
+        "summary": "POST /api/friend-links/applications"
+      }
+    },
+    "/api/settings": {
+      "get": {
+        "operationId": "SettingsController_findPublicSettings",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "settings"
+        ],
+        "summary": "GET /api/settings"
+      }
+    },
+    "/api/admin/settings": {
+      "get": {
+        "operationId": "SettingsController_findAllSettings",
+        "parameters": [
+          {
+            "name": "group",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "admin/settings"
+        ],
+        "summary": "GET /api/admin/settings"
+      },
+      "put": {
+        "operationId": "SettingsController_upsert",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpsertSettingDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "admin/settings"
+        ],
+        "summary": "PUT /api/admin/settings"
+      }
+    },
+    "/api/admin/settings/{key}": {
+      "get": {
+        "operationId": "SettingsController_findByKey",
+        "parameters": [
+          {
+            "name": "key",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "admin/settings"
+        ],
+        "summary": "GET /api/admin/settings/{key}"
+      },
+      "delete": {
+        "operationId": "SettingsController_remove",
+        "parameters": [
+          {
+            "name": "key",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "admin/settings"
+        ],
+        "summary": "DELETE /api/admin/settings/{key}"
+      }
+    },
+    "/api/admin/settings/batch": {
+      "put": {
+        "operationId": "SettingsController_batchUpsert",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BatchUpsertSettingsDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "admin/settings"
+        ],
+        "summary": "PUT /api/admin/settings/batch"
+      }
+    },
+    "/api/admin/dashboard/stats": {
+      "get": {
+        "operationId": "DashboardController_getStats",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "admin/dashboard"
+        ],
+        "summary": "GET /api/admin/dashboard/stats"
+      }
+    },
+    "/api/admin/dashboard/recent-articles": {
+      "get": {
+        "operationId": "DashboardController_getRecentArticles",
+        "parameters": [
+          {
+            "name": "limit",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "admin/dashboard"
+        ],
+        "summary": "GET /api/admin/dashboard/recent-articles"
+      }
+    },
+    "/api/archives": {
+      "get": {
+        "operationId": "ArchivesController_getSummary",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "archives"
+        ],
+        "summary": "GET /api/archives"
+      }
+    },
+    "/api/archives/articles": {
+      "get": {
+        "operationId": "ArchivesController_getArticles",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "archives"
+        ],
+        "summary": "GET /api/archives/articles"
+      }
+    },
+    "/api/search": {
+      "get": {
+        "operationId": "SearchController_search",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "search"
+        ],
+        "summary": "GET /api/search"
+      }
+    },
+    "/api/admin/search/rebuild-index": {
+      "post": {
+        "operationId": "AdminSearchController_rebuildIndex",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "admin/search"
+        ],
+        "summary": "POST /api/admin/search/rebuild-index"
+      }
+    },
+    "/api/admin/collaboration/{articleId}/collaborators": {
+      "post": {
+        "operationId": "CollaborationController_addCollaborator",
+        "parameters": [
+          {
+            "name": "articleId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddCollaboratorDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "admin/collaboration"
+        ],
+        "summary": "POST /api/admin/collaboration/{articleId}/collaborators"
+      },
+      "get": {
+        "operationId": "CollaborationController_getCollaborators",
+        "parameters": [
+          {
+            "name": "articleId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "admin/collaboration"
+        ],
+        "summary": "GET /api/admin/collaboration/{articleId}/collaborators"
+      }
+    },
+    "/api/admin/collaboration/{articleId}/collaborators/{collaboratorId}": {
+      "delete": {
+        "operationId": "CollaborationController_removeCollaborator",
+        "parameters": [
+          {
+            "name": "articleId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "collaboratorId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "admin/collaboration"
+        ],
+        "summary": "DELETE /api/admin/collaboration/{articleId}/collaborators/{collaboratorId}"
+      }
+    },
+    "/api/admin/collaboration/{articleId}/draft": {
+      "patch": {
+        "operationId": "CollaborationController_updateDraft",
+        "parameters": [
+          {
+            "name": "articleId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateDraftDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "admin/collaboration"
+        ],
+        "summary": "PATCH /api/admin/collaboration/{articleId}/draft"
+      }
+    },
+    "/api/admin/collaboration/{articleId}/history": {
+      "get": {
+        "operationId": "CollaborationController_getEditHistory",
+        "parameters": [
+          {
+            "name": "articleId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "admin/collaboration"
+        ],
+        "summary": "GET /api/admin/collaboration/{articleId}/history"
+      }
+    },
+    "/api/admin/paid-content/{articleId}": {
+      "put": {
+        "operationId": "AdminPaidContentController_setPaidContent",
+        "parameters": [
+          {
+            "name": "articleId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetPaidContentDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "admin/paid-content"
+        ],
+        "summary": "PUT /api/admin/paid-content/{articleId}"
+      },
+      "delete": {
+        "operationId": "AdminPaidContentController_removePaidContent",
+        "parameters": [
+          {
+            "name": "articleId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "admin/paid-content"
+        ],
+        "summary": "DELETE /api/admin/paid-content/{articleId}"
+      }
+    },
+    "/api/admin/paid-content/{articleId}/purchases": {
+      "get": {
+        "operationId": "AdminPaidContentController_getPurchaseRecords",
+        "parameters": [
+          {
+            "name": "articleId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "admin/paid-content"
+        ],
+        "summary": "GET /api/admin/paid-content/{articleId}/purchases"
+      }
+    },
+    "/api/paid-content/{articleId}/info": {
+      "get": {
+        "operationId": "PublicPaidContentController_getPaidInfo",
+        "parameters": [
+          {
+            "name": "articleId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "paid-content"
+        ],
+        "summary": "GET /api/paid-content/{articleId}/info"
+      }
+    },
+    "/api/paid-content/{articleId}/content": {
+      "get": {
+        "operationId": "PublicPaidContentController_getContent",
+        "parameters": [
+          {
+            "name": "articleId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "paid-content"
+        ],
+        "summary": "GET /api/paid-content/{articleId}/content"
+      }
+    },
+    "/api/paid-content/purchase": {
+      "post": {
+        "operationId": "PublicPaidContentController_purchase",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PurchaseArticleDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "paid-content"
+        ],
+        "summary": "POST /api/paid-content/purchase"
+      }
+    },
+    "/api/paid-content/{articleId}/check": {
+      "get": {
+        "operationId": "PublicPaidContentController_checkPurchase",
+        "parameters": [
+          {
+            "name": "articleId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "paid-content"
+        ],
+        "summary": "GET /api/paid-content/{articleId}/check"
+      }
+    },
+    "/api/paid-content/my-purchases": {
+      "get": {
+        "operationId": "PublicPaidContentController_getMyPurchases",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "paid-content"
+        ],
+        "summary": "GET /api/paid-content/my-purchases"
+      }
+    },
+    "/api/admin/notifications/send": {
+      "post": {
+        "operationId": "AdminNotificationsController_sendNotification",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SendNotificationDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "admin/notifications"
+        ],
+        "summary": "POST /api/admin/notifications/send"
+      }
+    },
+    "/api/admin/notifications/notify-subscribers": {
+      "post": {
+        "operationId": "AdminNotificationsController_notifySubscribers",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "admin/notifications"
+        ],
+        "summary": "POST /api/admin/notifications/notify-subscribers"
+      }
+    },
+    "/api/admin/notifications/retry-failed": {
+      "post": {
+        "operationId": "AdminNotificationsController_retryFailed",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "admin/notifications"
+        ],
+        "summary": "POST /api/admin/notifications/retry-failed"
+      }
+    },
+    "/api/admin/notifications": {
+      "get": {
+        "operationId": "AdminNotificationsController_getNotifications",
+        "parameters": [
+          {
+            "name": "page",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "pageSize",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "admin/notifications"
+        ],
+        "summary": "GET /api/admin/notifications"
+      }
+    },
+    "/api/admin/notifications/subscribers": {
+      "get": {
+        "operationId": "AdminNotificationsController_getSubscribers",
+        "parameters": [
+          {
+            "name": "page",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "pageSize",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "admin/notifications"
+        ],
+        "summary": "GET /api/admin/notifications/subscribers"
+      }
+    },
+    "/api/admin/notifications/subscribers/{id}": {
+      "delete": {
+        "operationId": "AdminNotificationsController_removeSubscriber",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "admin/notifications"
+        ],
+        "summary": "DELETE /api/admin/notifications/subscribers/{id}"
+      }
+    },
+    "/api/subscriptions": {
+      "post": {
+        "operationId": "PublicSubscriptionController_subscribe",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SubscribeDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "subscriptions"
+        ],
+        "summary": "POST /api/subscriptions"
+      }
+    },
+    "/api/subscriptions/confirm/{token}": {
+      "get": {
+        "operationId": "PublicSubscriptionController_confirm",
+        "parameters": [
+          {
+            "name": "token",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "subscriptions"
+        ],
+        "summary": "GET /api/subscriptions/confirm/{token}"
+      }
+    },
+    "/api/subscriptions/unsubscribe/{token}": {
+      "get": {
+        "operationId": "PublicSubscriptionController_unsubscribe",
+        "parameters": [
+          {
+            "name": "token",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "subscriptions"
+        ],
+        "summary": "GET /api/subscriptions/unsubscribe/{token}"
+      }
+    },
+    "/api/seo/site": {
+      "get": {
+        "operationId": "SeoController_getSiteSeoSettings",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "seo"
+        ],
+        "summary": "GET /api/seo/site"
+      }
+    },
+    "/api/seo/articles/{slug}": {
+      "get": {
+        "operationId": "SeoController_getArticleSeoMeta",
+        "parameters": [
+          {
+            "name": "slug",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "seo"
+        ],
+        "summary": "GET /api/seo/articles/{slug}"
+      }
+    },
+    "/api/seo/pages/{slug}": {
+      "get": {
+        "operationId": "SeoController_getPageSeoMeta",
+        "parameters": [
+          {
+            "name": "slug",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "seo"
+        ],
+        "summary": "GET /api/seo/pages/{slug}"
+      }
+    },
+    "/api/seo/sitemap": {
+      "get": {
+        "operationId": "SeoController_generateSitemap",
+        "parameters": [
+          {
+            "name": "baseUrl",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "seo"
+        ],
+        "summary": "GET /api/seo/sitemap"
+      }
+    },
+    "/api/admin/backup": {
+      "post": {
+        "operationId": "BackupController_createBackup",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "admin/backup"
+        ],
+        "summary": "POST /api/admin/backup"
+      },
+      "get": {
+        "operationId": "BackupController_listBackups",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "admin/backup"
+        ],
+        "summary": "GET /api/admin/backup"
+      }
+    },
+    "/api/admin/backup/{filename}/download": {
+      "get": {
+        "operationId": "BackupController_downloadBackup",
+        "parameters": [
+          {
+            "name": "filename",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "admin/backup"
+        ],
+        "summary": "GET /api/admin/backup/{filename}/download"
+      }
+    },
+    "/api/admin/backup/{filename}/restore": {
+      "post": {
+        "operationId": "BackupController_restoreBackup",
+        "parameters": [
+          {
+            "name": "filename",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "admin/backup"
+        ],
+        "summary": "POST /api/admin/backup/{filename}/restore"
+      }
+    },
+    "/api/admin/backup/{filename}": {
+      "delete": {
+        "operationId": "BackupController_deleteBackup",
+        "parameters": [
+          {
+            "name": "filename",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "admin/backup"
+        ],
+        "summary": "DELETE /api/admin/backup/{filename}"
+      }
+    },
+    "/api/i18n/locales": {
+      "get": {
+        "operationId": "I18nController_getSupportedLocales",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "i18n"
+        ],
+        "summary": "GET /api/i18n/locales"
+      }
+    },
+    "/api/i18n/default": {
+      "get": {
+        "operationId": "I18nController_getDefaultLocale",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "i18n"
+        ],
+        "summary": "GET /api/i18n/default"
+      },
+      "put": {
+        "operationId": "I18nController_setDefaultLocale",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "i18n"
+        ],
+        "summary": "PUT /api/i18n/default"
+      }
+    },
+    "/api/i18n/translations/{locale}": {
+      "get": {
+        "operationId": "I18nController_getTranslations",
+        "parameters": [
+          {
+            "name": "locale",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "i18n"
+        ],
+        "summary": "GET /api/i18n/translations/{locale}"
+      }
+    },
+    "/api/users/profile": {
+      "get": {
+        "operationId": "UsersController_getProfile",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "users"
+        ],
+        "summary": "GET /api/users/profile"
+      },
+      "put": {
+        "operationId": "UsersController_updateProfile",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateProfileDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "users"
+        ],
+        "summary": "PUT /api/users/profile"
+      }
+    },
+    "/api/users/avatar": {
+      "post": {
+        "operationId": "UsersController_uploadAvatar",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "users"
+        ],
+        "summary": "POST /api/users/avatar"
+      }
+    },
+    "/api/users/password": {
+      "put": {
+        "operationId": "UsersController_changePassword",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChangePasswordDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "users"
+        ],
+        "summary": "PUT /api/users/password"
+      }
+    },
+    "/api/users/favorites": {
+      "get": {
+        "operationId": "UsersController_getFavoriteArticles",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "users"
+        ],
+        "summary": "GET /api/users/favorites"
+      }
+    },
+    "/api/favorites/{articleId}": {
+      "post": {
+        "operationId": "FavoritesController_addFavorite",
+        "parameters": [
+          {
+            "name": "articleId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "favorites"
+        ],
+        "summary": "POST /api/favorites/{articleId}"
+      },
+      "delete": {
+        "operationId": "FavoritesController_removeFavorite",
+        "parameters": [
+          {
+            "name": "articleId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "favorites"
+        ],
+        "summary": "DELETE /api/favorites/{articleId}"
+      }
+    },
+    "/api/favorites/{articleId}/check": {
+      "get": {
+        "operationId": "FavoritesController_isFavorited",
+        "parameters": [
+          {
+            "name": "articleId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "favorites"
+        ],
+        "summary": "GET /api/favorites/{articleId}/check"
+      }
+    },
+    "/api/favorites/batch-check": {
+      "post": {
+        "operationId": "FavoritesController_batchCheckFavorited",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "favorites"
+        ],
+        "summary": "POST /api/favorites/batch-check"
+      }
+    },
+    "/api/notifications": {
+      "get": {
+        "operationId": "UserNotificationsController_getMyNotifications",
+        "parameters": [
+          {
+            "name": "page",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "pageSize",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "unreadOnly",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "notifications"
+        ],
+        "summary": "GET /api/notifications"
+      }
+    },
+    "/api/notifications/unread-count": {
+      "get": {
+        "operationId": "UserNotificationsController_getUnreadCount",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "notifications"
+        ],
+        "summary": "GET /api/notifications/unread-count"
+      }
+    },
+    "/api/notifications/{id}/read": {
+      "put": {
+        "operationId": "UserNotificationsController_markAsRead",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "notifications"
+        ],
+        "summary": "PUT /api/notifications/{id}/read"
+      }
+    },
+    "/api/notifications/read-all": {
+      "put": {
+        "operationId": "UserNotificationsController_markAllAsRead",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "notifications"
+        ],
+        "summary": "PUT /api/notifications/read-all"
+      }
+    },
+    "/api/notifications/{id}": {
+      "delete": {
+        "operationId": "UserNotificationsController_deleteNotification",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "notifications"
+        ],
+        "summary": "DELETE /api/notifications/{id}"
+      }
+    },
+    "/api/admin/notifications/broadcast": {
+      "post": {
+        "operationId": "AdminNotificationsController_broadcast",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BroadcastNotificationDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "admin/notifications"
+        ],
+        "summary": "POST /api/admin/notifications/broadcast"
+      }
+    },
+    "/api/stats/visit": {
+      "post": {
+        "operationId": "PublicVisitorStatsController_recordVisit",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RecordVisitDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "stats"
+        ],
+        "summary": "POST /api/stats/visit"
+      }
+    },
+    "/api/admin/stats/today": {
+      "get": {
+        "operationId": "AdminVisitorStatsController_getTodayStats",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "admin/stats"
+        ],
+        "summary": "GET /api/admin/stats/today"
+      }
+    },
+    "/api/admin/stats/range": {
+      "get": {
+        "operationId": "AdminVisitorStatsController_getStatsRange",
+        "parameters": [
+          {
+            "name": "startDate",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "endDate",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "admin/stats"
+        ],
+        "summary": "GET /api/admin/stats/range"
+      }
+    },
+    "/api/admin/stats/top-pages": {
+      "get": {
+        "operationId": "AdminVisitorStatsController_getTopPages",
+        "parameters": [
+          {
+            "name": "limit",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "days",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "admin/stats"
+        ],
+        "summary": "GET /api/admin/stats/top-pages"
+      }
+    },
+    "/api/admin/stats/referers": {
+      "get": {
+        "operationId": "AdminVisitorStatsController_getRefererStats",
+        "parameters": [
+          {
+            "name": "days",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "admin/stats"
+        ],
+        "summary": "GET /api/admin/stats/referers"
+      }
+    },
+    "/api/admin/stats/devices": {
+      "get": {
+        "operationId": "AdminVisitorStatsController_getDeviceStats",
+        "parameters": [
+          {
+            "name": "days",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "admin/stats"
+        ],
+        "summary": "GET /api/admin/stats/devices"
+      }
+    },
+    "/api/guestbook": {
+      "get": {
+        "operationId": "PublicGuestbookController_getMessages",
+        "parameters": [
+          {
+            "name": "page",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "pageSize",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "guestbook"
+        ],
+        "summary": "GET /api/guestbook"
+      },
+      "post": {
+        "operationId": "PublicGuestbookController_createMessage",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateGuestbookDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "guestbook"
+        ],
+        "summary": "POST /api/guestbook"
+      }
+    },
+    "/api/admin/guestbook": {
+      "get": {
+        "operationId": "AdminGuestbookController_getMessages",
+        "parameters": [
+          {
+            "name": "page",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "pageSize",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "status",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "admin/guestbook"
+        ],
+        "summary": "GET /api/admin/guestbook"
+      }
+    },
+    "/api/admin/guestbook/{id}/status": {
+      "put": {
+        "operationId": "AdminGuestbookController_updateStatus",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "admin/guestbook"
+        ],
+        "summary": "PUT /api/admin/guestbook/{id}/status"
+      }
+    },
+    "/api/admin/guestbook/{id}/reply": {
+      "post": {
+        "operationId": "AdminGuestbookController_adminReply",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "admin/guestbook"
+        ],
+        "summary": "POST /api/admin/guestbook/{id}/reply"
+      }
+    },
+    "/api/admin/guestbook/{id}": {
+      "delete": {
+        "operationId": "AdminGuestbookController_deleteMessage",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "admin/guestbook"
+        ],
+        "summary": "DELETE /api/admin/guestbook/{id}"
+      }
+    },
+    "/api/articles/{articleId}/comments": {
+      "get": {
+        "operationId": "PublicCommentsController_getApprovedComments",
+        "summary": "获取文章公开评论列表",
+        "parameters": [
+          {
+            "name": "pageSize",
+            "required": false,
+            "in": "query",
+            "description": "每页数量",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "description": "页码",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "articleId",
+            "required": true,
+            "in": "path",
+            "description": "文章 ID",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "获取成功"
+          }
+        },
+        "tags": [
+          "comments"
+        ]
+      },
+      "post": {
+        "operationId": "PublicCommentsController_createComment",
+        "summary": "提交文章评论",
+        "parameters": [
+          {
+            "name": "articleId",
+            "required": true,
+            "in": "path",
+            "description": "文章 ID",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateCommentDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "提交成功，等待审核"
+          }
+        },
+        "tags": [
+          "comments"
+        ]
+      }
+    },
+    "/api/admin/comments": {
+      "get": {
+        "operationId": "AdminCommentsController_getComments",
+        "summary": "获取后台评论列表",
+        "parameters": [
+          {
+            "name": "status",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "enum": [
+                "pending",
+                "approved",
+                "spam",
+                "rejected"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "name": "articleId",
+            "required": false,
+            "in": "query",
+            "description": "文章 ID",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "pageSize",
+            "required": false,
+            "in": "query",
+            "description": "每页数量",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "description": "页码",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "获取成功"
+          }
+        },
+        "tags": [
+          "admin-comments"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/api/admin/comments/{id}/status": {
+      "put": {
+        "operationId": "AdminCommentsController_updateStatus",
+        "summary": "更新评论审核状态",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "评论 ID",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateCommentStatusDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "更新成功"
+          }
+        },
+        "tags": [
+          "admin-comments"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/api/admin/comments/{id}/reply": {
+      "post": {
+        "operationId": "AdminCommentsController_reply",
+        "summary": "管理员回复评论",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "父评论 ID",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReplyCommentDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "回复成功"
+          }
+        },
+        "tags": [
+          "admin-comments"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/api/admin/comments/{id}": {
+      "delete": {
+        "operationId": "AdminCommentsController_deleteComment",
+        "summary": "删除评论及其子回复",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "评论 ID",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "删除成功"
+          }
+        },
+        "tags": [
+          "admin-comments"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/api/admin/media-assets/upload": {
+      "post": {
+        "operationId": "AdminMediaAssetsController_upload",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "admin/media-assets"
+        ],
+        "summary": "POST /api/admin/media-assets/upload"
+      }
+    },
+    "/api/admin/media-assets": {
+      "get": {
+        "operationId": "AdminMediaAssetsController_findList",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "admin/media-assets"
+        ],
+        "summary": "GET /api/admin/media-assets"
+      }
+    },
+    "/api/admin/media-assets/{id}": {
+      "get": {
+        "operationId": "AdminMediaAssetsController_findDetail",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "admin/media-assets"
+        ],
+        "summary": "GET /api/admin/media-assets/{id}"
+      },
+      "patch": {
+        "operationId": "AdminMediaAssetsController_update",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateMediaAssetDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "admin/media-assets"
+        ],
+        "summary": "PATCH /api/admin/media-assets/{id}"
+      },
+      "delete": {
+        "operationId": "AdminMediaAssetsController_remove",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "admin/media-assets"
+        ],
+        "summary": "DELETE /api/admin/media-assets/{id}"
+      }
+    },
+    "/api/media-assets/files/{fileName}": {
+      "get": {
+        "operationId": "PublicMediaAssetsController_serveFile",
+        "parameters": [
+          {
+            "name": "fileName",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "media-assets"
+        ],
+        "summary": "GET /api/media-assets/files/{fileName}"
+      }
+    },
+    "/api/admin/series": {
+      "post": {
+        "operationId": "AdminArticleSeriesController_create",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateArticleSeriesDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "admin/series"
+        ],
+        "summary": "POST /api/admin/series"
+      },
+      "get": {
+        "operationId": "AdminArticleSeriesController_findList",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "admin/series"
+        ],
+        "summary": "GET /api/admin/series"
+      }
+    },
+    "/api/admin/series/{id}": {
+      "get": {
+        "operationId": "AdminArticleSeriesController_findDetail",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "admin/series"
+        ],
+        "summary": "GET /api/admin/series/{id}"
+      },
+      "patch": {
+        "operationId": "AdminArticleSeriesController_update",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateArticleSeriesDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "admin/series"
+        ],
+        "summary": "PATCH /api/admin/series/{id}"
+      },
+      "delete": {
+        "operationId": "AdminArticleSeriesController_remove",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "admin/series"
+        ],
+        "summary": "DELETE /api/admin/series/{id}"
+      }
+    },
+    "/api/series": {
+      "get": {
+        "operationId": "PublicArticleSeriesController_findList",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "series"
+        ],
+        "summary": "GET /api/series"
+      }
+    },
+    "/api/series/{slug}": {
+      "get": {
+        "operationId": "PublicArticleSeriesController_findDetail",
+        "parameters": [
+          {
+            "name": "slug",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "series"
+        ],
+        "summary": "GET /api/series/{slug}"
+      }
+    },
+    "/api/admin/operation-logs": {
+      "get": {
+        "operationId": "AdminOperationLogsController_findList",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "admin/operation-logs"
+        ],
+        "summary": "GET /api/admin/operation-logs"
+      }
+    },
+    "/api/announcements": {
+      "get": {
+        "operationId": "PublicAnnouncementsController_getPublishedAnnouncements",
+        "parameters": [
+          {
+            "name": "page",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "pageSize",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "announcements"
+        ],
+        "summary": "GET /api/announcements"
+      }
+    },
+    "/api/announcements/pinned": {
+      "get": {
+        "operationId": "PublicAnnouncementsController_getLatestPinned",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "announcements"
+        ],
+        "summary": "GET /api/announcements/pinned"
+      }
+    },
+    "/api/admin/announcements": {
+      "get": {
+        "operationId": "AdminAnnouncementsController_getAnnouncements",
+        "parameters": [
+          {
+            "name": "page",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "pageSize",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "admin/announcements"
+        ],
+        "summary": "GET /api/admin/announcements"
+      },
+      "post": {
+        "operationId": "AdminAnnouncementsController_create",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateAnnouncementDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "admin/announcements"
+        ],
+        "summary": "POST /api/admin/announcements"
+      }
+    },
+    "/api/admin/announcements/{id}": {
+      "put": {
+        "operationId": "AdminAnnouncementsController_update",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateAnnouncementDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "admin/announcements"
+        ],
+        "summary": "PUT /api/admin/announcements/{id}"
+      },
+      "delete": {
+        "operationId": "AdminAnnouncementsController_delete",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "admin/announcements"
+        ],
+        "summary": "DELETE /api/admin/announcements/{id}"
+      }
+    }
+  },
+  "info": {
+    "title": "Blog System",
+    "description": "Personal Blog System API - 自动生成的后端接口文档",
+    "version": "1.0.0",
+    "contact": {}
+  },
+  "tags": [
+    {
+      "name": "admin-comments"
+    },
+    {
+      "name": "admin/announcements"
+    },
+    {
+      "name": "admin/articles"
+    },
+    {
+      "name": "admin/backup"
+    },
+    {
+      "name": "admin/categories"
+    },
+    {
+      "name": "admin/collaboration"
+    },
+    {
+      "name": "admin/dashboard"
+    },
+    {
+      "name": "admin/friend-links"
+    },
+    {
+      "name": "admin/guestbook"
+    },
+    {
+      "name": "admin/media-assets"
+    },
+    {
+      "name": "admin/notifications"
+    },
+    {
+      "name": "admin/operation-logs"
+    },
+    {
+      "name": "admin/pages"
+    },
+    {
+      "name": "admin/paid-content"
+    },
+    {
+      "name": "admin/search"
+    },
+    {
+      "name": "admin/series"
+    },
+    {
+      "name": "admin/settings"
+    },
+    {
+      "name": "admin/stats"
+    },
+    {
+      "name": "admin/tags"
+    },
+    {
+      "name": "announcements"
+    },
+    {
+      "name": "archives"
+    },
+    {
+      "name": "articles"
+    },
+    {
+      "name": "auth"
+    },
+    {
+      "name": "categories"
+    },
+    {
+      "name": "comments"
+    },
+    {
+      "name": "favorites"
+    },
+    {
+      "name": "feed"
+    },
+    {
+      "name": "friend-links"
+    },
+    {
+      "name": "guestbook"
+    },
+    {
+      "name": "health"
+    },
+    {
+      "name": "i18n"
+    },
+    {
+      "name": "media-assets"
+    },
+    {
+      "name": "notifications"
+    },
+    {
+      "name": "pages"
+    },
+    {
+      "name": "paid-content"
+    },
+    {
+      "name": "search"
+    },
+    {
+      "name": "seo"
+    },
+    {
+      "name": "series"
+    },
+    {
+      "name": "settings"
+    },
+    {
+      "name": "stats"
+    },
+    {
+      "name": "subscriptions"
+    },
+    {
+      "name": "tags"
+    },
+    {
+      "name": "users"
+    }
+  ],
+  "servers": [],
+  "components": {
+    "securitySchemes": {
+      "bearer": {
+        "scheme": "bearer",
+        "bearerFormat": "JWT",
+        "type": "http",
+        "in": "header"
+      }
+    },
+    "schemas": {
+      "RegisterDto": {
+        "type": "object",
+        "properties": {
+          "username": {
+            "type": "string",
+            "description": "用户名",
+            "example": "coder_su"
+          },
+          "email": {
+            "type": "string",
+            "description": "邮箱地址",
+            "example": "coder@example.com"
+          },
+          "password": {
+            "type": "string",
+            "description": "登录密码，必须包含字母和数字",
+            "example": "Pass123456"
+          },
+          "nickname": {
+            "type": "string",
+            "description": "昵称",
+            "example": "苏同学"
+          }
+        },
+        "required": [
+          "username",
+          "email",
+          "password"
+        ]
+      },
+      "AuthUserDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "0f4c5af2-1111-4444-8888-123456789abc"
+          },
+          "username": {
+            "type": "string",
+            "example": "author"
+          },
+          "email": {
+            "type": "string",
+            "example": "author@example.com"
+          },
+          "nickname": {
+            "type": "object",
+            "example": "博主",
+            "nullable": true
+          },
+          "avatar": {
+            "type": "object",
+            "example": "https://example.com/avatar.png",
+            "nullable": true
+          },
+          "bio": {
+            "type": "object",
+            "example": "持续写作与构建产品。",
+            "nullable": true
+          },
+          "isActive": {
+            "type": "boolean",
+            "example": true
+          },
+          "role": {
+            "type": "object",
+            "example": "author"
+          },
+          "lastLoginAt": {
+            "type": "object",
+            "example": "2026-04-19T10:00:00.000Z",
+            "nullable": true
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string",
+            "example": "2026-04-19T10:00:00.000Z"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "type": "string",
+            "example": "2026-04-19T10:00:00.000Z"
+          }
+        },
+        "required": [
+          "id",
+          "username",
+          "email",
+          "nickname",
+          "avatar",
+          "bio",
+          "isActive",
+          "role",
+          "lastLoginAt",
+          "createdAt",
+          "updatedAt"
+        ]
+      },
+      "AuthResponseDto": {
+        "type": "object",
+        "properties": {
+          "accessToken": {
+            "type": "string",
+            "example": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+          },
+          "tokenType": {
+            "type": "string",
+            "example": "Bearer"
+          },
+          "expiresIn": {
+            "type": "string",
+            "example": "7d"
+          },
+          "user": {
+            "$ref": "#/components/schemas/AuthUserDto"
+          }
+        },
+        "required": [
+          "accessToken",
+          "tokenType",
+          "expiresIn",
+          "user"
+        ]
+      },
+      "LoginDto": {
+        "type": "object",
+        "properties": {
+          "account": {
+            "type": "string",
+            "description": "用户名或邮箱",
+            "example": "admin_manager"
+          },
+          "password": {
+            "type": "string",
+            "description": "登录密码",
+            "example": "admin12345678"
+          }
+        },
+        "required": [
+          "account",
+          "password"
+        ]
+      },
+      "CreateCategoryDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "UpdateCategoryDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "CreateTagDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "UpdateTagDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "CreateArticleDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "UpdateArticleDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "RestoreArticleVersionDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "CreatePageDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "UpdatePageDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "CreateFriendLinkDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "UpdateFriendLinkDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "ApplyFriendLinkDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "UpsertSettingDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "BatchUpsertSettingsDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "AddCollaboratorDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "UpdateDraftDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "SetPaidContentDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "PurchaseArticleDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "SendNotificationDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "SubscribeDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "UpdateProfileDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "ChangePasswordDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "BroadcastNotificationDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "RecordVisitDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "CreateGuestbookDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "CreateCommentDto": {
+        "type": "object",
+        "properties": {
+          "authorName": {
+            "type": "string",
+            "description": "评论作者昵称",
+            "example": "访客甲"
+          },
+          "authorEmail": {
+            "type": "string",
+            "description": "评论作者邮箱",
+            "example": "guest@example.com"
+          },
+          "authorWebsite": {
+            "type": "string",
+            "description": "个人网站完整地址",
+            "example": "https://example.com"
+          },
+          "parentId": {
+            "type": "string",
+            "description": "父评论 ID，存在时表示回复评论",
+            "example": "20000000-0000-4000-8000-000000000001"
+          },
+          "content": {
+            "type": "string",
+            "description": "评论正文",
+            "example": "这篇文章很有帮助。"
+          }
+        },
+        "required": [
+          "authorName",
+          "authorEmail",
+          "content"
+        ]
+      },
+      "UpdateCommentStatusDto": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "description": "评论审核状态",
+            "enum": [
+              "pending",
+              "approved",
+              "spam",
+              "rejected"
+            ],
+            "example": "approved"
+          }
+        },
+        "required": [
+          "status"
+        ]
+      },
+      "ReplyCommentDto": {
+        "type": "object",
+        "properties": {
+          "content": {
+            "type": "string",
+            "description": "管理员回复内容",
+            "example": "感谢反馈，我们会继续优化。"
+          }
+        },
+        "required": [
+          "content"
+        ]
+      },
+      "UpdateMediaAssetDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "CreateArticleSeriesDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "UpdateArticleSeriesDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "CreateAnnouncementDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "UpdateAnnouncementDto": {
+        "type": "object",
+        "properties": {}
+      }
+    }
+  }
+}

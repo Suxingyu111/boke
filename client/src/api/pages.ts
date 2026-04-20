@@ -1,5 +1,5 @@
 import { patch, post, remove, request } from "@/api/http";
-import type { PageStatus, PageType } from "@/types/blog";
+import type { CustomPage, PageStatus, PageType } from "@/types/blog";
 
 export interface PagePayload {
   title: string;
@@ -15,32 +15,32 @@ export interface PagePayload {
 }
 
 export async function getPublicAboutPage() {
-  const response = await request<unknown>("/pages/about");
+  const response = await request<CustomPage>("/pages/about");
   return response.data;
 }
 
 export async function getPublicPage(slug: string) {
-  const response = await request<unknown>(`/pages/${slug}`);
+  const response = await request<CustomPage>(`/pages/${slug}`);
   return response.data;
 }
 
 export async function getAdminPages() {
-  const response = await request<unknown[]>("/admin/pages");
+  const response = await request<CustomPage[]>("/admin/pages");
   return response.data;
 }
 
 export async function getAdminPage(id: string) {
-  const response = await request<unknown>(`/admin/pages/${id}`);
+  const response = await request<CustomPage>(`/admin/pages/${id}`);
   return response.data;
 }
 
 export async function createPage(payload: PagePayload) {
-  const response = await post<unknown, PagePayload>("/admin/pages", payload);
+  const response = await post<CustomPage, PagePayload>("/admin/pages", payload);
   return response.data;
 }
 
 export async function updatePage(id: string, payload: Partial<PagePayload>) {
-  const response = await patch<unknown, Partial<PagePayload>>(
+  const response = await patch<CustomPage, Partial<PagePayload>>(
     `/admin/pages/${id}`,
     payload,
   );

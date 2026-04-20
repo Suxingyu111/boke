@@ -5,6 +5,7 @@ import { NotFoundException, BadRequestException } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
 import { User, Favorite, Article, Guestbook } from '@database/entities';
 import { UsersService } from '../src/modules/users/users.service';
+import { MediaAssetsService } from '../src/modules/media-assets/media-assets.service';
 
 type RepositoryMock<T extends ObjectLiteral> = Partial<Repository<T>> & {
   items: T[];
@@ -232,12 +233,16 @@ describe('UsersService', () => {
   let favoriteRepository: RepositoryMock<Favorite>;
   let articleRepository: RepositoryMock<Article>;
   let guestbookRepository: RepositoryMock<Guestbook>;
+  let mediaAssetsService: Pick<MediaAssetsService, 'upload'>;
 
   beforeEach(async () => {
     userRepository = createRepositoryMock<User>([seedUser]);
     favoriteRepository = createRepositoryMock<Favorite>([seedFavorite]);
     articleRepository = createRepositoryMock<Article>([seedArticle]);
     guestbookRepository = createRepositoryMock<Guestbook>([seedGuestbook]);
+    mediaAssetsService = {
+      upload: jest.fn(),
+    };
 
     // wire createQueryBuilder for changePassword (select hidden password field)
     (userRepository.createQueryBuilder as jest.Mock).mockImplementation(() => {
@@ -264,6 +269,7 @@ describe('UsersService', () => {
         { provide: getRepositoryToken(Favorite), useValue: favoriteRepository },
         { provide: getRepositoryToken(Article), useValue: articleRepository },
         { provide: getRepositoryToken(Guestbook), useValue: guestbookRepository },
+        { provide: MediaAssetsService, useValue: mediaAssetsService },
       ],
     }).compile();
 

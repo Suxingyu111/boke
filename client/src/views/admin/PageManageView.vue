@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref } from "vue";
 import { getApiErrorMessage } from "@/api/auth";
+import ConfirmDialog from "@/components/ConfirmDialog.vue";
+import EmptyState from "@/components/EmptyState.vue";
 import { createSlug } from "@/stores/content";
 import { usePagesStore, type PageMutationPayload } from "@/stores/pages";
 import type { CustomPage, PageType } from "@/types/blog";
@@ -19,9 +21,19 @@ interface PageForm {
   seoDescription: string;
 }
 
+interface ConfirmRequest {
+  title: string;
+  message: string;
+  confirmLabel: string;
+  variant?: "primary" | "danger";
+  action: () => Promise<void>;
+}
+
 const pagesStore = usePagesStore();
 const notice = ref("");
 const pageError = ref("");
+const confirmRequest = ref<ConfirmRequest | null>(null);
+const confirmLoading = ref(false);
 
 const pageTypes: { value: PageType; label: string }[] = [
   { value: "about", label: "关于我" },
@@ -181,18 +193,43 @@ async function editPage(page: CustomPage) {
 }
 
 async function removePage(page: CustomPage) {
-  if (!confirm(`确认删除页面《${page.title}》？此操作不能撤销。`)) {
+  confirmRequest.value = {
+    title: "删除页面",
+    message: `确认删除页面《${page.title}》？此操作不能撤销。`,
+    confirmLabel: "确认删除",
+    variant: "danger",
+    action: async () => {
+      try {
+        await pagesStore.deletePage(page.id);
+        notice.value = `页面已删除：${page.title}`;
+        if (pageForm.id === page.id) {
+          resetPageForm();
+        }
+      } catch (error) {
+        pageError.value = getApiErrorMessage(error, "页面删除失败");
+        throw error;
+      }
+    },
+  };
+}
+
+function closeConfirmDialog() {
+  if (!confirmLoading.value) {
+    confirmRequest.value = null;
+  }
+}
+
+async function executeConfirmDialog() {
+  if (!confirmRequest.value) {
     return;
   }
 
+  confirmLoading.value = true;
   try {
-    await pagesStore.deletePage(page.id);
-    notice.value = `页面已删除：${page.title}`;
-    if (pageForm.id === page.id) {
-      resetPageForm();
-    }
-  } catch (error) {
-    pageError.value = getApiErrorMessage(error, "页面删除失败");
+    await confirmRequest.value.action();
+    confirmRequest.value = null;
+  } finally {
+    confirmLoading.value = false;
   }
 }
 </script>
@@ -362,59 +399,77 @@ async function removePage(page: CustomPage) {
         </div>
 
         <div class="ui-surface overflow-hidden rounded-[16px]">
-          <article
-            v-for="page in pagesStore.adminPages"
-            :key="page.id"
-            class="grid gap-4 border-b border-line p-5 last:border-b-0 md:grid-cols-[minmax(0,1fr)_auto]"
-          >
-            <div>
-              <div class="flex flex-wrap items-center gap-2">
-                <h2 class="font-display text-3xl">{{ page.title }}</h2>
-                <span class="rounded-md border px-2 py-1 text-xs">
-                  {{ typeLabel(page.pageType) }}
-                </span>
-                <span
-                  class="rounded-md border px-2 py-1 text-xs"
-                  :class="statusClass(page.status)"
-                >
-                  {{ page.status === "published" ? "已发布" : "草稿" }}
-                </span>
+          <template v-if="pagesStore.adminPages.length">
+            <article
+              v-for="page in pagesStore.adminPages"
+              :key="page.id"
+              class="grid gap-4 border-b border-line p-5 last:border-b-0 md:grid-cols-[minmax(0,1fr)_auto]"
+            >
+              <div>
+                <div class="flex flex-wrap items-center gap-2">
+                  <h2 class="font-display text-3xl">{{ page.title }}</h2>
+                  <span class="rounded-md border px-2 py-1 text-xs">
+                    {{ typeLabel(page.pageType) }}
+                  </span>
+                  <span
+                    class="rounded-md border px-2 py-1 text-xs"
+                    :class="statusClass(page.status)"
+                  >
+                    {{ page.status === "published" ? "已发布" : "草稿" }}
+                  </span>
+                </div>
+                <p class="mt-2 break-all text-sm text-ink/55">
+                  /pages/{{ page.slug }} · {{ formatDate(page.updatedAt) }}
+                </p>
+                <p class="mt-3 leading-7 text-ink/65">
+                  {{ page.summary || "这个页面暂时没有摘要。" }}
+                </p>
               </div>
-              <p class="mt-2 break-all text-sm text-ink/55">
-                /pages/{{ page.slug }} · {{ formatDate(page.updatedAt) }}
-              </p>
-              <p class="mt-3 leading-7 text-ink/65">
-                {{ page.summary || "这个页面暂时没有摘要。" }}
-              </p>
-            </div>
-            <div class="flex flex-wrap items-start gap-2 md:justify-end">
-              <RouterLink
-                v-if="page.status === 'published'"
-                class="focus-ring min-h-9 rounded-md border border-line px-3 py-2 text-sm hover:border-brand hover:text-brand"
-                :to="
-                  page.pageType === 'about' ? '/about' : `/pages/${page.slug}`
-                "
-              >
-                查看
-              </RouterLink>
-              <button
-                class="focus-ring min-h-9 rounded-md border border-line px-3 py-2 text-sm hover:border-moss hover:text-moss"
-                type="button"
-                @click="editPage(page)"
-              >
-                编辑
-              </button>
-              <button
-                class="focus-ring min-h-9 rounded-md border border-coral px-3 py-2 text-sm text-coral"
-                type="button"
-                @click="removePage(page)"
-              >
-                删除
-              </button>
-            </div>
-          </article>
+              <div class="flex flex-wrap items-start gap-2 md:justify-end">
+                <RouterLink
+                  v-if="page.status === 'published'"
+                  class="focus-ring min-h-9 rounded-md border border-line px-3 py-2 text-sm hover:border-brand hover:text-brand"
+                  :to="
+                    page.pageType === 'about' ? '/about' : `/pages/${page.slug}`
+                  "
+                >
+                  查看
+                </RouterLink>
+                <button
+                  class="focus-ring min-h-9 rounded-md border border-line px-3 py-2 text-sm hover:border-moss hover:text-moss"
+                  type="button"
+                  @click="editPage(page)"
+                >
+                  编辑
+                </button>
+                <button
+                  class="focus-ring min-h-9 rounded-md border border-coral px-3 py-2 text-sm text-coral"
+                  type="button"
+                  @click="removePage(page)"
+                >
+                  删除
+                </button>
+              </div>
+            </article>
+          </template>
+          <EmptyState
+            v-else
+            compact
+            title="还没有页面"
+            description="创建关于页、项目页或作品集后会出现在这里。"
+          />
         </div>
       </div>
     </section>
   </div>
+  <ConfirmDialog
+    :open="Boolean(confirmRequest)"
+    :title="confirmRequest?.title || ''"
+    :message="confirmRequest?.message || ''"
+    :confirm-label="confirmRequest?.confirmLabel || '确认'"
+    :loading="confirmLoading"
+    :variant="confirmRequest?.variant || 'primary'"
+    @cancel="closeConfirmDialog"
+    @confirm="executeConfirmDialog"
+  />
 </template>

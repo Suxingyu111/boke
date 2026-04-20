@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { onMounted, reactive, watch } from "vue";
 import { useSiteStore } from "@/stores/site";
-import type { SiteSettings, AboutSettings, TimelineItem } from "@/types/blog";
+import type { SiteSettings, AboutSettings } from "@/types/blog";
 
 const siteStore = useSiteStore();
 const settings = reactive<SiteSettings>({ ...siteStore.settings });

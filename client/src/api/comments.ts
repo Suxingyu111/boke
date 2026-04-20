@@ -1,4 +1,4 @@
-import { http, post, put, remove } from "@/api/http";
+import { post, put, remove, request } from "@/api/http";
 import type {
   AdminComment,
   CommentPage,
@@ -6,7 +6,6 @@ import type {
   CommentReplyPayload,
   CommentStatus,
   PublicComment,
-  ApiResponse,
 } from "@/types/blog";
 
 export interface CommentQuery {
@@ -23,12 +22,10 @@ export async function getArticleComments(
   articleId: string,
   query: CommentQuery = {},
 ) {
-  const response = await http.get<
-    unknown,
-    ApiResponse<CommentPage<PublicComment>>
-  >(`/articles/${articleId}/comments`, {
-    params: query,
-  });
+  const response = await request<CommentPage<PublicComment>>(
+    `/articles/${articleId}/comments`,
+    query,
+  );
   return response.data;
 }
 
@@ -51,12 +48,10 @@ export async function createArticleComment(
 }
 
 export async function getAdminComments(query: AdminCommentQuery = {}) {
-  const response = await http.get<
-    unknown,
-    ApiResponse<CommentPage<AdminComment>>
-  >("/admin/comments", {
-    params: query,
-  });
+  const response = await request<CommentPage<AdminComment>>(
+    "/admin/comments",
+    query,
+  );
   return response.data;
 }
 

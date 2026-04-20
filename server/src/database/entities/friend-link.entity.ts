@@ -17,16 +17,16 @@ export class FriendLink {
   @Column({ name: 'site_url', length: 255 })
   siteUrl: string;
 
-  @Column({ name: 'logo_url', length: 500, nullable: true })
+  @Column({ name: 'logo_url', type: 'varchar', length: 500, nullable: true })
   logoUrl: string | null;
 
-  @Column({ length: 255, nullable: true })
+  @Column({ type: 'varchar', length: 255, nullable: true })
   description: string | null;
 
-  @Column({ name: 'contact_email', length: 255, nullable: true })
+  @Column({ name: 'contact_email', type: 'varchar', length: 255, nullable: true })
   contactEmail: string | null;
 
-  @Column({ name: 'applicant_name', length: 100, nullable: true })
+  @Column({ name: 'applicant_name', type: 'varchar', length: 100, nullable: true })
   applicantName: string | null;
 
   @Column({ name: 'sort_order', type: 'int', default: 0 })

@@ -7,6 +7,7 @@ import request from 'supertest';
 import { ObjectLiteral, Repository } from 'typeorm';
 import {
   Article,
+  ArticleLike,
   ArticleTag,
   Category,
   OperationLog,
@@ -206,6 +207,7 @@ describe('Admin operations integration', () => {
   let categoryRepository: RepositoryMock<Category>;
   let tagRepository: RepositoryMock<Tag>;
   let articleTagRepository: RepositoryMock<ArticleTag>;
+  let articleLikeRepository: RepositoryMock<ArticleLike>;
   let userRepository: RepositoryMock<User>;
   let operationLogRepository: RepositoryMock<OperationLog>;
 
@@ -231,6 +233,7 @@ describe('Admin operations integration', () => {
     ]);
     tagRepository = createRepositoryMock<Tag>([]);
     articleTagRepository = createRepositoryMock<ArticleTag>([]);
+    articleLikeRepository = createRepositoryMock<ArticleLike>([]);
     userRepository = createRepositoryMock<User>([]);
     operationLogRepository = createRepositoryMock<OperationLog>([]);
 
@@ -259,6 +262,10 @@ describe('Admin operations integration', () => {
         {
           provide: getRepositoryToken(ArticleTag),
           useValue: articleTagRepository,
+        },
+        {
+          provide: getRepositoryToken(ArticleLike),
+          useValue: articleLikeRepository,
         },
         {
           provide: getRepositoryToken(User),
@@ -296,7 +303,9 @@ describe('Admin operations integration', () => {
   });
 
   afterAll(async () => {
-    await app.close();
+    if (app) {
+      await app.close();
+    }
   });
 
   it('应支持导出文章为 Markdown，并记录后台关键操作日志', async () => {

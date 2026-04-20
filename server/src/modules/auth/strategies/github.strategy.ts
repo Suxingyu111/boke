@@ -11,11 +11,18 @@ export class GithubStrategy extends PassportStrategy(Strategy, 'github') {
     configService: ConfigService,
     private readonly authService: AuthService,
   ) {
+    const clientId =
+      configService.get<string>('oauth.github.clientId') || 'disabled';
+    const clientSecret =
+      configService.get<string>('oauth.github.clientSecret') || 'disabled';
+    const callbackUrl =
+      configService.get<string>('oauth.github.callbackUrl') ||
+      'http://localhost/oauth/github-disabled';
+
     super({
-      clientID: configService.get<string>('oauth.github.clientId', 'disabled'),
-      clientSecret: configService.get<string>('oauth.github.clientSecret', 'disabled'),
-      callbackURL:
-        configService.get<string>('oauth.github.callbackUrl') || 'http://localhost/oauth/github-disabled',
+      clientID: clientId,
+      clientSecret,
+      callbackURL: callbackUrl,
       scope: ['user:email'],
     });
   }

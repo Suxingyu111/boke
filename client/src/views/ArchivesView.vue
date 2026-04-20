@@ -2,6 +2,7 @@
 import { computed, onMounted, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { getApiErrorMessage } from "@/api/auth";
+import Pagination from "@/components/Pagination.vue";
 import { useEcosystemStore } from "@/stores/ecosystem";
 
 const ecosystemStore = useEcosystemStore();
@@ -225,39 +226,13 @@ onMounted(async () => {
           <div v-else class="archive-empty">当前月份暂无公开文章。</div>
 
           <!-- Pagination -->
-          <nav
+          <Pagination
             v-if="ecosystemStore.archivePagination.totalPages > 1"
-            class="archive-pager"
-            aria-label="分页导航"
-          >
-            <button
-              class="archive-pager__arrow focus-ring"
-              type="button"
-              :disabled="currentPage <= 1"
-              aria-label="上一页"
-              @click="goToPage(currentPage - 1)"
-            >←</button>
-            <div class="archive-pager__pages">
-              <button
-                v-for="p in ecosystemStore.archivePagination.totalPages"
-                :key="p"
-                class="archive-pager__page focus-ring"
-                :class="{ 'archive-pager__page--active': p === currentPage }"
-                type="button"
-                @click="goToPage(p)"
-              >{{ p }}</button>
-            </div>
-            <button
-              class="archive-pager__arrow focus-ring"
-              type="button"
-              :disabled="currentPage >= ecosystemStore.archivePagination.totalPages"
-              aria-label="下一页"
-              @click="goToPage(currentPage + 1)"
-            >→</button>
-            <span class="archive-pager__info">
-              第 {{ currentPage }} / {{ ecosystemStore.archivePagination.totalPages }} 页
-            </span>
-          </nav>
+            :current-page="currentPage"
+            :show-page-numbers="true"
+            :total-pages="ecosystemStore.archivePagination.totalPages"
+            @change="goToPage"
+          />
         </template>
       </main>
     </div>

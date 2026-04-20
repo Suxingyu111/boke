@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref, watch } from "vue";
 import { getApiErrorMessage } from "@/api/auth";
+import ConfirmDialog from "@/components/ConfirmDialog.vue";
+import Pagination from "@/components/Pagination.vue";
 import { useContentStore, type ArticleMutationPayload } from "@/stores/content";
 import type { Article, ArticleStatus, Category, Tag } from "@/types/blog";
 import { handleMarkdownInteraction, renderMarkdown } from "@/utils/markdown";
@@ -24,6 +26,14 @@ interface ArticleForm {
   seoKeywords: string;
 }
 
+interface ConfirmRequest {
+  title: string;
+  message: string;
+  confirmLabel: string;
+  variant?: "primary" | "danger";
+  action: () => Promise<void>;
+}
+
 const defaultCover =
   "https://images.unsplash.com/photo-1499750310107-5fef28a66643?auto=format&fit=crop&w=1400&q=80";
 const pageSize = 5;
@@ -42,6 +52,8 @@ const notice = ref("");
 const articleError = ref("");
 const categoryError = ref("");
 const tagError = ref("");
+const confirmRequest = ref<ConfirmRequest | null>(null);
+const confirmLoading = ref(false);
 
 const articleForm = reactive<ArticleForm>(createArticleForm());
 const categoryForm = reactive({
@@ -306,14 +318,21 @@ async function editArticle(article: Article) {
 }
 
 async function archiveArticle(article: Article) {
-  if (confirm(`确认删除《${article.title}》？可在回收站恢复为草稿。`)) {
-    try {
-      await contentStore.archiveArticle(article.id);
-      notice.value = `已移入回收站：${article.title}`;
-    } catch (error) {
-      articleError.value = getApiErrorMessage(error, "文章删除失败");
-    }
-  }
+  confirmRequest.value = {
+    title: "移入回收站",
+    message: `确认删除《${article.title}》？可在回收站恢复为草稿。`,
+    confirmLabel: "确认删除",
+    variant: "danger",
+    action: async () => {
+      try {
+        await contentStore.archiveArticle(article.id);
+        notice.value = `已移入回收站：${article.title}`;
+      } catch (error) {
+        articleError.value = getApiErrorMessage(error, "文章删除失败");
+        throw error;
+      }
+    },
+  };
 }
 
 async function restoreDraft(article: Article) {
@@ -326,17 +345,24 @@ async function restoreDraft(article: Article) {
 }
 
 async function deletePermanently(article: Article) {
-  if (confirm(`永久删除《${article.title}》？此操作不能撤销。`)) {
-    try {
-      await contentStore.deleteArticlePermanently(article.id);
-      notice.value = `已永久删除：${article.title}`;
-      if (articleForm.id === article.id) {
-        resetArticleForm();
+  confirmRequest.value = {
+    title: "永久删除文章",
+    message: `永久删除《${article.title}》？此操作不能撤销。`,
+    confirmLabel: "永久删除",
+    variant: "danger",
+    action: async () => {
+      try {
+        await contentStore.deleteArticlePermanently(article.id);
+        notice.value = `已永久删除：${article.title}`;
+        if (articleForm.id === article.id) {
+          resetArticleForm();
+        }
+      } catch (error) {
+        articleError.value = getApiErrorMessage(error, "永久删除失败");
+        throw error;
       }
-    } catch (error) {
-      articleError.value = getApiErrorMessage(error, "永久删除失败");
-    }
-  }
+    },
+  };
 }
 
 function statusClass(status: ArticleStatus) {
@@ -452,13 +478,40 @@ async function submitTag() {
 }
 
 async function removeTag(tag: Tag) {
-  if (confirm(`删除标签 #${tag.name}？它会从已关联文章中移除。`)) {
-    try {
-      await contentStore.deleteTag(tag.id);
-      notice.value = `标签已删除：${tag.name}`;
-    } catch (error) {
-      tagError.value = getApiErrorMessage(error, "标签删除失败");
-    }
+  confirmRequest.value = {
+    title: "删除标签",
+    message: `删除标签 #${tag.name}？它会从已关联文章中移除。`,
+    confirmLabel: "删除标签",
+    variant: "danger",
+    action: async () => {
+      try {
+        await contentStore.deleteTag(tag.id);
+        notice.value = `标签已删除：${tag.name}`;
+      } catch (error) {
+        tagError.value = getApiErrorMessage(error, "标签删除失败");
+        throw error;
+      }
+    },
+  };
+}
+
+function closeConfirmDialog() {
+  if (!confirmLoading.value) {
+    confirmRequest.value = null;
+  }
+}
+
+async function executeConfirmDialog() {
+  if (!confirmRequest.value) {
+    return;
+  }
+
+  confirmLoading.value = true;
+  try {
+    await confirmRequest.value.action();
+    confirmRequest.value = null;
+  } finally {
+    confirmLoading.value = false;
   }
 }
 </script>
@@ -820,30 +873,12 @@ async function removeTag(tag: Tag) {
           </table>
         </div>
 
-        <div class="flex flex-wrap items-center justify-between gap-3">
-          <p class="text-sm text-ink/55">
-            共 {{ filteredArticles.length }} 篇，第 {{ articlePage }} /
-            {{ totalArticlePages }} 页
-          </p>
-          <div class="flex gap-2">
-            <button
-              class="focus-ring ui-button-secondary px-3 py-2 text-sm disabled:opacity-50"
-              :disabled="articlePage === 1"
-              type="button"
-              @click="articlePage -= 1"
-            >
-              上一页
-            </button>
-            <button
-              class="focus-ring ui-button-primary px-3 py-2 text-sm disabled:opacity-50"
-              :disabled="articlePage === totalArticlePages"
-              type="button"
-              @click="articlePage += 1"
-            >
-              下一页
-            </button>
-          </div>
-        </div>
+        <Pagination
+          :current-page="articlePage"
+          :total="filteredArticles.length"
+          :total-pages="totalArticlePages"
+          @change="articlePage = $event"
+        />
       </div>
     </section>
 
@@ -1027,4 +1062,14 @@ async function removeTag(tag: Tag) {
       </div>
     </section>
   </div>
+  <ConfirmDialog
+    :open="Boolean(confirmRequest)"
+    :title="confirmRequest?.title || ''"
+    :message="confirmRequest?.message || ''"
+    :confirm-label="confirmRequest?.confirmLabel || '确认'"
+    :loading="confirmLoading"
+    :variant="confirmRequest?.variant || 'primary'"
+    @cancel="closeConfirmDialog"
+    @confirm="executeConfirmDialog"
+  />
 </template>

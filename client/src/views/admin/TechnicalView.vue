@@ -5,6 +5,8 @@ import * as backupApi from "@/api/backup";
 import * as i18nApi from "@/api/i18n";
 import * as seoApi from "@/api/seo";
 import { getApiErrorMessage } from "@/api/auth";
+import ConfirmDialog from "@/components/ConfirmDialog.vue";
+import EmptyState from "@/components/EmptyState.vue";
 import { useCommunityStore } from "@/stores/community";
 import { useI18nStore } from "@/stores/i18n";
 import { useSiteStore } from "@/stores/site";
@@ -21,6 +23,14 @@ const adminAnnouncements = ref<AnnouncementRecord[]>([]);
 const notice = ref("");
 const errorMessage = ref("");
 const loading = ref(false);
+const confirmRequest = ref<{
+  title: string;
+  message: string;
+  confirmLabel: string;
+  variant?: "primary" | "danger";
+  action: () => Promise<void>;
+} | null>(null);
+const confirmLoading = ref(false);
 const localeForm = reactive({
   locale: i18nStore.locale,
 });
@@ -118,31 +128,61 @@ async function createBackup() {
 }
 
 async function restoreBackup(filename: string) {
-  if (!confirm(`确认从 ${filename} 恢复数据库？恢复前请确保当前数据已有备份。`)) {
-    return;
-  }
-
-  notice.value = "";
-  errorMessage.value = "";
-  try {
-    const result = await backupApi.restoreBackup(filename);
-    notice.value = result.message;
-  } catch (error) {
-    errorMessage.value = getApiErrorMessage(error, "恢复备份失败");
-  }
+  confirmRequest.value = {
+    title: "恢复备份",
+    message: `确认从 ${filename} 恢复数据库？恢复前请确保当前数据已有备份。`,
+    confirmLabel: "开始恢复",
+    variant: "danger",
+    action: async () => {
+      notice.value = "";
+      errorMessage.value = "";
+      try {
+        const result = await backupApi.restoreBackup(filename);
+        notice.value = result.message;
+      } catch (error) {
+        errorMessage.value = getApiErrorMessage(error, "恢复备份失败");
+        throw error;
+      }
+    },
+  };
 }
 
 async function deleteBackup(filename: string) {
-  if (!confirm(`确认删除备份 ${filename}？`)) {
+  confirmRequest.value = {
+    title: "删除备份",
+    message: `确认删除备份 ${filename}？`,
+    confirmLabel: "删除备份",
+    variant: "danger",
+    action: async () => {
+      try {
+        await backupApi.deleteBackup(filename);
+        backups.value = backups.value.filter((backup) => backup.filename !== filename);
+        notice.value = `已删除备份：${filename}`;
+      } catch (error) {
+        errorMessage.value = getApiErrorMessage(error, "删除备份失败");
+        throw error;
+      }
+    },
+  };
+}
+
+function closeConfirmDialog() {
+  if (!confirmLoading.value) {
+    confirmRequest.value = null;
+  }
+}
+
+async function executeConfirmDialog() {
+  if (!confirmRequest.value) {
     return;
   }
 
+  confirmLoading.value = true;
   try {
-    await backupApi.deleteBackup(filename);
-    backups.value = backups.value.filter((backup) => backup.filename !== filename);
-    notice.value = `已删除备份：${filename}`;
-  } catch (error) {
-    errorMessage.value = getApiErrorMessage(error, "删除备份失败");
+    await confirmRequest.value.action();
+    confirmRequest.value = null;
+  } finally {
+    confirmLoading.value = false;
   }
 }
 
@@ -335,9 +375,12 @@ onMounted(() => {
               </div>
             </div>
           </article>
-          <p v-if="!backups.length" class="rounded-md border border-line bg-paper p-4 text-ink/56">
-            暂无备份文件。
-          </p>
+          <EmptyState
+            v-if="!backups.length"
+            compact
+            title="暂无备份文件"
+            description="创建一次手动备份后，这里会显示可下载、恢复和删除的快照。"
+          />
         </div>
       </section>
 
@@ -502,4 +545,14 @@ onMounted(() => {
       </section>
     </div>
   </div>
+  <ConfirmDialog
+    :open="Boolean(confirmRequest)"
+    :title="confirmRequest?.title || ''"
+    :message="confirmRequest?.message || ''"
+    :confirm-label="confirmRequest?.confirmLabel || '确认'"
+    :loading="confirmLoading"
+    :variant="confirmRequest?.variant || 'primary'"
+    @cancel="closeConfirmDialog"
+    @confirm="executeConfirmDialog"
+  />
 </template>

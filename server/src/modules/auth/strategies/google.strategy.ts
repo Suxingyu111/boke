@@ -11,11 +11,18 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
     configService: ConfigService,
     private readonly authService: AuthService,
   ) {
+    const clientId =
+      configService.get<string>('oauth.google.clientId') || 'disabled';
+    const clientSecret =
+      configService.get<string>('oauth.google.clientSecret') || 'disabled';
+    const callbackUrl =
+      configService.get<string>('oauth.google.callbackUrl') ||
+      'http://localhost/oauth/google-disabled';
+
     super({
-      clientID: configService.get<string>('oauth.google.clientId', 'disabled'),
-      clientSecret: configService.get<string>('oauth.google.clientSecret', 'disabled'),
-      callbackURL:
-        configService.get<string>('oauth.google.callbackUrl') || 'http://localhost/oauth/google-disabled',
+      clientID: clientId,
+      clientSecret,
+      callbackURL: callbackUrl,
       scope: ['profile', 'email'],
     });
   }

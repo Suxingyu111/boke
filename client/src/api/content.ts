@@ -1,5 +1,5 @@
-import { http, patch, post, remove, request } from "@/api/http";
-import type { ArticleStatus } from "@/types/blog";
+import { patch, post, remove, request } from "@/api/http";
+import type { Article, ArticleStatus, Category, Tag } from "@/types/blog";
 
 export interface PaginationMeta {
   total: number;
@@ -68,7 +68,7 @@ export interface TagPayload {
 }
 
 export async function getPublicArticles(query: ArticleQuery = {}) {
-  const response = await request<PaginatedResponse<unknown>>(
+  const response = await request<PaginatedResponse<Article>>(
     "/articles",
     query,
   );
@@ -76,14 +76,12 @@ export async function getPublicArticles(query: ArticleQuery = {}) {
 }
 
 export async function getPublicArticle(slug: string) {
-  const response = await request<unknown>(`/articles/${slug}`);
+  const response = await request<Article>(`/articles/${slug}`);
   return response.data;
 }
 
 export async function getArticleLikeState(articleId: string) {
-  const response = await http.get<unknown, { data: ArticleLikeState }>(
-    `/articles/${articleId}/like`,
-  );
+  const response = await request<ArticleLikeState>(`/articles/${articleId}/like`);
   return response.data;
 }
 
@@ -101,7 +99,7 @@ export async function unlikeArticle(articleId: string) {
 }
 
 export async function getAdminArticles(query: ArticleQuery = {}) {
-  const response = await request<PaginatedResponse<unknown>>(
+  const response = await request<PaginatedResponse<Article>>(
     "/admin/articles",
     query,
   );
@@ -109,12 +107,12 @@ export async function getAdminArticles(query: ArticleQuery = {}) {
 }
 
 export async function getAdminArticle(id: string) {
-  const response = await request<unknown>(`/admin/articles/${id}`);
+  const response = await request<Article>(`/admin/articles/${id}`);
   return response.data;
 }
 
 export async function createArticle(payload: ArticlePayload) {
-  const response = await post<unknown, ArticlePayload>(
+  const response = await post<Article, ArticlePayload>(
     "/admin/articles",
     payload,
   );
@@ -125,7 +123,7 @@ export async function updateArticle(
   id: string,
   payload: Partial<ArticlePayload>,
 ) {
-  const response = await patch<unknown, Partial<ArticlePayload>>(
+  const response = await patch<Article, Partial<ArticlePayload>>(
     `/admin/articles/${id}`,
     payload,
   );
@@ -145,22 +143,22 @@ export async function deleteArticlePermanently(id: string) {
 }
 
 export async function getPublicCategories() {
-  const response = await request<unknown[]>("/categories");
+  const response = await request<Category[]>("/categories");
   return response.data;
 }
 
 export async function getAdminCategories() {
-  const response = await request<unknown[]>("/admin/categories");
+  const response = await request<Category[]>("/admin/categories");
   return response.data;
 }
 
 export async function getAdminCategory(id: string) {
-  const response = await request<unknown>(`/admin/categories/${id}`);
+  const response = await request<Category>(`/admin/categories/${id}`);
   return response.data;
 }
 
 export async function createCategory(payload: CategoryPayload) {
-  const response = await post<unknown, CategoryPayload>(
+  const response = await post<Category, CategoryPayload>(
     "/admin/categories",
     payload,
   );
@@ -171,7 +169,7 @@ export async function updateCategory(
   id: string,
   payload: Partial<CategoryPayload>,
 ) {
-  const response = await patch<unknown, Partial<CategoryPayload>>(
+  const response = await patch<Category, Partial<CategoryPayload>>(
     `/admin/categories/${id}`,
     payload,
   );
@@ -184,27 +182,27 @@ export async function deleteCategory(id: string) {
 }
 
 export async function getPublicTags() {
-  const response = await request<unknown[]>("/tags");
+  const response = await request<Tag[]>("/tags");
   return response.data;
 }
 
 export async function getAdminTags() {
-  const response = await request<unknown[]>("/admin/tags");
+  const response = await request<Tag[]>("/admin/tags");
   return response.data;
 }
 
 export async function getAdminTag(id: string) {
-  const response = await request<unknown>(`/admin/tags/${id}`);
+  const response = await request<Tag>(`/admin/tags/${id}`);
   return response.data;
 }
 
 export async function createTag(payload: TagPayload) {
-  const response = await post<unknown, TagPayload>("/admin/tags", payload);
+  const response = await post<Tag, TagPayload>("/admin/tags", payload);
   return response.data;
 }
 
 export async function updateTag(id: string, payload: Partial<TagPayload>) {
-  const response = await patch<unknown, Partial<TagPayload>>(
+  const response = await patch<Tag, Partial<TagPayload>>(
     `/admin/tags/${id}`,
     payload,
   );

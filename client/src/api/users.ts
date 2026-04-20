@@ -38,7 +38,11 @@ export async function updateProfile(payload: UpdateProfilePayload) {
 export async function uploadAvatar(file: File) {
   const formData = new FormData();
   formData.append("file", file);
-  const response = await http.post<unknown, ApiResponse<{ url: string }>>(
+  const response = await http.post<
+    ApiResponse<{ url: string }>,
+    ApiResponse<{ url: string }>,
+    FormData
+  >(
     "/users/avatar",
     formData,
   );

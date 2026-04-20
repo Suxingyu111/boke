@@ -1,6 +1,9 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref, watch } from "vue";
 import { getApiErrorMessage } from "@/api/auth";
+import ConfirmDialog from "@/components/ConfirmDialog.vue";
+import EmptyState from "@/components/EmptyState.vue";
+import Pagination from "@/components/Pagination.vue";
 import {
   deleteComment,
   getAdminComments,
@@ -11,6 +14,14 @@ import { useContentStore } from "@/stores/content";
 import type { AdminComment, CommentStatus } from "@/types/blog";
 
 type StatusFilter = CommentStatus | "all";
+
+interface ConfirmRequest {
+  title: string;
+  message: string;
+  confirmLabel: string;
+  variant?: "primary" | "danger";
+  action: () => Promise<void>;
+}
 
 const pageSize = 10;
 const contentStore = useContentStore();
@@ -26,6 +37,8 @@ const activeReplyId = ref("");
 const statusFilter = ref<StatusFilter>("all");
 const articleFilter = ref("all");
 const replyDrafts = reactive<Record<string, string>>({});
+const confirmRequest = ref<ConfirmRequest | null>(null);
+const confirmLoading = ref(false);
 
 const articleMap = computed(
   () => new Map(contentStore.articles.map((article) => [article.id, article])),
@@ -173,24 +186,49 @@ async function submitReply(comment: AdminComment) {
 }
 
 async function removeCommentRecord(comment: AdminComment) {
-  if (!confirm(`确认删除 ${comment.authorName} 的这条评论？其子回复也会一起删除。`)) {
+  confirmRequest.value = {
+    title: "删除评论",
+    message: `确认删除 ${comment.authorName} 的这条评论？其子回复也会一起删除。`,
+    confirmLabel: "确认删除",
+    variant: "danger",
+    action: async () => {
+      submittingId.value = comment.id;
+      errorMessage.value = "";
+
+      try {
+        const result = await deleteComment(comment.id);
+        notice.value = result.message;
+        if (comments.value.length === 1 && page.value > 1) {
+          page.value -= 1;
+        }
+        await refreshPageContext();
+      } catch (error) {
+        errorMessage.value = getApiErrorMessage(error, "评论删除失败");
+        throw error;
+      } finally {
+        submittingId.value = "";
+      }
+    },
+  };
+}
+
+function closeConfirmDialog() {
+  if (!confirmLoading.value) {
+    confirmRequest.value = null;
+  }
+}
+
+async function executeConfirmDialog() {
+  if (!confirmRequest.value) {
     return;
   }
 
-  submittingId.value = comment.id;
-  errorMessage.value = "";
-
+  confirmLoading.value = true;
   try {
-    const result = await deleteComment(comment.id);
-    notice.value = result.message;
-    if (comments.value.length === 1 && page.value > 1) {
-      page.value -= 1;
-    }
-    await refreshPageContext();
-  } catch (error) {
-    errorMessage.value = getApiErrorMessage(error, "评论删除失败");
+    await confirmRequest.value.action();
+    confirmRequest.value = null;
   } finally {
-    submittingId.value = "";
+    confirmLoading.value = false;
   }
 }
 
@@ -310,12 +348,12 @@ onMounted(async () => {
           </div>
         </div>
 
-        <div
+        <EmptyState
           v-else-if="comments.length === 0"
-          class="ui-surface rounded-md border border-dashed border-line px-6 py-12 text-center text-ink/58"
-        >
-          当前筛选条件下没有评论。
-        </div>
+          compact
+          title="没有评论"
+          description="当前筛选条件下没有评论。"
+        />
 
         <template v-else>
           <article
@@ -452,30 +490,24 @@ onMounted(async () => {
           </article>
         </template>
 
-        <div class="flex flex-wrap items-center justify-between gap-3">
-          <p class="text-sm text-ink/55">
-            当前第 {{ page }} / {{ totalPages }} 页
-          </p>
-          <div class="flex gap-2">
-            <button
-              class="focus-ring ui-button-secondary px-3 py-2 text-sm disabled:opacity-50"
-              :disabled="page === 1 || loading"
-              type="button"
-              @click="page -= 1"
-            >
-              上一页
-            </button>
-            <button
-              class="focus-ring ui-button-primary px-3 py-2 text-sm disabled:opacity-50"
-              :disabled="page === totalPages || loading"
-              type="button"
-              @click="page += 1"
-            >
-              下一页
-            </button>
-          </div>
-        </div>
+        <Pagination
+          :current-page="page"
+          :disabled="loading"
+          :total="total"
+          :total-pages="totalPages"
+          @change="page = $event"
+        />
       </div>
     </section>
   </div>
+  <ConfirmDialog
+    :open="Boolean(confirmRequest)"
+    :title="confirmRequest?.title || ''"
+    :message="confirmRequest?.message || ''"
+    :confirm-label="confirmRequest?.confirmLabel || '确认'"
+    :loading="confirmLoading"
+    :variant="confirmRequest?.variant || 'primary'"
+    @cancel="closeConfirmDialog"
+    @confirm="executeConfirmDialog"
+  />
 </template>

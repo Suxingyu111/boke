@@ -190,6 +190,7 @@ npm run search:refresh-local # 导入演示内容并重建 Elasticsearch 索引
 # 构建和生产
 npm run build              # 构建项目
 npm run start:prod         # 启动生产服务器
+npm run docs:generate      # 导出 OpenAPI 文档到 docs/openapi.json
 
 # 质量检查
 npm run lint               # 运行 ESLint
@@ -221,8 +222,12 @@ npm run migration:revert   # 回滚迁移
 6. 页面管理接口文档见 [server/docs/PAGES_API.md](server/docs/PAGES_API.md)
 7. 前端展示接口文档见 [server/docs/FRONTEND_DISPLAY_API.md](server/docs/FRONTEND_DISPLAY_API.md)
 8. 在线 Swagger 文档（启用时）见 `http://localhost:3000/api/docs`
-9. 订阅源接口：`/api/feed/rss`、`/api/feed/atom`
-10. OAuth 登录入口：`/api/auth/github`、`/api/auth/google`
+9. 原始 OpenAPI JSON：`http://localhost:3000/api/docs-json`
+10. 原始 OpenAPI YAML：`http://localhost:3000/api/docs-yaml`
+11. 可离线导出完整接口文档：`npm run docs:generate`
+12. 导出文件位置：`server/docs/openapi.json`
+13. 订阅源接口：`/api/feed/rss`、`/api/feed/atom`
+14. OAuth 登录入口：`/api/auth/github`、`/api/auth/google`
 
 ```bash
 # 请求示例

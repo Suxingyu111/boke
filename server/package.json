@@ -7,6 +7,7 @@
   "license": "MIT",
   "scripts": {
     "build": "nest build",
+    "docs:generate": "node -r tsconfig-paths/register ./node_modules/ts-node/dist/bin.js --project tsconfig.json scripts/generate-openapi.ts",
     "db:init": "node ./node_modules/ts-node/dist/bin.js --project tsconfig.json scripts/init-db.ts",
     "db:seed:about": "node ./node_modules/ts-node/dist/bin.js --project tsconfig.json scripts/seed-about.ts",
     "db:seed-content": "node ./node_modules/ts-node/dist/bin.js --project tsconfig.json scripts/seed-content.ts",

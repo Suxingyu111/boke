@@ -330,7 +330,7 @@ export const useSiteStore = defineStore("site", {
 
       try {
         const savedSettings = normalizeSettings(
-          await settingsApi.saveSiteSettings(nextSettings),
+          await settingsApi.saveSettings(nextSettings),
           nextSettings,
         );
         this.applySettings(savedSettings);
