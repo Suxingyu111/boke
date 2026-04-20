@@ -8,6 +8,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { Response } from 'express';
+import { sanitizeAttachmentFileName } from '@common/security/file-validation.util';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
@@ -35,7 +36,7 @@ export class BackupController {
   @Get(':filename/download')
   downloadBackup(@Param('filename') filename: string, @Res() res: Response) {
     const streamable = this.backupService.downloadBackup(filename);
-    const sanitizedFilename = filename.replace(/[^a-zA-Z0-9._-]/g, '');
+    const sanitizedFilename = sanitizeAttachmentFileName(filename, ['.sql']);
     res.set({
       'Content-Type': 'application/sql',
       'Content-Disposition': `attachment; filename="${sanitizedFilename}"`,

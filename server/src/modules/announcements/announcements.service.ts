@@ -1,5 +1,7 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, Optional } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+import { ANNOUNCEMENT_CACHE_PREFIXES } from '@common/security/cache-prefixes';
+import { ResponseCacheService } from '@common/security/response-cache.service';
 import { Repository } from 'typeorm';
 import { Announcement } from '@database/entities';
 import { CreateAnnouncementDto } from './dto/create-announcement.dto';
@@ -10,6 +12,8 @@ export class AnnouncementsService {
   constructor(
     @InjectRepository(Announcement)
     private readonly announcementRepository: Repository<Announcement>,
+    @Optional()
+    private readonly responseCacheService?: ResponseCacheService,
   ) {}
 
   /** 前台：获取已发布的公告列表 */
@@ -60,7 +64,9 @@ export class AnnouncementsService {
       createdBy: userId,
     });
 
-    return this.announcementRepository.save(announcement);
+    const savedAnnouncement = await this.announcementRepository.save(announcement);
+    await this.invalidatePublicCaches();
+    return savedAnnouncement;
   }
 
   /** 管理端：更新公告 */
@@ -80,7 +86,9 @@ export class AnnouncementsService {
       }
     }
 
-    return this.announcementRepository.save(announcement);
+    const savedAnnouncement = await this.announcementRepository.save(announcement);
+    await this.invalidatePublicCaches();
+    return savedAnnouncement;
   }
 
   /** 管理端：删除公告 */
@@ -89,6 +97,11 @@ export class AnnouncementsService {
     if (result.affected === 0) {
       throw new NotFoundException('公告不存在');
     }
+    await this.invalidatePublicCaches();
     return { message: '公告已删除' };
+  }
+
+  private async invalidatePublicCaches(): Promise<void> {
+    await this.responseCacheService?.invalidatePrefixes(ANNOUNCEMENT_CACHE_PREFIXES);
   }
 }

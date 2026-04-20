@@ -1,5 +1,6 @@
 import { Injectable, Logger, StreamableFile } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { sanitizeAttachmentFileName } from '@common/security/file-validation.util';
 import { exec } from 'child_process';
 import { promisify } from 'util';
 import * as fs from 'fs';
@@ -84,7 +85,7 @@ export class BackupService {
 
   /** 恢复指定备份 */
   async restoreBackup(filename: string): Promise<{ message: string }> {
-    const sanitizedFilename = path.basename(filename);
+    const sanitizedFilename = sanitizeAttachmentFileName(filename, ['.sql']);
     const filePath = path.join(this.backupDir, sanitizedFilename);
 
     if (!fs.existsSync(filePath)) {
@@ -121,7 +122,7 @@ export class BackupService {
 
   /** 下载备份文件 */
   downloadBackup(filename: string): StreamableFile {
-    const sanitizedFilename = path.basename(filename);
+    const sanitizedFilename = sanitizeAttachmentFileName(filename, ['.sql']);
     const filePath = path.join(this.backupDir, sanitizedFilename);
 
     if (!fs.existsSync(filePath)) {
@@ -137,7 +138,7 @@ export class BackupService {
 
   /** 删除备份文件 */
   async deleteBackup(filename: string): Promise<{ message: string }> {
-    const sanitizedFilename = path.basename(filename);
+    const sanitizedFilename = sanitizeAttachmentFileName(filename, ['.sql']);
     const filePath = path.join(this.backupDir, sanitizedFilename);
 
     if (!fs.existsSync(filePath)) {

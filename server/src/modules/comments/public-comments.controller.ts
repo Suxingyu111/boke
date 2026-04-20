@@ -3,6 +3,8 @@ import { ApiOperation, ApiParam, ApiQuery, ApiResponse, ApiTags } from '@nestjs/
 import { Throttle } from '@nestjs/throttler';
 import { Request } from 'express';
 import { User } from '@database/entities';
+import { ResponseCache } from '@common/security/decorators/response-cache.decorator';
+import { extractClientIp, extractUserAgent } from '@common/security/request-metadata.util';
 import { OptionalJwtAuthGuard } from '../auth/guards/optional-jwt-auth.guard';
 import { CreateCommentDto } from './dto/create-comment.dto';
 import { CommentsService, type PublicCommentView } from './comments.service';
@@ -31,6 +33,7 @@ export class PublicCommentsController {
   @ApiQuery({ name: 'page', required: false, type: Number, description: '页码' })
   @ApiQuery({ name: 'pageSize', required: false, type: Number, description: '每页数量' })
   @ApiResponse({ status: 200, description: '获取成功' })
+  @ResponseCache({ keyPrefix: 'comments:public', ttlSeconds: 120, clientTtlSeconds: 60 })
   getApprovedComments(
     @Query('page') page = 1,
     @Query('pageSize') pageSize = 20,
@@ -47,14 +50,11 @@ export class PublicCommentsController {
   @ApiParam({ name: 'articleId', description: '文章 ID', type: String })
   @ApiResponse({ status: 201, description: '提交成功，等待审核' })
   createComment(@Body() dto: CreateCommentDto, @Req() req: CommentRequest) {
-    const ip = (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() || req.ip || null;
-    const userAgent = req.headers['user-agent'] ?? null;
-
     return this.commentsService.createComment(
       req.params.articleId,
       dto,
-      ip,
-      userAgent,
+      extractClientIp(req),
+      extractUserAgent(req),
       req.user ?? null,
     );
   }

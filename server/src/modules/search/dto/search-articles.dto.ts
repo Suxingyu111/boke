@@ -1,9 +1,10 @@
-import { IsOptional, IsString, IsUUID, IsInt, Min, Max } from 'class-validator';
+import { IsOptional, IsString, IsUUID, IsInt, Min, Max, MaxLength } from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class SearchArticlesDto {
   @IsOptional()
   @IsString()
+  @MaxLength(100)
   keyword?: string;
 
   @IsOptional()

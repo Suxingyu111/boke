@@ -1,4 +1,5 @@
 import { Body, Controller, Delete, Get, Param, Put, Query, UseGuards } from '@nestjs/common';
+import { ResponseCache } from '@common/security/decorators/response-cache.decorator';
 import { SettingsService } from './settings.service';
 import { UpsertSettingDto } from './dto/upsert-setting.dto';
 import { BatchUpsertSettingsDto } from './dto/batch-upsert-settings.dto';
@@ -12,6 +13,7 @@ export class SettingsController {
 
   /** 公开接口 - 获取站点公开设置（标题、副标题、备案等） */
   @Get('settings')
+  @ResponseCache({ keyPrefix: 'settings:public', ttlSeconds: 1800, clientTtlSeconds: 300 })
   findPublicSettings() {
     return this.settingsService.findPublicSettings();
   }

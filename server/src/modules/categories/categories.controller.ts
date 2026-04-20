@@ -5,12 +5,14 @@ import { UpdateCategoryDto } from './dto/update-category.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
+import { ResponseCache } from '@common/security/decorators/response-cache.decorator';
 
 @Controller()
 export class CategoriesController {
   constructor(private readonly categoriesService: CategoriesService) {}
 
   @Get('categories')
+  @ResponseCache({ keyPrefix: 'categories:public', ttlSeconds: 3600, clientTtlSeconds: 300 })
   findPublicList() {
     return this.categoriesService.findAll({ visibleOnly: true });
   }

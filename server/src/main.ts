@@ -7,6 +7,8 @@ import { ConfigService } from '@nestjs/config';
 import { AppModule } from './app.module';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 import { ResponseInterceptor } from './common/interceptors/response.interceptor';
+import { ResponseCacheInterceptor } from './common/security/response-cache.interceptor';
+import { ResponseSecurityInterceptor } from './common/security/response-security.interceptor';
 import {
   createSwaggerDocument,
   getSwaggerUiPath,
@@ -25,6 +27,8 @@ async function bootstrap(): Promise<void> {
     'cors.allowRequestsWithoutOrigin',
     true,
   );
+  const trustProxy = configService.get<boolean>('security.trustProxy', false);
+  const hstsEnabled = configService.get<boolean>('security.hstsEnabled', nodeEnv === 'production');
   const swaggerEnabledValue = configService.get<string | boolean>('SWAGGER_ENABLED');
   const swaggerEnabled =
     typeof swaggerEnabledValue === 'boolean'
@@ -33,7 +37,15 @@ async function bootstrap(): Promise<void> {
         ? swaggerEnabledValue === 'true'
         : nodeEnv !== 'production';
 
-  app.use(helmet());
+  app.use(
+    helmet({
+      hsts: hstsEnabled,
+    }),
+  );
+  app.getHttpAdapter().getInstance().disable('x-powered-by');
+  if (trustProxy) {
+    app.getHttpAdapter().getInstance().set('trust proxy', 1);
+  }
 
   // 全局请求体限制为 1MB，文件上传由 multer 在具体路由单独控制。
   app.use(json({ limit: '1mb' }));
@@ -66,7 +78,11 @@ async function bootstrap(): Promise<void> {
   app.useGlobalFilters(new HttpExceptionFilter());
 
   // 全局响应拦截器
-  app.useGlobalInterceptors(new ResponseInterceptor());
+  app.useGlobalInterceptors(
+    app.get(ResponseSecurityInterceptor),
+    new ResponseInterceptor(),
+    app.get(ResponseCacheInterceptor),
+  );
 
   if (swaggerEnabled) {
     const document = createSwaggerDocument(app, configService);

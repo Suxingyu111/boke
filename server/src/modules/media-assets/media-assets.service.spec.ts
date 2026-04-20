@@ -11,6 +11,11 @@ type RepositoryMock<T extends ObjectLiteral> = Partial<Repository<T>> & {
   items: T[];
 };
 
+const PNG_BUFFER = Buffer.from(
+  '89504e470d0a1a0a0000000d49484452000000010000000108060000001f15c4890000000d49444154789c6360606060000000050001a5f645400000000049454e44ae426082',
+  'hex',
+);
+
 const cloneValue = <T>(value: T): T => JSON.parse(JSON.stringify(value));
 
 const matchWhere = <T extends Record<string, unknown>>(
@@ -111,8 +116,8 @@ describe('MediaAssetsService', () => {
     const file = {
       originalname: 'cover.png',
       mimetype: 'image/png',
-      size: 16,
-      buffer: Buffer.from('same-file-content'),
+      size: PNG_BUFFER.length,
+      buffer: PNG_BUFFER,
     };
     const currentUser = {
       id: 'author-1',
@@ -128,12 +133,12 @@ describe('MediaAssetsService', () => {
 
   it('删除媒体时应同时删除物理文件', async () => {
     const created = await service.upload(
-      {
-        originalname: 'cover.png',
-        mimetype: 'image/png',
-        size: 16,
-        buffer: Buffer.from('file-to-delete'),
-      } as UploadedMediaFile,
+        {
+          originalname: 'cover.png',
+          mimetype: 'image/png',
+          size: PNG_BUFFER.length,
+          buffer: PNG_BUFFER,
+        } as UploadedMediaFile,
       {
         id: 'author-1',
         role: 'author',
@@ -148,5 +153,22 @@ describe('MediaAssetsService', () => {
 
     await expect(fs.access(absolutePath)).rejects.toThrow();
     expect(mediaAssetRepository.items).toHaveLength(0);
+  });
+
+  it('文件扩展名与内容签名不一致时应拒绝上传', async () => {
+    await expect(
+      service.upload(
+        {
+          originalname: 'cover.png',
+          mimetype: 'image/png',
+          size: 24,
+          buffer: Buffer.from('%PDF-1.4 fake file', 'utf8'),
+        } as UploadedMediaFile,
+        {
+          id: 'author-1',
+          role: 'author',
+        } as User,
+      ),
+    ).rejects.toThrow('文件内容与声明类型不匹配');
   });
 });

@@ -1,5 +1,7 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, Optional } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+import { SETTINGS_CACHE_PREFIXES } from '@common/security/cache-prefixes';
+import { ResponseCacheService } from '@common/security/response-cache.service';
 import { Repository, In } from 'typeorm';
 import { SiteSetting } from '@database/entities';
 import { UpsertSettingDto } from './dto/upsert-setting.dto';
@@ -9,6 +11,8 @@ export class SettingsService {
   constructor(
     @InjectRepository(SiteSetting)
     private readonly settingRepository: Repository<SiteSetting>,
+    @Optional()
+    private readonly responseCacheService?: ResponseCacheService,
   ) {}
 
   /** 获取全部公开设置（前端展示用） */
@@ -49,7 +53,9 @@ export class SettingsService {
       if (dto.groupName !== undefined) existing.groupName = dto.groupName;
       if (dto.description !== undefined) existing.description = dto.description;
       if (dto.isPublic !== undefined) existing.isPublic = dto.isPublic;
-      return this.settingRepository.save(existing);
+      const savedSetting = await this.settingRepository.save(existing);
+      await this.invalidatePublicCaches();
+      return savedSetting;
     }
 
     const setting = this.settingRepository.create({
@@ -60,7 +66,9 @@ export class SettingsService {
       description: dto.description ?? null,
       isPublic: dto.isPublic ?? false,
     });
-    return this.settingRepository.save(setting);
+    const savedSetting = await this.settingRepository.save(setting);
+    await this.invalidatePublicCaches();
+    return savedSetting;
   }
 
   /** 批量新增或更新设置 */
@@ -72,6 +80,7 @@ export class SettingsService {
     const updated = await this.settingRepository.find({
       where: { settingKey: In(keys) },
     });
+    await this.invalidatePublicCaches();
     return this.toKeyValueMap(updated);
   }
 
@@ -79,6 +88,11 @@ export class SettingsService {
   async remove(key: string): Promise<void> {
     const setting = await this.findByKey(key);
     await this.settingRepository.remove(setting);
+    await this.invalidatePublicCaches();
+  }
+
+  private async invalidatePublicCaches(): Promise<void> {
+    await this.responseCacheService?.invalidatePrefixes(SETTINGS_CACHE_PREFIXES);
   }
 
   private toKeyValueMap(settings: SiteSetting[]): Record<string, unknown> {

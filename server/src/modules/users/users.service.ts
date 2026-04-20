@@ -8,6 +8,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import * as bcrypt from 'bcrypt';
 import sharp from 'sharp';
+import { assertAllowedFileSignature } from '@common/security/file-validation.util';
 import { User, Favorite, Article, Guestbook } from '@database/entities';
 import { MediaAssetsService, UploadedMediaFile } from '../media-assets/media-assets.service';
 import { UpdateProfileDto } from './dto/update-profile.dto';
@@ -119,6 +120,7 @@ export class UsersService {
     if (!AVATAR_ALLOWED_TYPES.includes(file.mimetype)) {
       throw new BadRequestException('头像只支持 JPG、PNG、WebP、GIF 格式');
     }
+    assertAllowedFileSignature(file);
 
     const compressed = await compressAvatar(file);
     const asset = await this.mediaAssetsService.upload(compressed, currentUser, '用户头像');

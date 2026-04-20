@@ -4,8 +4,11 @@ import {
   ForbiddenException,
   Injectable,
   NotFoundException,
+  Optional,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+import { ARTICLE_CACHE_PREFIXES } from '@common/security/cache-prefixes';
+import { ResponseCacheService } from '@common/security/response-cache.service';
 import { createHash } from 'crypto';
 import { IsNull, Repository } from 'typeorm';
 import { Article, ArticleLike, ArticleTag, Category, Tag, User } from '@database/entities';
@@ -48,6 +51,8 @@ export class ArticlesService {
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
     private readonly articleVersionsService: ArticleVersionsService,
+    @Optional()
+    private readonly responseCacheService?: ResponseCacheService,
   ) {}
 
   async create(dto: CreateArticleDto, currentUser: User): Promise<ArticleView> {
@@ -94,6 +99,7 @@ export class ArticlesService {
       tags.map(tag => tag.id),
     );
     await this.articleVersionsService.recordVersion(savedArticle, currentUser.id, '创建文章');
+    await this.invalidatePublicCaches();
 
     return this.buildArticleView(savedArticle);
   }
@@ -254,6 +260,7 @@ export class ArticlesService {
       currentUser.id,
       dto.changeNote ?? '更新文章',
     );
+    await this.invalidatePublicCaches();
 
     return this.buildArticleView(savedArticle);
   }
@@ -287,6 +294,7 @@ export class ArticlesService {
       tags.map(tag => tag.id),
     );
     await this.articleVersionsService.recordVersion(archivedArticle, currentUser.id, '归档文章');
+    await this.invalidatePublicCaches();
     return { message: '文章删除成功' };
   }
 
@@ -300,6 +308,7 @@ export class ArticlesService {
       article.categoryId,
       tags.map(tag => tag.id),
     );
+    await this.invalidatePublicCaches();
 
     return { message: '文章永久删除成功' };
   }
@@ -438,6 +447,7 @@ export class ArticlesService {
       likes: article.likes + 1,
       updatedAt: new Date(),
     });
+    await this.invalidatePublicCaches();
 
     return {
       liked: true,
@@ -472,6 +482,7 @@ export class ArticlesService {
       likes: Math.max(0, article.likes - 1),
       updatedAt: new Date(),
     });
+    await this.invalidatePublicCaches();
 
     return {
       liked: false,
@@ -876,5 +887,9 @@ export class ArticlesService {
       articleCount: count,
       updatedAt: new Date(),
     });
+  }
+
+  private async invalidatePublicCaches(): Promise<void> {
+    await this.responseCacheService?.invalidatePrefixes(ARTICLE_CACHE_PREFIXES);
   }
 }

@@ -1,5 +1,6 @@
-import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import { ConflictException, Injectable, NotFoundException, Optional } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+import { ResponseCacheService } from '@common/security/response-cache.service';
 import { Repository } from 'typeorm';
 import { Article, ArticleTag, Tag } from '@database/entities';
 import { CreateTagDto } from './dto/create-tag.dto';
@@ -18,6 +19,8 @@ export class TagsService {
     private readonly articleTagRepository: Repository<ArticleTag>,
     @InjectRepository(Article)
     private readonly articleRepository: Repository<Article>,
+    @Optional()
+    private readonly responseCacheService?: ResponseCacheService,
   ) {}
 
   async create(dto: CreateTagDto): Promise<Tag> {
@@ -28,7 +31,9 @@ export class TagsService {
       slug: dto.slug.trim(),
     });
 
-    return this.tagRepository.save(tag);
+    const savedTag = await this.tagRepository.save(tag);
+    await this.invalidatePublicCaches();
+    return savedTag;
   }
 
   async findAll(): Promise<Tag[]> {
@@ -66,7 +71,9 @@ export class TagsService {
       updatedAt: new Date(),
     };
 
-    return this.tagRepository.save(updatedTag);
+    const savedTag = await this.tagRepository.save(updatedTag);
+    await this.invalidatePublicCaches();
+    return savedTag;
   }
 
   async remove(id: string): Promise<{ message: string }> {
@@ -86,7 +93,12 @@ export class TagsService {
     }
 
     await this.tagRepository.remove(tag);
+    await this.invalidatePublicCaches();
     return { message: '标签删除成功' };
+  }
+
+  private async invalidatePublicCaches(): Promise<void> {
+    await this.responseCacheService?.invalidatePrefixes(['tags:public', 'articles:list']);
   }
 
   private async ensureSlugUnique(slug: string, currentId?: string): Promise<void> {

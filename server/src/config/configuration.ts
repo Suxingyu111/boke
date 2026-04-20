@@ -32,6 +32,18 @@ export const configuration = (): {
     ttl: number;
     limit: number;
   };
+  cache: {
+    enabled: boolean;
+    keyNamespace: string;
+    nullTtlSeconds: number;
+    lockTtlMs: number;
+    waitTimeoutMs: number;
+    ttlJitterSeconds: number;
+  };
+  security: {
+    trustProxy: boolean;
+    hstsEnabled: boolean;
+  };
   database: {
     type: string;
     host: string | undefined;
@@ -102,6 +114,24 @@ export const configuration = (): {
   throttle: {
     ttl: parseNumber(process.env.THROTTLE_TTL, 60000),
     limit: parseNumber(process.env.THROTTLE_LIMIT, 120),
+  },
+  cache: {
+    enabled: process.env.CACHE_ENABLED !== 'false',
+    keyNamespace: process.env.CACHE_KEY_NAMESPACE || 'blog-api-cache',
+    nullTtlSeconds: parseNumber(process.env.CACHE_NULL_TTL_SECONDS, 30),
+    lockTtlMs: parseNumber(process.env.CACHE_LOCK_TTL_MS, 5000),
+    waitTimeoutMs: parseNumber(process.env.CACHE_WAIT_TIMEOUT_MS, 1200),
+    ttlJitterSeconds: parseNumber(process.env.CACHE_TTL_JITTER_SECONDS, 30),
+  },
+  security: {
+    trustProxy:
+      process.env.TRUST_PROXY !== undefined
+        ? process.env.TRUST_PROXY === 'true'
+        : (process.env.NODE_ENV || 'development') === 'production',
+    hstsEnabled:
+      process.env.SECURITY_HSTS_ENABLED !== undefined
+        ? process.env.SECURITY_HSTS_ENABLED === 'true'
+        : (process.env.NODE_ENV || 'development') === 'production',
   },
   database: {
     type: process.env.DB_TYPE || 'mysql',

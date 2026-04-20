@@ -1,5 +1,6 @@
-import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import { ConflictException, Injectable, NotFoundException, Optional } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+import { ResponseCacheService } from '@common/security/response-cache.service';
 import { IsNull, Repository } from 'typeorm';
 import { Article, Category } from '@database/entities';
 import { CreateCategoryDto } from './dto/create-category.dto';
@@ -16,6 +17,8 @@ export class CategoriesService {
     private readonly categoryRepository: Repository<Category>,
     @InjectRepository(Article)
     private readonly articleRepository: Repository<Article>,
+    @Optional()
+    private readonly responseCacheService?: ResponseCacheService,
   ) {}
 
   async create(dto: CreateCategoryDto): Promise<Category> {
@@ -30,7 +33,9 @@ export class CategoriesService {
       color: dto.color ?? '#000000',
     });
 
-    return this.categoryRepository.save(category);
+    const savedCategory = await this.categoryRepository.save(category);
+    await this.invalidatePublicCaches();
+    return savedCategory;
   }
 
   async findAll(options?: { visibleOnly?: boolean }): Promise<Category[]> {
@@ -75,7 +80,9 @@ export class CategoriesService {
       updatedAt: new Date(),
     };
 
-    return this.categoryRepository.save(updatedCategory);
+    const savedCategory = await this.categoryRepository.save(updatedCategory);
+    await this.invalidatePublicCaches();
+    return savedCategory;
   }
 
   async remove(id: string): Promise<{ message: string }> {
@@ -92,7 +99,18 @@ export class CategoriesService {
     }
 
     await this.categoryRepository.remove(category);
+    await this.invalidatePublicCaches();
     return { message: '分类删除成功' };
+  }
+
+  private async invalidatePublicCaches(): Promise<void> {
+    await this.responseCacheService?.invalidatePrefixes([
+      'categories:public',
+      'articles:list',
+      'archives:summary',
+      'archives:articles',
+      'seo:sitemap',
+    ]);
   }
 
   private async ensureSlugUnique(slug: string, currentId?: string): Promise<void> {

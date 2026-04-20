@@ -3,8 +3,11 @@ import {
   Injectable,
   Logger,
   NotFoundException,
+  Optional,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+import { ARTICLE_CACHE_PREFIXES } from '@common/security/cache-prefixes';
+import { ResponseCacheService } from '@common/security/response-cache.service';
 import { FindOptionsWhere, IsNull, Repository } from 'typeorm';
 import { Article, CommentEntity, User } from '@database/entities';
 import { NotificationsService } from '../notifications/notifications.service';
@@ -62,6 +65,8 @@ export class CommentsService {
     private readonly userRepository: Repository<User>,
     private readonly notificationsService: NotificationsService,
     private readonly userNotificationsService: UserNotificationsService,
+    @Optional()
+    private readonly responseCacheService?: ResponseCacheService,
   ) {}
 
   /** 获取公开评论树 */
@@ -199,6 +204,7 @@ export class CommentsService {
     if (previousApproved !== nextApproved) {
       await this.adjustArticleCommentCount(comment.articleId, nextApproved ? 1 : -1);
     }
+    await this.invalidatePublicCaches();
 
     return {
       message: `评论状态已更新为 ${status}`,
@@ -243,6 +249,8 @@ export class CommentsService {
       });
     }
 
+    await this.invalidatePublicCaches();
+
     return savedReply;
   }
 
@@ -264,6 +272,7 @@ export class CommentsService {
     if (approvedCount > 0) {
       await this.adjustArticleCommentCount(comment.articleId, -approvedCount);
     }
+    await this.invalidatePublicCaches();
 
     return {
       message: '评论已删除',
@@ -435,5 +444,9 @@ export class CommentsService {
 
   private buildInternalCommentEmail(userId: string): string {
     return `user-${userId}@member.local`;
+  }
+
+  private async invalidatePublicCaches(): Promise<void> {
+    await this.responseCacheService?.invalidatePrefixes(ARTICLE_CACHE_PREFIXES);
   }
 }

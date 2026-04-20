@@ -8,6 +8,14 @@ export const validationSchema = Joi.object({
   CORS_ORIGINS: Joi.string().allow('').optional(),
   THROTTLE_TTL: Joi.number().default(60000),
   THROTTLE_LIMIT: Joi.number().default(120),
+  CACHE_ENABLED: Joi.boolean().default(true),
+  CACHE_KEY_NAMESPACE: Joi.string().default('blog-api-cache'),
+  CACHE_NULL_TTL_SECONDS: Joi.number().integer().min(5).default(30),
+  CACHE_LOCK_TTL_MS: Joi.number().integer().min(500).default(5000),
+  CACHE_WAIT_TIMEOUT_MS: Joi.number().integer().min(100).default(1200),
+  CACHE_TTL_JITTER_SECONDS: Joi.number().integer().min(0).default(30),
+  TRUST_PROXY: Joi.boolean().optional(),
+  SECURITY_HSTS_ENABLED: Joi.boolean().optional(),
 
   // Database
   DB_TYPE: Joi.string().valid('mysql').default('mysql'),

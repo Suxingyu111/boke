@@ -5,12 +5,14 @@ import { UpdateTagDto } from './dto/update-tag.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
+import { ResponseCache } from '@common/security/decorators/response-cache.decorator';
 
 @Controller()
 export class TagsController {
   constructor(private readonly tagsService: TagsService) {}
 
   @Get('tags')
+  @ResponseCache({ keyPrefix: 'tags:public', ttlSeconds: 3600, clientTtlSeconds: 300 })
   findPublicList() {
     return this.tagsService.findAll();
   }

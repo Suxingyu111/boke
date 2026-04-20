@@ -1,6 +1,8 @@
 import { Body, Controller, DefaultValuePipe, Get, ParseIntPipe, Post, Query, Req } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
 import { Request } from 'express';
+import { ResponseCache } from '@common/security/decorators/response-cache.decorator';
+import { extractClientIp } from '@common/security/request-metadata.util';
 import { CreateGuestbookDto } from './dto/create-guestbook.dto';
 import { GuestbookService } from './guestbook.service';
 
@@ -10,6 +12,7 @@ export class PublicGuestbookController {
 
   /** 获取已审核的留言列表 */
   @Get()
+  @ResponseCache({ keyPrefix: 'guestbook:public', ttlSeconds: 120, clientTtlSeconds: 60 })
   getMessages(
     @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
     @Query('pageSize', new DefaultValuePipe(20), ParseIntPipe) pageSize: number,
@@ -21,7 +24,6 @@ export class PublicGuestbookController {
   @Post()
   @Throttle({ default: { limit: 5, ttl: 60000 } })
   createMessage(@Body() dto: CreateGuestbookDto, @Req() req: Request) {
-    const ip = (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() || req.ip || null;
-    return this.guestbookService.createMessage(dto, ip);
+    return this.guestbookService.createMessage(dto, extractClientIp(req));
   }
 }

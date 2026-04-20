@@ -2,6 +2,9 @@ import { Controller, Delete, Get, Param, ParseUUIDPipe, Post, Query, Req, UseGua
 import { ApiOperation, ApiParam, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { Request } from 'express';
 import { User } from '@database/entities';
+import { NoStoreResponse } from '@common/security/decorators/no-store-response.decorator';
+import { ResponseCache } from '@common/security/decorators/response-cache.decorator';
+import { extractClientIp, extractUserAgent } from '@common/security/request-metadata.util';
 import { OptionalJwtAuthGuard } from '../auth/guards/optional-jwt-auth.guard';
 import { ArticlesService } from './articles.service';
 import { PublicListArticlesDto } from './dto/public-list-articles.dto';
@@ -29,12 +32,14 @@ export class PublicArticlesController {
   })
   @ApiQuery({ name: 'order', required: false, enum: ['ASC', 'DESC'] })
   @ApiResponse({ status: 200, description: '获取成功' })
+  @ResponseCache({ keyPrefix: 'articles:list', ttlSeconds: 180, clientTtlSeconds: 60 })
   findList(@Query() query: PublicListArticlesDto) {
     return this.articlesService.findPublicList(query);
   }
 
   @Get(':id/like')
   @UseGuards(OptionalJwtAuthGuard)
+  @NoStoreResponse()
   @ApiOperation({ summary: '获取文章点赞状态' })
   @ApiParam({ name: 'id', description: '文章 ID', type: String })
   @ApiResponse({ status: 200, description: '获取成功' })
@@ -42,9 +47,12 @@ export class PublicArticlesController {
     @Param('id', ParseUUIDPipe) id: string,
     @Req() req: PublicArticleRequest,
   ) {
-    const ip = (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() || req.ip || null;
-    const userAgent = req.headers['user-agent'] ?? null;
-    return this.articlesService.getLikeStatus(id, ip, userAgent, req.user ?? null);
+    return this.articlesService.getLikeStatus(
+      id,
+      extractClientIp(req),
+      extractUserAgent(req),
+      req.user ?? null,
+    );
   }
 
   @Post(':id/like')
@@ -56,9 +64,12 @@ export class PublicArticlesController {
     @Param('id', ParseUUIDPipe) id: string,
     @Req() req: PublicArticleRequest,
   ) {
-    const ip = (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() || req.ip || null;
-    const userAgent = req.headers['user-agent'] ?? null;
-    return this.articlesService.likeArticle(id, ip, userAgent, req.user ?? null);
+    return this.articlesService.likeArticle(
+      id,
+      extractClientIp(req),
+      extractUserAgent(req),
+      req.user ?? null,
+    );
   }
 
   @Delete(':id/like')
@@ -70,9 +81,12 @@ export class PublicArticlesController {
     @Param('id', ParseUUIDPipe) id: string,
     @Req() req: PublicArticleRequest,
   ) {
-    const ip = (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() || req.ip || null;
-    const userAgent = req.headers['user-agent'] ?? null;
-    return this.articlesService.unlikeArticle(id, ip, userAgent, req.user ?? null);
+    return this.articlesService.unlikeArticle(
+      id,
+      extractClientIp(req),
+      extractUserAgent(req),
+      req.user ?? null,
+    );
   }
 
   @Get(':slug')

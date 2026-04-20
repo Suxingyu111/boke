@@ -1,5 +1,7 @@
-import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import { ConflictException, Injectable, NotFoundException, Optional } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+import { PAGE_CACHE_PREFIXES } from '@common/security/cache-prefixes';
+import { ResponseCacheService } from '@common/security/response-cache.service';
 import { Repository } from 'typeorm';
 import { FriendLink, Page, User } from '@database/entities';
 import { CreatePageDto } from './dto/create-page.dto';
@@ -20,6 +22,8 @@ export class PagesService {
     private readonly pageRepository: Repository<Page>,
     @InjectRepository(FriendLink)
     private readonly friendLinkRepository: Repository<FriendLink>,
+    @Optional()
+    private readonly responseCacheService?: ResponseCacheService,
   ) {}
 
   async createPage(dto: CreatePageDto, currentUser: User): Promise<Page> {
@@ -42,7 +46,9 @@ export class PagesService {
       updatedBy: currentUser.id,
     });
 
-    return this.pageRepository.save(page);
+    const savedPage = await this.pageRepository.save(page);
+    await this.invalidatePageCaches();
+    return savedPage;
   }
 
   async findAdminPages(): Promise<Page[]> {
@@ -92,12 +98,15 @@ export class PagesService {
       updatedAt: new Date(),
     };
 
-    return this.pageRepository.save(updatedPage);
+    const savedPage = await this.pageRepository.save(updatedPage);
+    await this.invalidatePageCaches();
+    return savedPage;
   }
 
   async removePage(id: string): Promise<{ message: string }> {
     const page = await this.findPageById(id);
     await this.pageRepository.remove(page);
+    await this.invalidatePageCaches();
     return { message: '页面删除成功' };
   }
 
@@ -135,7 +144,9 @@ export class PagesService {
       approvedAt: this.resolveApprovedAt(status),
     });
 
-    return this.friendLinkRepository.save(link);
+    const savedLink = await this.friendLinkRepository.save(link);
+    await this.invalidatePageCaches();
+    return savedLink;
   }
 
   async applyFriendLink(dto: ApplyFriendLinkDto): Promise<FriendLink> {
@@ -183,13 +194,20 @@ export class PagesService {
       updatedAt: new Date(),
     };
 
-    return this.friendLinkRepository.save(updatedLink);
+    const savedLink = await this.friendLinkRepository.save(updatedLink);
+    await this.invalidatePageCaches();
+    return savedLink;
   }
 
   async removeFriendLink(id: string): Promise<{ message: string }> {
     const link = await this.findFriendLinkById(id);
     await this.friendLinkRepository.remove(link);
+    await this.invalidatePageCaches();
     return { message: '友链删除成功' };
+  }
+
+  private async invalidatePageCaches(): Promise<void> {
+    await this.responseCacheService?.invalidatePrefixes(PAGE_CACHE_PREFIXES);
   }
 
   async findPublicFriendLinks(): Promise<FriendLink[]> {

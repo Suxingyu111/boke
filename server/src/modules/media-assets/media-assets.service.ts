@@ -5,6 +5,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+import { assertAllowedFileSignature } from '@common/security/file-validation.util';
 import { createHash, randomUUID } from 'crypto';
 import { promises as fs } from 'fs';
 import path from 'path';
@@ -164,6 +165,8 @@ export class MediaAssetsService {
     if (!allowedExtensions || !allowedExtensions.includes(fileExt)) {
       throw new BadRequestException(INVALID_MEDIA_FILE_MESSAGE);
     }
+
+    assertAllowedFileSignature(file);
   }
 
   private async ensureStorageRoot(): Promise<void> {

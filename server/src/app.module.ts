@@ -6,6 +6,7 @@ import { configuration } from './config/configuration';
 import { validationSchema } from './config/validation';
 import { DatabaseModule } from './database/database.module';
 import { RedisModule } from './common/redis/redis.module';
+import { SecurityModule } from './common/security/security.module';
 import { SanitizePipe } from './common/pipes/sanitize.pipe';
 import { HealthModule } from './modules/health/health.module';
 import { AuthModule } from './modules/auth/auth.module';
@@ -67,6 +68,9 @@ import { OperationLogInterceptor } from './modules/operation-logs/operation-log.
 
     // Redis 模块
     RedisModule,
+
+    // 安全与缓存模块
+    SecurityModule,
 
     // 健康检查模块
     HealthModule,

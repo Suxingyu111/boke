@@ -1,5 +1,7 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, Optional } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+import { GUESTBOOK_CACHE_PREFIXES } from '@common/security/cache-prefixes';
+import { ResponseCacheService } from '@common/security/response-cache.service';
 import { Repository } from 'typeorm';
 import { Guestbook } from '@database/entities';
 import { CreateGuestbookDto } from './dto/create-guestbook.dto';
@@ -9,6 +11,8 @@ export class GuestbookService {
   constructor(
     @InjectRepository(Guestbook)
     private readonly guestbookRepository: Repository<Guestbook>,
+    @Optional()
+    private readonly responseCacheService?: ResponseCacheService,
   ) {}
 
   /** 前台：获取已审核的留言列表 */
@@ -106,6 +110,7 @@ export class GuestbookService {
 
     message.status = status;
     await this.guestbookRepository.save(message);
+    await this.invalidatePublicCaches();
     return { message: `留言已${status === 'approved' ? '通过' : '拒绝'}` };
   }
 
@@ -124,12 +129,19 @@ export class GuestbookService {
       isAdminReply: true,
     });
 
-    return this.guestbookRepository.save(reply);
+    const savedReply = await this.guestbookRepository.save(reply);
+    await this.invalidatePublicCaches();
+    return savedReply;
   }
 
   /** 管理端：删除留言 */
   async deleteMessage(id: string) {
     await this.guestbookRepository.delete(id);
+    await this.invalidatePublicCaches();
     return { message: '留言已删除' };
+  }
+
+  private async invalidatePublicCaches(): Promise<void> {
+    await this.responseCacheService?.invalidatePrefixes(GUESTBOOK_CACHE_PREFIXES);
   }
 }
