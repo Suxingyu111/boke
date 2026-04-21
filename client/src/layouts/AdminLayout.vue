@@ -22,7 +22,7 @@ const navigationItems = computed(() =>
 );
 
 async function logout() {
-  authStore.logout();
+  await authStore.logout();
   await router.push("/login");
 }
 </script>

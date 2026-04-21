@@ -26,20 +26,8 @@ function resolveRedirectTarget() {
 }
 
 onMounted(async () => {
-  const token =
-    typeof route.query.token === "string" ? route.query.token.trim() : "";
-
-  if (!token) {
-    errorMessage.value = "OAuth 登录结果无效，请重新发起授权。";
-    await router.replace({
-      name: "login",
-      query: { oauthError: errorMessage.value },
-    });
-    return;
-  }
-
   try {
-    await authStore.completeOAuthLogin(token, true);
+    await authStore.completeOAuthLogin(true);
     await router.replace(resolveRedirectTarget());
   } catch (error) {
     errorMessage.value = getApiErrorMessage(error, "OAuth 登录失败，请稍后再试");

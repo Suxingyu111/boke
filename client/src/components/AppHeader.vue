@@ -39,8 +39,8 @@ function closeUserMenu() {
   userMenuOpen.value = false;
 }
 
-function logout() {
-  authStore.logout();
+async function logout() {
+  await authStore.logout();
   closeUserMenu();
 }
 

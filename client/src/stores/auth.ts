@@ -14,6 +14,8 @@ import {
 const persistentTokenKey = "blog_token";
 const sessionTokenKey = "blog_session_token";
 const userStorageKey = "blog_user";
+const persistentSessionKey = "blog_auth_session";
+const sessionSessionKey = "blog_session_auth";
 
 function readStoredUser(): AuthUser | null {
   const value =
@@ -38,6 +40,13 @@ function readStoredToken() {
   );
 }
 
+function readStoredSession() {
+  return Boolean(
+    localStorage.getItem(persistentSessionKey) ??
+      sessionStorage.getItem(sessionSessionKey),
+  );
+}
+
 function persistAuth(response: AuthResponse, remember: boolean) {
   const targetStorage = remember ? localStorage : sessionStorage;
   const otherStorage = remember ? sessionStorage : localStorage;
@@ -46,35 +55,65 @@ function persistAuth(response: AuthResponse, remember: boolean) {
     remember ? persistentTokenKey : sessionTokenKey,
     response.accessToken,
   );
+  targetStorage.setItem(
+    remember ? persistentSessionKey : sessionSessionKey,
+    "1",
+  );
   targetStorage.setItem(userStorageKey, JSON.stringify(response.user));
   otherStorage.removeItem(remember ? sessionTokenKey : persistentTokenKey);
+  otherStorage.removeItem(remember ? sessionSessionKey : persistentSessionKey);
   otherStorage.removeItem(userStorageKey);
 }
 
-function persistToken(token: string, remember: boolean) {
+function persistSession(remember: boolean) {
   const targetStorage = remember ? localStorage : sessionStorage;
   const otherStorage = remember ? sessionStorage : localStorage;
 
-  targetStorage.setItem(remember ? persistentTokenKey : sessionTokenKey, token);
-  otherStorage.removeItem(remember ? sessionTokenKey : persistentTokenKey);
+  targetStorage.setItem(
+    remember ? persistentSessionKey : sessionSessionKey,
+    "1",
+  );
   otherStorage.removeItem(userStorageKey);
+  otherStorage.removeItem(remember ? sessionTokenKey : persistentTokenKey);
+  otherStorage.removeItem(remember ? sessionSessionKey : persistentSessionKey);
 }
 
 function clearStoredAuth() {
   localStorage.removeItem(persistentTokenKey);
+  localStorage.removeItem(persistentSessionKey);
   localStorage.removeItem(userStorageKey);
   sessionStorage.removeItem(sessionTokenKey);
+  sessionStorage.removeItem(sessionSessionKey);
   sessionStorage.removeItem(userStorageKey);
+}
+
+function resolveUserStorage() {
+  if (
+    localStorage.getItem(persistentTokenKey) ||
+    localStorage.getItem(persistentSessionKey)
+  ) {
+    return localStorage;
+  }
+
+  if (
+    sessionStorage.getItem(sessionTokenKey) ||
+    sessionStorage.getItem(sessionSessionKey)
+  ) {
+    return sessionStorage;
+  }
+
+  return localStorage;
 }
 
 export const useAuthStore = defineStore("auth", {
   state: () => ({
     token: readStoredToken(),
+    sessionActive: readStoredSession(),
     user: readStoredUser(),
     loading: false,
   }),
   getters: {
-    isAuthenticated: (state) => Boolean(state.token),
+    isAuthenticated: (state) => Boolean(state.token || state.sessionActive),
     canAccessManagement: (state) => canAccessManagement(state.user),
     canAccessAdmin: (state) => canAccessAdminFeatures(state.user),
     displayName: (state) => state.user?.nickname ?? state.user?.username ?? "",
@@ -82,6 +121,7 @@ export const useAuthStore = defineStore("auth", {
   actions: {
     applyAuth(response: AuthResponse, remember = true) {
       this.token = response.accessToken;
+      this.sessionActive = true;
       this.user = response.user;
       persistAuth(response, remember);
     },
@@ -105,51 +145,57 @@ export const useAuthStore = defineStore("auth", {
         this.loading = false;
       }
     },
-    async completeOAuthLogin(token: string, remember = true) {
+    async completeOAuthLogin(remember = true) {
       this.loading = true;
       try {
-        this.token = token;
-        persistToken(token, remember);
+        this.token = "";
+        this.sessionActive = true;
+        persistSession(remember);
         const user = await authApi.getCurrentUser();
         this.user = user;
         this.persistUser(user);
         return user;
       } catch (error) {
-        this.logout();
+        await this.logout();
         throw error;
       } finally {
         this.loading = false;
       }
     },
     async refreshCurrentUser() {
-      if (!this.token) {
+      if (!this.isAuthenticated) {
         return null;
       }
 
       const user = await authApi.getCurrentUser();
+      this.sessionActive = true;
       this.persistUser(user);
       return user;
     },
     async refreshCurrentAdminUser() {
-      if (!this.token) {
+      if (!this.isAuthenticated) {
         return null;
       }
 
       const user = await authApi.getCurrentAdminUser();
+      this.sessionActive = true;
       this.persistUser(user);
       return user;
     },
     persistUser(user: AuthUser) {
       this.user = user;
-      const storage = localStorage.getItem(persistentTokenKey)
-        ? localStorage
-        : sessionStorage;
+      const storage = resolveUserStorage();
       storage.setItem(userStorageKey, JSON.stringify(user));
     },
-    logout() {
-      this.token = "";
-      this.user = null;
-      clearStoredAuth();
+    async logout() {
+      try {
+        await authApi.logout();
+      } finally {
+        this.token = "";
+        this.sessionActive = false;
+        this.user = null;
+        clearStoredAuth();
+      }
     },
   },
 });

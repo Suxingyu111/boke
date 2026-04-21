@@ -158,11 +158,11 @@ router.beforeEach(async (to) => {
     to.matched.map((record) => record.meta.minRole),
   );
 
-  if (authStore.token && !authStore.user) {
+  if (authStore.isAuthenticated && !authStore.user) {
     try {
       await authStore.refreshCurrentUser();
     } catch {
-      authStore.logout();
+      await authStore.logout();
     }
   }
 

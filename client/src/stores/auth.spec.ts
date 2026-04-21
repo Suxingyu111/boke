@@ -6,6 +6,7 @@ import { useAuthStore } from "@/stores/auth";
 const authApiMocks = vi.hoisted(() => ({
   loginMock: vi.fn(),
   registerMock: vi.fn(),
+  logoutMock: vi.fn(),
   getCurrentUserMock: vi.fn(),
   getCurrentAdminUserMock: vi.fn(),
 }));
@@ -13,6 +14,7 @@ const authApiMocks = vi.hoisted(() => ({
 vi.mock("@/api/auth", () => ({
   login: authApiMocks.loginMock,
   register: authApiMocks.registerMock,
+  logout: authApiMocks.logoutMock,
   getCurrentUser: authApiMocks.getCurrentUserMock,
   getCurrentAdminUser: authApiMocks.getCurrentAdminUserMock,
 }));
@@ -48,6 +50,7 @@ describe("useAuthStore", () => {
     localStorage.clear();
     sessionStorage.clear();
     vi.clearAllMocks();
+    authApiMocks.logoutMock.mockResolvedValue({ message: "已退出登录" });
   });
 
   it("persists remembered login in localStorage", async () => {
@@ -67,11 +70,29 @@ describe("useAuthStore", () => {
     authApiMocks.getCurrentUserMock.mockResolvedValue(mockUser);
     const store = useAuthStore();
 
-    await store.completeOAuthLogin("oauth-token", false);
+    await store.completeOAuthLogin(false);
 
     expect(store.user?.email).toBe("writer@example.com");
-    expect(sessionStorage.getItem("blog_session_token")).toBe("oauth-token");
+    expect(store.token).toBe("");
+    expect(store.sessionActive).toBe(true);
+    expect(sessionStorage.getItem("blog_session_token")).toBeNull();
+    expect(sessionStorage.getItem("blog_session_auth")).toBe("1");
     expect(localStorage.getItem("blog_token")).toBeNull();
+  });
+
+  it("logout clears cookie-session markers and user state", async () => {
+    const store = useAuthStore();
+    store.sessionActive = true;
+    store.user = mockUser;
+    sessionStorage.setItem("blog_session_auth", "1");
+    sessionStorage.setItem("blog_user", JSON.stringify(mockUser));
+
+    await store.logout();
+
+    expect(authApiMocks.logoutMock).toHaveBeenCalledTimes(1);
+    expect(store.isAuthenticated).toBe(false);
+    expect(store.user).toBeNull();
+    expect(sessionStorage.getItem("blog_session_auth")).toBeNull();
   });
 
   it("exposes management access by role", () => {

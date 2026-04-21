@@ -1,4 +1,16 @@
-import { Body, Controller, Get, HttpCode, HttpStatus, Next, Post, Query, Req, Res, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Next,
+  Post,
+  Query,
+  Req,
+  Res,
+  UseGuards,
+} from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import * as passport from 'passport';
@@ -74,6 +86,15 @@ export class AuthController {
   @ApiResponse({ status: 200, description: '登录成功', type: AuthResponseDto })
   login(@Body() dto: LoginDto): Promise<AuthResponseDto> {
     return this.authService.login(dto);
+  }
+
+  @Post('logout')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: '退出登录' })
+  @ApiResponse({ status: 200, description: '退出成功' })
+  logout(@Res({ passthrough: true }) res: Response) {
+    this.authService.clearAuthCookie(res);
+    return { message: '已退出登录' };
   }
 
   @Get('me')
@@ -195,7 +216,8 @@ export class AuthController {
 
           try {
             const authResponse = await this.authService.buildOAuthAuthResponse(user);
-            res.redirect(this.authService.buildOAuthSuccessRedirect(authResponse, redirect));
+            this.authService.writeAuthCookie(res, authResponse.accessToken);
+            res.redirect(this.authService.buildOAuthSuccessRedirect(redirect));
             resolve();
           } catch (authError) {
             reject(authError);

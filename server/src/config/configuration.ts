@@ -64,6 +64,9 @@ export const configuration = (): {
     secret: string | undefined;
     expiresIn: string;
   };
+  auth: {
+    cookieName: string;
+  };
   oauth: {
     clientUrl: string;
     github: {
@@ -154,6 +157,9 @@ export const configuration = (): {
   jwt: {
     secret: process.env.JWT_SECRET,
     expiresIn: process.env.JWT_EXPIRATION || '7d',
+  },
+  auth: {
+    cookieName: process.env.AUTH_COOKIE_NAME || 'blog_auth_token',
   },
   oauth: {
     clientUrl: process.env.CLIENT_URL || 'http://localhost:5173',

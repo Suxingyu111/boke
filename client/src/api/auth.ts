@@ -30,6 +30,14 @@ export async function register(payload: RegisterPayload) {
   return response.data;
 }
 
+export async function logout() {
+  const response = await post<{ message: string }, Record<string, never>>(
+    "/auth/logout",
+    {},
+  );
+  return response.data;
+}
+
 export async function checkRegistrationAvailability(
   payload: RegistrationAvailabilityPayload,
 ) {

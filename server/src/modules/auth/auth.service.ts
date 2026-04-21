@@ -14,7 +14,8 @@ import { JwtService } from '@nestjs/jwt';
 import { InjectRepository } from '@nestjs/typeorm';
 import * as bcrypt from 'bcrypt';
 import { createHash, randomInt, timingSafeEqual } from 'crypto';
-import type { StringValue } from 'ms';
+import type { CookieOptions, Response } from 'express';
+import ms, { type StringValue } from 'ms';
 import { Repository } from 'typeorm';
 import { User, VerificationCode } from '@database/entities';
 import { NotificationsService } from '../notifications/notifications.service';
@@ -403,13 +404,9 @@ export class AuthService {
     return this.buildAuthResponse(user);
   }
 
-  buildOAuthSuccessRedirect(
-    auth: AuthResponseDto,
-    redirectPath?: string,
-  ): string {
+  buildOAuthSuccessRedirect(redirectPath?: string): string {
     const clientUrl = this.configService.get<string>('oauth.clientUrl', 'http://localhost:5173');
     const target = new URL('/oauth/callback', this.ensureTrailingSlash(clientUrl));
-    target.searchParams.set('token', auth.accessToken);
 
     const safeRedirect = this.normalizeRedirectPath(redirectPath);
     if (safeRedirect) {
@@ -430,6 +427,14 @@ export class AuthService {
     }
 
     return target.toString();
+  }
+
+  writeAuthCookie(response: Pick<Response, 'cookie'>, accessToken: string): void {
+    response.cookie(this.getAuthCookieName(), accessToken, this.getAuthCookieOptions());
+  }
+
+  clearAuthCookie(response: Pick<Response, 'clearCookie'>): void {
+    response.clearCookie(this.getAuthCookieName(), this.getAuthCookieOptions());
   }
 
   private async resolveValidRegistrationVerification(dto: RegisterDto): Promise<VerificationCode> {
@@ -671,17 +676,38 @@ export class AuthService {
   }
 
   private async buildAuthResponse(user: User): Promise<AuthResponseDto> {
-    const accessToken = await this.jwtService.signAsync({
-      sub: user.id,
-      username: user.username,
-      role: user.role,
-    });
+    const accessToken = await this.buildAccessToken(user);
 
     return new AuthResponseDto({
       accessToken,
       expiresIn: this.configService.get<string>('jwt.expiresIn', '7d'),
       user: new AuthUserDto(user),
     });
+  }
+
+  private buildAccessToken(user: User): Promise<string> {
+    return this.jwtService.signAsync({
+      sub: user.id,
+      username: user.username,
+      role: user.role,
+    });
+  }
+
+  private getAuthCookieName(): string {
+    return this.configService.get<string>('auth.cookieName', 'blog_auth_token');
+  }
+
+  private getAuthCookieOptions(): CookieOptions {
+    const expiresIn = this.configService.get<string>('jwt.expiresIn', '7d');
+    const maxAge = ms(expiresIn as StringValue);
+
+    return {
+      httpOnly: true,
+      secure: this.isProduction(),
+      sameSite: 'lax',
+      path: '/',
+      maxAge: typeof maxAge === 'number' ? maxAge : undefined,
+    };
   }
 
   private async dispatchRegistrationCode(

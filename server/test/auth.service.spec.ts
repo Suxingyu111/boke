@@ -430,35 +430,11 @@ describe('AuthService', () => {
       return defaultValue;
     });
 
-    const successUrl = service.buildOAuthSuccessRedirect(
-      {
-        accessToken: 'oauth-token',
-        tokenType: 'Bearer',
-        expiresIn: '7d',
-        user: {
-          id: baseUser.id,
-          username: baseUser.username,
-          email: baseUser.email,
-          phone: baseUser.phone,
-          nickname: baseUser.nickname,
-          avatar: baseUser.avatar,
-          bio: baseUser.bio,
-          registrationType: baseUser.registrationType,
-          emailVerified: true,
-          phoneVerified: false,
-          isActive: baseUser.isActive,
-          role: baseUser.role,
-          lastLoginAt: baseUser.lastLoginAt,
-          createdAt: baseUser.createdAt,
-          updatedAt: baseUser.updatedAt,
-        },
-      },
-      '/admin',
-    );
+    const successUrl = service.buildOAuthSuccessRedirect('/admin');
     const failureUrl = service.buildOAuthFailureRedirect('GitHub OAuth 登录失败', '/profile');
 
     expect(successUrl).toContain('/oauth/callback?');
-    expect(successUrl).toContain('token=oauth-token');
+    expect(successUrl).not.toContain('token=');
     expect(successUrl).toContain('redirect=%2Fadmin');
     expect(failureUrl).toContain('/login?');
     expect(failureUrl).toContain('oauthError=');

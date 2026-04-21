@@ -93,6 +93,7 @@ export function invalidateGetCache(
 export const http = axios.create({
   baseURL: apiBaseUrl,
   timeout: 10000,
+  withCredentials: true,
 });
 
 http.interceptors.request.use((config) => {
@@ -119,11 +120,13 @@ http.interceptors.response.use(
     if (error.response?.status === 401) {
       localStorage.removeItem("blog_token");
       localStorage.removeItem("blog_user");
+      localStorage.removeItem("blog_auth_session");
       sessionStorage.removeItem("blog_session_token");
       sessionStorage.removeItem("blog_user");
+      sessionStorage.removeItem("blog_session_auth");
     }
 
-    return Promise.reject(error);
+  return Promise.reject(error);
   },
 );
 
