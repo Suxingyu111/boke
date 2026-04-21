@@ -18,6 +18,9 @@ export class EmailSubscriber {
   @Column({ name: 'confirm_token', type: 'varchar', length: 100, nullable: true })
   confirmToken: string | null;
 
+  @Column({ name: 'confirm_token_hash', type: 'varchar', length: 64, nullable: true })
+  confirmTokenHash: string | null;
+
   @Column({ name: 'unsubscribe_token', type: 'varchar', length: 100, unique: true })
   unsubscribeToken: string;
 

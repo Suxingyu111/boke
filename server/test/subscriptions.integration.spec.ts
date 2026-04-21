@@ -1,8 +1,10 @@
 import 'reflect-metadata';
 import { CanActivate, ExecutionContext, INestApplication, ValidationPipe } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
+import { ConfigService } from '@nestjs/config';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import request from 'supertest';
+import { createHash } from 'crypto';
 import { ObjectLiteral, Repository } from 'typeorm';
 import { EmailNotification, EmailSubscriber, User } from '../src/database/entities';
 import { HttpExceptionFilter } from '../src/common/filters/http-exception.filter';
@@ -45,6 +47,7 @@ const createRepositoryMock = <T extends ObjectLiteral & { id?: string }>(
         );
       },
     ),
+    find: jest.fn().mockImplementation(async () => items),
     findAndCount: jest.fn().mockImplementation(
       async (options?: {
         skip?: number;
@@ -88,6 +91,7 @@ const createRepositoryMock = <T extends ObjectLiteral & { id?: string }>(
 };
 
 const now = new Date('2026-04-20T12:45:00.000Z');
+const hashToken = (token: string) => createHash('sha256').update(token).digest('hex');
 
 const makeSubscriber = (overrides: Partial<EmailSubscriber> = {}): EmailSubscriber => ({
   id: 'subscriber-1',
@@ -95,6 +99,7 @@ const makeSubscriber = (overrides: Partial<EmailSubscriber> = {}): EmailSubscrib
   name: '读者',
   isConfirmed: false,
   confirmToken: 'confirm-token-1',
+  confirmTokenHash: null,
   unsubscribeToken: 'unsubscribe-token-1',
   isActive: true,
   subscribedAt: now,
@@ -146,7 +151,7 @@ describe('Subscriptions integration', () => {
   let subscriberRepository: RepositoryMock<EmailSubscriber>;
 
   const notificationsService = {
-    sendNotification: jest.fn(),
+    sendNotification: jest.fn().mockResolvedValue({}),
     notifySubscribersNewArticle: jest.fn(),
     retryFailed: jest.fn(),
     getNotifications: jest.fn().mockResolvedValue({
@@ -201,6 +206,18 @@ describe('Subscriptions integration', () => {
           provide: getRepositoryToken(EmailNotification),
           useValue: emailNotificationRepository,
         },
+        {
+          provide: ConfigService,
+          useValue: {
+            get: jest.fn().mockImplementation((key: string, fallback?: string) => {
+              if (key === 'oauth.clientUrl') {
+                return 'http://localhost:5173';
+              }
+
+              return fallback;
+            }),
+          },
+        },
       ],
     })
       .overrideGuard(JwtAuthGuard)
@@ -229,6 +246,15 @@ describe('Subscriptions integration', () => {
     await app.close();
   });
 
+  function extractLatestConfirmationToken() {
+    const latestCall = notificationsService.sendNotification.mock.calls.at(-1)?.[0] as
+      | { body?: string }
+      | undefined;
+    const body = latestCall?.body ?? '';
+    const matched = body.match(/\/subscriptions\/confirm\/([a-f0-9]{64})/i);
+    return matched?.[1] ?? null;
+  }
+
   it('应支持公开订阅、确认订阅与取消订阅', async () => {
     const subscribeResponse = await request(app.getHttpServer())
       .post('/api/subscriptions')
@@ -239,8 +265,7 @@ describe('Subscriptions integration', () => {
       .expect(201);
 
     expect(subscribeResponse.body.data.message).toBe('订阅请求已提交，请查看邮箱确认');
-    expect(typeof subscribeResponse.body.data.confirmToken).toBe('string');
-    expect(subscribeResponse.body.data.confirmToken).toHaveLength(64);
+    expect(subscribeResponse.body.data).not.toHaveProperty('confirmToken');
 
     const created = subscriberRepository.items.find(item => item.email === 'new-reader@example.com');
     expect(created).toEqual(
@@ -249,15 +274,31 @@ describe('Subscriptions integration', () => {
         name: '  新读者  ',
         isConfirmed: false,
         isActive: true,
+        confirmToken: null,
+      }),
+    );
+    expect(created?.confirmTokenHash).toMatch(/^[a-f0-9]{64}$/);
+    const migratedLegacySubscriber = subscriberRepository.items.find(item => item.id === 'subscriber-2');
+    expect(migratedLegacySubscriber?.confirmToken).toBeNull();
+    expect(migratedLegacySubscriber?.confirmTokenHash).toBe(hashToken('confirm-token-2'));
+    expect(notificationsService.sendNotification).toHaveBeenCalledWith(
+      expect.objectContaining({
+        toEmail: 'new-reader@example.com',
+        subject: '请确认你的博客订阅',
+        type: 'subscription',
       }),
     );
 
+    const confirmToken = extractLatestConfirmationToken();
+    expect(confirmToken).toMatch(/^[a-f0-9]{64}$/);
+
     await request(app.getHttpServer())
-      .get(`/api/subscriptions/confirm/${created?.confirmToken}`)
+      .get(`/api/subscriptions/confirm/${confirmToken}`)
       .expect(200);
 
     expect(created?.isConfirmed).toBe(true);
     expect(created?.confirmToken).toBeNull();
+    expect(created?.confirmTokenHash).toBeNull();
 
     await request(app.getHttpServer())
       .get('/api/subscriptions/unsubscribe/unsubscribe-token-1')
@@ -289,9 +330,10 @@ describe('Subscriptions integration', () => {
         isActive: true,
         name: '重新激活',
         unsubscribedAt: null,
+        confirmToken: null,
       }),
     );
-    expect(typeof reactivated?.confirmToken).toBe('string');
+    expect(reactivated?.confirmTokenHash).toMatch(/^[a-f0-9]{64}$/);
 
     const listResponse = await request(app.getHttpServer())
       .get('/api/admin/notifications/subscribers?page=1&pageSize=1')

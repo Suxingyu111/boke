@@ -342,16 +342,21 @@ CREATE TABLE IF NOT EXISTS article_series_items (
 CREATE TABLE IF NOT EXISTS email_subscribers (
   id CHAR(36) NOT NULL,
   email VARCHAR(255) NOT NULL,
-  nickname VARCHAR(100) DEFAULT NULL,
-  status ENUM('pending', 'subscribed', 'unsubscribed') NOT NULL DEFAULT 'pending',
-  subscribe_token VARCHAR(100) DEFAULT NULL,
-  subscribed_at DATETIME DEFAULT NULL,
+  name VARCHAR(100) DEFAULT NULL,
+  is_confirmed TINYINT(1) NOT NULL DEFAULT 0,
+  confirm_token VARCHAR(100) DEFAULT NULL,
+  confirm_token_hash VARCHAR(64) DEFAULT NULL,
+  unsubscribe_token VARCHAR(100) NOT NULL,
+  is_active TINYINT(1) NOT NULL DEFAULT 1,
+  subscribed_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  confirmed_at DATETIME DEFAULT NULL,
   unsubscribed_at DATETIME DEFAULT NULL,
-  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (id),
   UNIQUE KEY idx_email_subscribers_email (email),
-  KEY idx_email_subscribers_status (status)
+  UNIQUE KEY idx_email_subscribers_unsubscribe_token (unsubscribe_token),
+  KEY idx_email_subscribers_confirm_token_hash (confirm_token_hash),
+  KEY idx_email_subscribers_is_active (is_active),
+  KEY idx_email_subscribers_is_confirmed (is_confirmed)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS notices (
