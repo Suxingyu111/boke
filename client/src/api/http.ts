@@ -2,7 +2,6 @@ import axios from "axios";
 import type { ApiResponse } from "@/types/blog";
 
 const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || "/api";
-const tokenStorageKeys = ["blog_token", "blog_session_token"];
 const pageCacheTtl = Number(import.meta.env.VITE_PAGE_CACHE_TTL || 60000);
 const pageCacheMaxEntries = Number(import.meta.env.VITE_PAGE_CACHE_MAX_ENTRIES || 80);
 const csrfStorageKey = "blog_csrf_token";
@@ -97,15 +96,7 @@ export const http = axios.create({
 });
 
 http.interceptors.request.use((config) => {
-  const token = tokenStorageKeys
-    .map((key) => localStorage.getItem(key) ?? sessionStorage.getItem(key))
-    .find(Boolean);
-
   config.headers["X-Requested-With"] = "XMLHttpRequest";
-
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
 
   if (!["get", "head", "options"].includes(config.method ?? "get")) {
     config.headers["X-CSRF-Token"] = getCsrfToken();

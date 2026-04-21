@@ -293,6 +293,18 @@ describe('Auth integration', () => {
       .expect(201);
   }
 
+  function expectAuthCookie(setCookieHeader: string | string[] | undefined) {
+    const cookies = Array.isArray(setCookieHeader)
+      ? setCookieHeader
+      : setCookieHeader
+        ? [setCookieHeader]
+        : undefined;
+
+    expect(cookies).toEqual(
+      expect.arrayContaining([expect.stringContaining('blog_auth_token=')]),
+    );
+  }
+
   it('注册成功后应能使用 accessToken 访问当前用户接口', async () => {
     const registerResponse = await registerUser(
       'integration_user',
@@ -308,10 +320,11 @@ describe('Auth integration', () => {
       }),
     );
     expect(registerResponse.body.data.user).not.toHaveProperty('password');
+    expectAuthCookie(registerResponse.headers['set-cookie']);
 
     const meResponse = await request(app.getHttpServer())
       .get('/api/auth/me')
-      .set('Authorization', `Bearer ${registerResponse.body.data.accessToken}`)
+      .set('Cookie', registerResponse.headers['set-cookie'])
       .expect(200);
 
     expect(meResponse.body.success).toBe(true);
@@ -370,10 +383,11 @@ describe('Auth integration', () => {
         password: 'SecurePass123',
       })
       .expect(200);
+    expectAuthCookie(loginResponse.headers['set-cookie']);
 
     const response = await request(app.getHttpServer())
       .get('/api/auth/admin/me')
-      .set('Authorization', `Bearer ${loginResponse.body.data.accessToken}`)
+      .set('Cookie', loginResponse.headers['set-cookie'])
       .expect(403);
 
     expect(response.body.success).toBe(false);
@@ -396,10 +410,11 @@ describe('Auth integration', () => {
         password: 'SecurePass123',
       })
       .expect(200);
+    expectAuthCookie(loginResponse.headers['set-cookie']);
 
     const response = await request(app.getHttpServer())
       .get('/api/auth/admin/me')
-      .set('Authorization', `Bearer ${loginResponse.body.data.accessToken}`)
+      .set('Cookie', loginResponse.headers['set-cookie'])
       .expect(200);
 
     expect(response.body.success).toBe(true);

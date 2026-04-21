@@ -75,8 +75,13 @@ export class AuthController {
   @Throttle({ default: { limit: 3, ttl: 60000 } })
   @ApiOperation({ summary: '注册账号' })
   @ApiResponse({ status: 201, description: '注册成功', type: AuthResponseDto })
-  register(@Body() dto: RegisterDto): Promise<AuthResponseDto> {
-    return this.authService.register(dto);
+  async register(
+    @Body() dto: RegisterDto,
+    @Res({ passthrough: true }) res: Response,
+  ): Promise<AuthResponseDto> {
+    const authResponse = await this.authService.register(dto);
+    this.authService.writeAuthCookie(res, authResponse.accessToken);
+    return authResponse;
   }
 
   @Post('login')
@@ -84,8 +89,13 @@ export class AuthController {
   @Throttle({ default: { limit: 5, ttl: 60000 } })
   @ApiOperation({ summary: '账号登录' })
   @ApiResponse({ status: 200, description: '登录成功', type: AuthResponseDto })
-  login(@Body() dto: LoginDto): Promise<AuthResponseDto> {
-    return this.authService.login(dto);
+  async login(
+    @Body() dto: LoginDto,
+    @Res({ passthrough: true }) res: Response,
+  ): Promise<AuthResponseDto> {
+    const authResponse = await this.authService.login(dto);
+    this.authService.writeAuthCookie(res, authResponse.accessToken);
+    return authResponse;
   }
 
   @Post('logout')

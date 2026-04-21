@@ -11,16 +11,17 @@ import {
   canAccessManagement,
 } from "@/utils/permissions";
 
-const persistentTokenKey = "blog_token";
-const sessionTokenKey = "blog_session_token";
 const userStorageKey = "blog_user";
 const persistentSessionKey = "blog_auth_session";
 const sessionSessionKey = "blog_session_auth";
 
 function readStoredUser(): AuthUser | null {
-  const value =
-    localStorage.getItem(userStorageKey) ??
-    sessionStorage.getItem(userStorageKey);
+  const storage = localStorage.getItem(persistentSessionKey)
+    ? localStorage
+    : sessionStorage.getItem(sessionSessionKey)
+      ? sessionStorage
+      : null;
+  const value = storage?.getItem(userStorageKey);
   if (!value) {
     return null;
   }
@@ -32,12 +33,9 @@ function readStoredUser(): AuthUser | null {
   }
 }
 
-function readStoredToken() {
-  return (
-    localStorage.getItem(persistentTokenKey) ??
-    sessionStorage.getItem(sessionTokenKey) ??
-    ""
-  );
+function clearLegacyTokenStorage() {
+  localStorage.removeItem("blog_token");
+  sessionStorage.removeItem("blog_session_token");
 }
 
 function readStoredSession() {
@@ -52,15 +50,10 @@ function persistAuth(response: AuthResponse, remember: boolean) {
   const otherStorage = remember ? sessionStorage : localStorage;
 
   targetStorage.setItem(
-    remember ? persistentTokenKey : sessionTokenKey,
-    response.accessToken,
-  );
-  targetStorage.setItem(
     remember ? persistentSessionKey : sessionSessionKey,
     "1",
   );
   targetStorage.setItem(userStorageKey, JSON.stringify(response.user));
-  otherStorage.removeItem(remember ? sessionTokenKey : persistentTokenKey);
   otherStorage.removeItem(remember ? sessionSessionKey : persistentSessionKey);
   otherStorage.removeItem(userStorageKey);
 }
@@ -74,53 +67,45 @@ function persistSession(remember: boolean) {
     "1",
   );
   otherStorage.removeItem(userStorageKey);
-  otherStorage.removeItem(remember ? sessionTokenKey : persistentTokenKey);
   otherStorage.removeItem(remember ? sessionSessionKey : persistentSessionKey);
 }
 
 function clearStoredAuth() {
-  localStorage.removeItem(persistentTokenKey);
+  clearLegacyTokenStorage();
   localStorage.removeItem(persistentSessionKey);
   localStorage.removeItem(userStorageKey);
-  sessionStorage.removeItem(sessionTokenKey);
   sessionStorage.removeItem(sessionSessionKey);
   sessionStorage.removeItem(userStorageKey);
 }
 
 function resolveUserStorage() {
-  if (
-    localStorage.getItem(persistentTokenKey) ||
-    localStorage.getItem(persistentSessionKey)
-  ) {
+  if (localStorage.getItem(persistentSessionKey)) {
     return localStorage;
   }
 
-  if (
-    sessionStorage.getItem(sessionTokenKey) ||
-    sessionStorage.getItem(sessionSessionKey)
-  ) {
+  if (sessionStorage.getItem(sessionSessionKey)) {
     return sessionStorage;
   }
 
   return localStorage;
 }
 
+clearLegacyTokenStorage();
+
 export const useAuthStore = defineStore("auth", {
   state: () => ({
-    token: readStoredToken(),
     sessionActive: readStoredSession(),
     user: readStoredUser(),
     loading: false,
   }),
   getters: {
-    isAuthenticated: (state) => Boolean(state.token || state.sessionActive),
+    isAuthenticated: (state) => Boolean(state.sessionActive),
     canAccessManagement: (state) => canAccessManagement(state.user),
     canAccessAdmin: (state) => canAccessAdminFeatures(state.user),
     displayName: (state) => state.user?.nickname ?? state.user?.username ?? "",
   },
   actions: {
     applyAuth(response: AuthResponse, remember = true) {
-      this.token = response.accessToken;
       this.sessionActive = true;
       this.user = response.user;
       persistAuth(response, remember);
@@ -148,7 +133,6 @@ export const useAuthStore = defineStore("auth", {
     async completeOAuthLogin(remember = true) {
       this.loading = true;
       try {
-        this.token = "";
         this.sessionActive = true;
         persistSession(remember);
         const user = await authApi.getCurrentUser();
@@ -191,7 +175,6 @@ export const useAuthStore = defineStore("auth", {
       try {
         await authApi.logout();
       } finally {
-        this.token = "";
         this.sessionActive = false;
         this.user = null;
         clearStoredAuth();

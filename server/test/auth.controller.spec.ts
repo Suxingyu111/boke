@@ -1,5 +1,6 @@
 import { AuthController } from '../src/modules/auth/auth.controller';
 import { AuthService } from '../src/modules/auth/auth.service';
+import type { Response } from 'express';
 import { User } from '../src/database/entities';
 import { LoginDto } from '../src/modules/auth/dto/login.dto';
 import { RegisterDto } from '../src/modules/auth/dto/register.dto';
@@ -47,27 +48,32 @@ describe('AuthController', () => {
     phoneVerifiedAt: null,
     passwordChangedAt: new Date('2026-04-15T00:00:00.000Z'),
   } as User;
+  const response = {} as Response;
 
   it('应调用 service.register 完成注册', async () => {
     const service = {
       register: jest.fn().mockResolvedValue(authResult),
       login: jest.fn(),
+      writeAuthCookie: jest.fn(),
     } as unknown as AuthService;
 
     const controller = new AuthController(service);
 
-    await expect(controller.register(registerDto)).resolves.toEqual(authResult);
+    await expect(controller.register(registerDto, response)).resolves.toEqual(authResult);
+    expect(service.writeAuthCookie).toHaveBeenCalledWith(response, authResult.accessToken);
   });
 
   it('应调用 service.login 完成登录', async () => {
     const service = {
       register: jest.fn(),
       login: jest.fn().mockResolvedValue(authResult),
+      writeAuthCookie: jest.fn(),
     } as unknown as AuthService;
 
     const controller = new AuthController(service);
 
-    await expect(controller.login(loginDto)).resolves.toEqual(authResult);
+    await expect(controller.login(loginDto, response)).resolves.toEqual(authResult);
+    expect(service.writeAuthCookie).toHaveBeenCalledWith(response, authResult.accessToken);
   });
 
   it('应返回当前登录用户信息', () => {
