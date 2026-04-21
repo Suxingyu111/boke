@@ -149,7 +149,15 @@ npm run start:prod
 - nickname: 昵称
 - avatar: 头像 URL
 - bio: 个人介绍
-- role: 角色 (admin, user)
+- role: 角色代码（super_admin / admin / author / user，关联 `user_roles` 角色表）
+- createdAt, updatedAt: 时间戳
+
+### UserRole（用户角色）
+- code: 角色代码（主键）
+- name: 角色名称
+- description: 角色描述
+- sortOrder: 排序值
+- isSystem: 是否系统内置角色
 - createdAt, updatedAt: 时间戳
 
 ### Article（文章）
@@ -234,6 +242,43 @@ npm run migration:revert   # 回滚迁移
 # 请求示例
 curl -H "Authorization: Bearer <token>" http://localhost:3000/api/auth/me
 ```
+
+## 👑 超级管理员引导
+
+项目支持通过环境变量自动引导超级管理员账号：
+
+```env
+SUPER_ADMIN_USERNAME=rootmaster
+SUPER_ADMIN_PASSWORD=change_me_super_admin_password_strong
+SUPER_ADMIN_EMAIL=root@example.com
+SUPER_ADMIN_NICKNAME=系统超管
+```
+
+说明：
+
+- 执行 `npm run db:init` 时，会自动创建 `user_roles` 角色表并按配置创建/同步 `super_admin` 账号。
+- 应用启动后也会再次兜底校验，确保配置中的超级管理员账号存在且处于启用状态。
+- 旧的 `ADMIN_USERNAME` / `ADMIN_PASSWORD` 仍可继续使用，但推荐迁移到 `SUPER_ADMIN_*`。
+
+## 🛠️ 后台数据库管理接口
+
+用于后台“库表管理页”的只读元数据接口，均要求管理员身份访问：
+
+| Method | Path | 说明 |
+|--------|------|------|
+| GET | `/api/admin/database/overview` | 获取当前数据库概览（字符集、排序规则、表数、估算行数、数据/索引大小） |
+| GET | `/api/admin/database/tables?page=1&pageSize=20&keyword=art&engine=InnoDB` | 获取数据表列表，支持分页、表名搜索和存储引擎筛选 |
+| GET | `/api/admin/database/tables/:tableName` | 获取单表详情，包括字段、索引和外键信息 |
+| GET | `/api/admin/database/tables/:tableName/rows?page=1&pageSize=20&keyword=post` | 分页读取指定数据表的数据行 |
+| POST | `/api/admin/database/tables/:tableName/rows` | 向指定数据表新增一行数据 |
+| PATCH | `/api/admin/database/tables/:tableName/rows` | 更新指定数据表中的一行数据 |
+| POST | `/api/admin/database/tables/:tableName/rows/delete` | 删除指定数据表中的一行数据 |
+
+说明：
+
+- 所有行数字段均为 `information_schema.tables` 提供的估算值，适合作为管理页巡检数据。
+- 所有接口仅允许 `super_admin` 访问，适合挂在高权限数据库工作台页面下。
+- 当前能力覆盖库表巡检与行级数据管理，不开放任意 SQL，也不开放建表、删表、改表等 DDL 操作。
 
 ## 🗄️ 数据库连接配置
 

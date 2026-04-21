@@ -1,4 +1,5 @@
 export { User } from './user.entity';
+export { UserRoleEntity } from './user-role.entity';
 export { VerificationCode } from './verification-code.entity';
 export { Article } from './article.entity';
 export { ArticleLike } from './article-like.entity';

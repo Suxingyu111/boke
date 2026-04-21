@@ -12,6 +12,7 @@ describe("permissions", () => {
     expect(canAccessManagement({ role: "author" })).toBe(true);
     expect(canAccessAdminFeatures({ role: "author" })).toBe(false);
     expect(canAccessAdminFeatures({ role: "admin" })).toBe(true);
+    expect(canAccessAdminFeatures({ role: "super_admin" })).toBe(true);
     expect(canAccessManagement({ role: "user" })).toBe(false);
   });
 
@@ -21,6 +22,7 @@ describe("permissions", () => {
       "/admin/articles",
     );
     expect(getDefaultAuthorizedRoute({ role: "admin" })).toBe("/admin");
+    expect(getDefaultAuthorizedRoute({ role: "super_admin" })).toBe("/admin");
   });
 
   it("可解析嵌套路由所需的最高权限", () => {

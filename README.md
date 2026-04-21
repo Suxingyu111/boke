@@ -713,9 +713,11 @@ REDIS_DB=0
 JWT_SECRET=your_32_plus_char_random_secret
 JWT_EXPIRATION=7d
 
-# 管理员
-ADMIN_USERNAME=admin_manager
-ADMIN_PASSWORD=your_admin_password
+# 超级管理员（推荐使用 SUPER_ADMIN_*）
+SUPER_ADMIN_USERNAME=rootmaster
+SUPER_ADMIN_PASSWORD=change_me_super_admin_password_strong
+SUPER_ADMIN_EMAIL=root@example.com
+SUPER_ADMIN_NICKNAME=系统超管
 
 # Elasticsearch（可选）
 ES_NODE=http://localhost:9200

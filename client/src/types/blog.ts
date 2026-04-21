@@ -398,3 +398,131 @@ export interface VisitorStats {
   topSources: Array<{ source: string; count: number }>;
   topPages: Array<{ path: string; title: string; views: number }>;
 }
+
+export type DatabaseCellValue =
+  | string
+  | number
+  | boolean
+  | null
+  | Array<string | number | boolean | null | Record<string, unknown>>
+  | Record<string, unknown>;
+
+export interface DatabaseEngineStat {
+  engine: string;
+  tableCount: number;
+  totalSize: number;
+}
+
+export interface DatabaseOverview {
+  databaseName: string;
+  charset: string | null;
+  collation: string | null;
+  tableCount: number;
+  estimatedRowCount: number;
+  dataSize: number;
+  indexSize: number;
+  totalSize: number;
+  typeormEntityCount: number;
+  engineStats: DatabaseEngineStat[];
+}
+
+export interface DatabaseTableSummary {
+  tableName: string;
+  engine: string | null;
+  estimatedRowCount: number;
+  dataSize: number;
+  indexSize: number;
+  totalSize: number;
+  autoIncrement: number | null;
+  collation: string | null;
+  tableComment: string | null;
+  createTime: string | null;
+  updateTime: string | null;
+  managedByTypeOrm: boolean;
+  entityName: string | null;
+}
+
+export interface DatabaseTableColumn {
+  columnName: string;
+  ordinalPosition: number;
+  dataType: string;
+  columnType: string;
+  nullable: boolean;
+  primaryKey: boolean;
+  unique: boolean;
+  indexed: boolean;
+  generated: boolean;
+  creatable: boolean;
+  editable: boolean;
+  searchable: boolean;
+  hasDefault: boolean;
+  enumValues: string[];
+  columnDefault: string | null;
+  extra: string | null;
+  columnComment: string | null;
+  characterMaximumLength: number | null;
+  numericPrecision: number | null;
+  numericScale: number | null;
+}
+
+export interface DatabaseTableIndexColumn {
+  columnName: string;
+  collation: string | null;
+  subPart: number | null;
+}
+
+export interface DatabaseTableIndex {
+  indexName: string;
+  unique: boolean;
+  primary: boolean;
+  indexType: string;
+  columns: DatabaseTableIndexColumn[];
+}
+
+export interface DatabaseTableForeignKey {
+  constraintName: string;
+  columns: string[];
+  referencedTableName: string;
+  referencedColumns: string[];
+  updateRule: string | null;
+  deleteRule: string | null;
+}
+
+export interface DatabaseTableDetail {
+  table: DatabaseTableSummary;
+  columnCount: number;
+  indexCount: number;
+  foreignKeyCount: number;
+  primaryKeyColumns: string[];
+  searchableColumns: string[];
+  canCreateRows: boolean;
+  canUpdateRows: boolean;
+  canDeleteRows: boolean;
+  columns: DatabaseTableColumn[];
+  indexes: DatabaseTableIndex[];
+  foreignKeys: DatabaseTableForeignKey[];
+}
+
+export interface DatabaseTableRecord {
+  primaryKey: Record<string, DatabaseCellValue>;
+  values: Record<string, DatabaseCellValue>;
+}
+
+export interface DatabaseTableRowsPage {
+  tableName: string;
+  primaryKeyColumns: string[];
+  searchableColumns: string[];
+  canCreateRows: boolean;
+  canUpdateRows: boolean;
+  canDeleteRows: boolean;
+  items: DatabaseTableRecord[];
+  total: number;
+  page: number;
+  pageSize: number;
+  totalPages: number;
+}
+
+export interface DatabaseTableMutationResult {
+  message: string;
+  primaryKey?: Record<string, DatabaseCellValue>;
+}

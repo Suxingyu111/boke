@@ -1,5 +1,11 @@
 import * as Joi from 'joi';
 
+const WEAK_SUPER_ADMIN_PASSWORDS = new Set([
+  'admin123456',
+  'change_me_admin_password_strong',
+  'change_me_super_admin_password_strong',
+]);
+
 export const validationSchema = Joi.object({
   NODE_ENV: Joi.string().valid('development', 'production', 'test').default('development'),
   PORT: Joi.number().default(3000),
@@ -61,17 +67,13 @@ export const validationSchema = Joi.object({
   GOOGLE_CLIENT_SECRET: Joi.string().allow('').optional().default(''),
   GOOGLE_CALLBACK_URL: Joi.string().uri().allow('').optional().default(''),
 
-  // Admin
-  ADMIN_USERNAME: Joi.when('NODE_ENV', {
-    is: 'production',
-    then: Joi.string().trim().min(3).required(),
-    otherwise: Joi.string().optional(),
-  }),
-  ADMIN_PASSWORD: Joi.when('NODE_ENV', {
-    is: 'production',
-    then: Joi.string().min(12).invalid('admin123456', 'change_me_admin_password_strong').required(),
-    otherwise: Joi.string().optional(),
-  }),
+  // Super admin（推荐使用 SUPER_ADMIN_*；保留 ADMIN_* 作为兼容别名）
+  SUPER_ADMIN_USERNAME: Joi.string().trim().allow('').optional(),
+  SUPER_ADMIN_PASSWORD: Joi.string().trim().allow('').optional(),
+  SUPER_ADMIN_EMAIL: Joi.string().email().optional(),
+  SUPER_ADMIN_NICKNAME: Joi.string().trim().max(100).optional(),
+  ADMIN_USERNAME: Joi.string().trim().allow('').optional(),
+  ADMIN_PASSWORD: Joi.string().trim().allow('').optional(),
 
   // Elasticsearch（可选）
   ES_NODE: Joi.string().uri().optional().default('http://localhost:9200'),
@@ -90,4 +92,47 @@ export const validationSchema = Joi.object({
   REGISTRATION_VERIFICATION_TOKEN_TTL: Joi.string().default('30m'),
   REGISTRATION_EXPOSE_DEBUG_CODE: Joi.boolean().optional(),
   SWAGGER_ENABLED: Joi.boolean().optional(),
-});
+})
+  .custom((value, helpers) => {
+    if (value.NODE_ENV !== 'production') {
+      return value;
+    }
+
+    const adminUsername = (value.SUPER_ADMIN_USERNAME || value.ADMIN_USERNAME || '').trim();
+    const adminPassword = (value.SUPER_ADMIN_PASSWORD || value.ADMIN_PASSWORD || '').trim();
+
+    if (!adminUsername) {
+      return helpers.error('any.custom', {
+        message: 'SUPER_ADMIN_USERNAME (or ADMIN_USERNAME) is required in production',
+      });
+    }
+
+    if (!adminPassword) {
+      return helpers.error('any.custom', {
+        message: 'SUPER_ADMIN_PASSWORD (or ADMIN_PASSWORD) is required in production',
+      });
+    }
+
+    if (adminUsername.length < 3) {
+      return helpers.error('any.custom', {
+        message: 'SUPER_ADMIN_USERNAME (or ADMIN_USERNAME) must be at least 3 characters long',
+      });
+    }
+
+    if (adminPassword.length < 12) {
+      return helpers.error('any.custom', {
+        message: 'SUPER_ADMIN_PASSWORD (or ADMIN_PASSWORD) must be at least 12 characters long',
+      });
+    }
+
+    if (WEAK_SUPER_ADMIN_PASSWORDS.has(adminPassword)) {
+      return helpers.error('any.custom', {
+        message: 'SUPER_ADMIN_PASSWORD (or ADMIN_PASSWORD) cannot use the default placeholder password',
+      });
+    }
+
+    return value;
+  }, 'production super admin validation')
+  .messages({
+    'any.custom': '{{#message}}',
+  });

@@ -30,6 +30,7 @@ const CommentManageView = () => import("@/views/admin/CommentManageView.vue");
 const PageManageView = () => import("@/views/admin/PageManageView.vue");
 const SettingsView = () => import("@/views/admin/SettingsView.vue");
 const TechnicalView = () => import("@/views/admin/TechnicalView.vue");
+const DatabaseManageView = () => import("@/views/admin/DatabaseManageView.vue");
 
 const routes: RouteRecordRaw[] = [
   {
@@ -125,6 +126,12 @@ const routes: RouteRecordRaw[] = [
         name: "admin-technical",
         component: TechnicalView,
         meta: { minRole: "admin" },
+      },
+      {
+        path: "database",
+        name: "admin-database",
+        component: DatabaseManageView,
+        meta: { minRole: "super_admin" },
       },
     ],
   },

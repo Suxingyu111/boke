@@ -4,11 +4,12 @@ import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import type { StringValue } from 'ms';
-import { User, VerificationCode } from '@database/entities';
+import { User, UserRoleEntity, VerificationCode } from '@database/entities';
 import { NotificationsModule } from '../notifications/notifications.module';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { RolesGuard } from './guards/roles.guard';
+import { SuperAdminBootstrapService } from './super-admin-bootstrap.service';
 import { GithubStrategy } from './strategies/github.strategy';
 import { GoogleStrategy } from './strategies/google.strategy';
 import { JwtStrategy } from './strategies/jwt.strategy';
@@ -18,7 +19,7 @@ import { JwtStrategy } from './strategies/jwt.strategy';
     ConfigModule,
     NotificationsModule,
     PassportModule.register({ defaultStrategy: 'jwt' }),
-    TypeOrmModule.forFeature([User, VerificationCode]),
+    TypeOrmModule.forFeature([User, UserRoleEntity, VerificationCode]),
     JwtModule.registerAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
@@ -40,7 +41,14 @@ import { JwtStrategy } from './strategies/jwt.strategy';
     }),
   ],
   controllers: [AuthController],
-  providers: [AuthService, JwtStrategy, GithubStrategy, GoogleStrategy, RolesGuard],
+  providers: [
+    AuthService,
+    JwtStrategy,
+    GithubStrategy,
+    GoogleStrategy,
+    RolesGuard,
+    SuperAdminBootstrapService,
+  ],
   exports: [AuthService],
 })
 export class AuthModule {}

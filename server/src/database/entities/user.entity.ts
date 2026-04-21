@@ -6,6 +6,7 @@ import {
   UpdateDateColumn,
   Index,
 } from 'typeorm';
+import { UserRoleCode } from '../default-user-roles';
 
 const userStatusTransformer = {
   to(value: boolean): 'active' | 'disabled' {
@@ -84,11 +85,11 @@ export class User {
   isActive: boolean = true;
 
   @Column({
-    type: 'enum',
-    enum: ['super_admin', 'admin', 'author', 'user'],
+    type: 'varchar',
+    length: 32,
     default: 'user',
   })
-  role: 'super_admin' | 'admin' | 'author' | 'user';
+  role: UserRoleCode;
 
   @Column({ name: 'last_login_at', type: 'datetime', nullable: true })
   lastLoginAt: Date | null;

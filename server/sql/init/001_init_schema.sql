@@ -1,5 +1,29 @@
 SET NAMES utf8mb4;
 
+CREATE TABLE IF NOT EXISTS user_roles (
+  code VARCHAR(32) NOT NULL,
+  name VARCHAR(50) NOT NULL,
+  description VARCHAR(255) DEFAULT NULL,
+  sort_order INT NOT NULL DEFAULT 0,
+  is_system TINYINT(1) NOT NULL DEFAULT 1,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (code),
+  UNIQUE KEY idx_user_roles_name (name)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+INSERT INTO user_roles (code, name, description, sort_order, is_system)
+VALUES
+  ('super_admin', '超级管理员', '拥有系统最高权限，可管理数据库、配置和所有后台资源。', 1, 1),
+  ('admin', '管理员', '拥有大部分后台管理权限，但不能执行超级管理员专属操作。', 2, 1),
+  ('author', '作者', '可管理自己的内容与创作资源。', 3, 1),
+  ('user', '普通用户', '默认注册角色，拥有前台访问与个人中心能力。', 4, 1)
+ON DUPLICATE KEY UPDATE
+  name = VALUES(name),
+  description = VALUES(description),
+  sort_order = VALUES(sort_order),
+  is_system = VALUES(is_system);
+
 CREATE TABLE IF NOT EXISTS users (
   id CHAR(36) NOT NULL,
   username VARCHAR(50) NOT NULL,
@@ -14,7 +38,7 @@ CREATE TABLE IF NOT EXISTS users (
   bio TEXT,
   oauth_provider ENUM('github', 'google') DEFAULT NULL,
   oauth_provider_id VARCHAR(120) DEFAULT NULL,
-  role ENUM('super_admin', 'admin', 'author', 'user') NOT NULL DEFAULT 'user',
+  role VARCHAR(32) NOT NULL DEFAULT 'user',
   status ENUM('active', 'disabled') NOT NULL DEFAULT 'active',
   last_login_at DATETIME DEFAULT NULL,
   password_changed_at DATETIME DEFAULT NULL,
@@ -26,8 +50,10 @@ CREATE TABLE IF NOT EXISTS users (
   UNIQUE KEY idx_users_phone (phone),
   UNIQUE KEY idx_users_nickname (nickname),
   UNIQUE KEY idx_users_oauth_provider (oauth_provider, oauth_provider_id),
+  KEY idx_users_role (role),
   KEY idx_users_role_status (role, status),
-  KEY idx_users_registration_type_status (registration_type, status)
+  KEY idx_users_registration_type_status (registration_type, status),
+  CONSTRAINT fk_users_role FOREIGN KEY (role) REFERENCES user_roles (code)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS verification_codes (

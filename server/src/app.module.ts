@@ -23,6 +23,7 @@ import { PaidContentModule } from './modules/paid-content/paid-content.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
 import { SeoModule } from './modules/seo/seo.module';
 import { BackupModule } from './modules/backup/backup.module';
+import { DatabaseAdminModule } from './modules/database-admin/database-admin.module';
 import { I18nModule } from './modules/i18n/i18n.module';
 import { UsersModule } from './modules/users/users.module';
 import { FavoritesModule } from './modules/favorites/favorites.module';
@@ -119,6 +120,9 @@ import { OperationLogInterceptor } from './modules/operation-logs/operation-log.
 
     // 备份与恢复模块
     BackupModule,
+
+    // 数据库元数据管理模块
+    DatabaseAdminModule,
 
     // 多语言支持模块
     I18nModule,

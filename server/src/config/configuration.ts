@@ -77,9 +77,11 @@ export const configuration = (): {
       callbackUrl: string;
     };
   };
-  admin: {
+  superAdmin: {
     username: string | undefined;
     password: string | undefined;
+    email: string | undefined;
+    nickname: string | undefined;
   };
   cors: {
     origins: string[];
@@ -166,9 +168,11 @@ export const configuration = (): {
       callbackUrl: process.env.GOOGLE_CALLBACK_URL || '',
     },
   },
-  admin: {
-    username: process.env.ADMIN_USERNAME,
-    password: process.env.ADMIN_PASSWORD,
+  superAdmin: {
+    username: process.env.SUPER_ADMIN_USERNAME || process.env.ADMIN_USERNAME,
+    password: process.env.SUPER_ADMIN_PASSWORD || process.env.ADMIN_PASSWORD,
+    email: process.env.SUPER_ADMIN_EMAIL,
+    nickname: process.env.SUPER_ADMIN_NICKNAME,
   },
   cors: {
     origins: parseCorsOrigins(process.env.CORS_ORIGINS, process.env.NODE_ENV || 'development'),

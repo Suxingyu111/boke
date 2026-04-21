@@ -32,8 +32,8 @@ describe('validationSchema', () => {
       NODE_ENV: 'production',
       REDIS_PASSWORD: 'prod_redis_password',
       JWT_SECRET: 'change_me_to_a_32_plus_char_random_secret',
-      ADMIN_USERNAME: 'admin_manager',
-      ADMIN_PASSWORD: 'change_me_admin_password_strong',
+      SUPER_ADMIN_USERNAME: 'rootmaster',
+      SUPER_ADMIN_PASSWORD: 'change_me_super_admin_password_strong',
     });
 
     expect(error).toBeDefined();
@@ -46,7 +46,7 @@ describe('validationSchema', () => {
       NODE_ENV: 'production',
       REDIS_PASSWORD: '',
       JWT_SECRET: 'prod_jwt_secret_value_with_more_than_32_chars',
-      ADMIN_PASSWORD: 'prod_admin_password',
+      SUPER_ADMIN_PASSWORD: 'prod_super_admin_password',
     });
 
     expect(error).toBeDefined();
@@ -59,10 +59,20 @@ describe('validationSchema', () => {
       NODE_ENV: 'production',
       REDIS_PASSWORD: 'prod_redis_password',
       JWT_SECRET: 'prod_jwt_secret_value_with_more_than_32_chars',
-      ADMIN_PASSWORD: 'prod_admin_password',
+      SUPER_ADMIN_PASSWORD: 'prod_super_admin_password',
     });
 
     expect(error).toBeDefined();
-    expect(error?.message).toContain('ADMIN_USERNAME');
+    expect(error?.message).toContain('SUPER_ADMIN_USERNAME');
+  });
+
+  it('开发环境应忽略未启用的旧 ADMIN_* 弱口令配置', () => {
+    const { error } = validationSchema.validate({
+      ...baseEnv,
+      ADMIN_USERNAME: 'ad',
+      ADMIN_PASSWORD: 'admin',
+    });
+
+    expect(error).toBeUndefined();
   });
 });

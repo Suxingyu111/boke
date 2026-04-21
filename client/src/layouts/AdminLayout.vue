@@ -17,6 +17,7 @@ const navigationItems = computed(() =>
     { to: "/admin/pages", label: "页面管理", minRole: "admin" as const },
     { to: "/admin/settings", label: "系统设置", minRole: "admin" as const },
     { to: "/admin/technical", label: "技术增强", minRole: "admin" as const },
+    { to: "/admin/database", label: "数据库", minRole: "super_admin" as const },
   ].filter((item) => hasMinimumRole(authStore.user, item.minRole)),
 );
 
