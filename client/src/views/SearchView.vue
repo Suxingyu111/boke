@@ -3,6 +3,7 @@ import { computed, onUnmounted, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { getApiErrorMessage } from "@/api/auth";
 import { useEcosystemStore } from "@/stores/ecosystem";
+import { sanitizeSearchHighlightHtml } from "@/utils/html-sanitizer";
 
 const ecosystemStore = useEcosystemStore();
 const route = useRoute();
@@ -17,16 +18,7 @@ const normalizedKeyword = computed(() => keyword.value.trim().toLowerCase());
 const results = computed(() => ecosystemStore.searchResults);
 
 function renderHighlight(value?: string | null) {
-  const escaped = (value || "")
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#39;");
-
-  return escaped
-    .replace(/&lt;mark&gt;/g, "<mark>")
-    .replace(/&lt;\/mark&gt;/g, "</mark>");
+  return sanitizeSearchHighlightHtml(value);
 }
 
 function syncKeywordFromRoute() {

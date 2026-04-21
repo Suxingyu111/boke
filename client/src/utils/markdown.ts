@@ -3,6 +3,7 @@ import markdownItAnchor from "markdown-it-anchor";
 import markdownItFootnote from "markdown-it-footnote";
 import markdownItTaskLists from "markdown-it-task-lists";
 import hljs from "highlight.js/lib/common";
+import { sanitizeRichTextHtml } from "@/utils/html-sanitizer";
 
 interface MarkdownLightboxItem {
   src: string;
@@ -145,7 +146,11 @@ markdownRenderer.renderer.rules.image = (tokens, index, options, env, self) => {
 };
 
 export function renderMarkdown(markdown: string) {
-  return markdownRenderer.render(markdown || "");
+  return sanitizeRichTextHtml(markdownRenderer.render(markdown || ""));
+}
+
+export function renderStoredRichText(markdown: string, contentHtml?: string | null) {
+  return contentHtml ? sanitizeRichTextHtml(contentHtml) : renderMarkdown(markdown);
 }
 
 function closeMarkdownLightbox() {

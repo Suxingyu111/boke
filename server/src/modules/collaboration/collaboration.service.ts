@@ -6,6 +6,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+import { sanitizeOptionalRichTextHtml } from '@common/security/html-sanitizer.util';
 import { Repository } from 'typeorm';
 import { Article, DraftCollaborator, DraftEditLog, User } from '@database/entities';
 import { AddCollaboratorDto } from './dto/add-collaborator.dto';
@@ -130,7 +131,7 @@ export class CollaborationService {
     }
 
     if (dto.contentHtml !== undefined) {
-      article.contentHtml = dto.contentHtml;
+      article.contentHtml = sanitizeOptionalRichTextHtml(dto.contentHtml);
     }
 
     if (dto.excerpt !== undefined && dto.excerpt !== article.excerpt) {

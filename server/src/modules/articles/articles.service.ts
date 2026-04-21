@@ -8,6 +8,7 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { ARTICLE_CACHE_PREFIXES } from '@common/security/cache-prefixes';
+import { sanitizeOptionalRichTextHtml } from '@common/security/html-sanitizer.util';
 import { ResponseCacheService } from '@common/security/response-cache.service';
 import { createHash } from 'crypto';
 import { IsNull, Repository } from 'typeorm';
@@ -69,7 +70,7 @@ export class ArticlesService {
       slug: dto.slug.trim(),
       excerpt: dto.excerpt?.trim() ?? null,
       content: dto.content,
-      contentHtml: dto.contentHtml?.trim() ?? null,
+      contentHtml: sanitizeOptionalRichTextHtml(dto.contentHtml),
       coverImage: dto.coverImage?.trim() ?? null,
       categoryId: dto.categoryId,
       userId: currentUser.id,
@@ -220,7 +221,9 @@ export class ArticlesService {
       excerpt: dto.excerpt !== undefined ? (dto.excerpt?.trim() ?? null) : article.excerpt,
       content: dto.content ?? article.content,
       contentHtml:
-        dto.contentHtml !== undefined ? (dto.contentHtml?.trim() ?? null) : article.contentHtml,
+        dto.contentHtml !== undefined
+          ? sanitizeOptionalRichTextHtml(dto.contentHtml)
+          : article.contentHtml,
       coverImage:
         dto.coverImage !== undefined ? (dto.coverImage?.trim() ?? null) : article.coverImage,
       categoryId: nextCategoryId,

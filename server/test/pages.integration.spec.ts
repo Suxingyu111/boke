@@ -7,6 +7,7 @@ import { ObjectLiteral, Repository } from 'typeorm';
 import { FriendLink, Page, User } from '../src/database/entities';
 import { HttpExceptionFilter } from '../src/common/filters/http-exception.filter';
 import { ResponseInterceptor } from '../src/common/interceptors/response.interceptor';
+import { SanitizePipe } from '../src/common/pipes/sanitize.pipe';
 import { AdminPagesController } from '../src/modules/pages/admin-pages.controller';
 import { PublicPagesController } from '../src/modules/pages/public-pages.controller';
 import { PagesService } from '../src/modules/pages/pages.service';
@@ -178,6 +179,7 @@ describe('Pages integration', () => {
           enableImplicitConversion: true,
         },
       }),
+      new SanitizePipe(),
     );
     app.useGlobalFilters(new HttpExceptionFilter());
     app.useGlobalInterceptors(new ResponseInterceptor());
@@ -276,6 +278,28 @@ describe('Pages integration', () => {
         summary: '项目合集',
       }),
     );
+  });
+
+  it('创建页面时应净化 contentHtml 中的危险标签与属性', async () => {
+    const response = await request(app.getHttpServer())
+      .post('/api/admin/pages')
+      .set('x-test-role', 'admin')
+      .set('x-test-user-id', 'admin-richtext-1')
+      .send({
+        title: '富文本页面',
+        slug: 'richtext-page',
+        pageType: 'custom',
+        content: '页面正文',
+        contentHtml:
+          '<p onclick="alert(1)">段落</p><img src="https://example.com/image.png" onerror="alert(1)"><script>alert(1)</script>',
+        status: 'published',
+      })
+      .expect(201);
+
+    expect(response.body.data.contentHtml).toContain('<p>段落</p>');
+    expect(response.body.data.contentHtml).toContain('src="https://example.com/image.png"');
+    expect(response.body.data.contentHtml).not.toContain('onerror');
+    expect(response.body.data.contentHtml).not.toContain('<script');
   });
 
   it('应校验关于页唯一和 slug 唯一，并支持页面删除', async () => {

@@ -4,7 +4,7 @@ import { getApiErrorMessage } from "@/api/auth";
 import { useRoute } from "vue-router";
 import { usePagesStore } from "@/stores/pages";
 import type { CustomPage } from "@/types/blog";
-import { handleMarkdownInteraction, renderMarkdown } from "@/utils/markdown";
+import { handleMarkdownInteraction, renderStoredRichText } from "@/utils/markdown";
 
 const route = useRoute();
 const pagesStore = usePagesStore();
@@ -14,7 +14,7 @@ const detailReady = ref(false);
 
 const renderedContent = computed(() =>
   page.value
-    ? page.value.contentHtml || renderMarkdown(page.value.content)
+    ? renderStoredRichText(page.value.content, page.value.contentHtml)
     : "",
 );
 

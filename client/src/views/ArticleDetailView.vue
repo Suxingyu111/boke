@@ -15,7 +15,7 @@ import { useAuthStore } from "@/stores/auth";
 import { useContentStore } from "@/stores/content";
 import { useEcosystemStore } from "@/stores/ecosystem";
 import { useUserStore } from "@/stores/user";
-import { handleMarkdownInteraction, renderMarkdown } from "@/utils/markdown";
+import { handleMarkdownInteraction, renderStoredRichText } from "@/utils/markdown";
 
 interface ArticleHeading {
   id: string;
@@ -47,10 +47,12 @@ const articleBodyRef = ref<HTMLElement | null>(null);
 
 const renderedContent = computed(() =>
   ecosystemStore.paidContent
-    ? ecosystemStore.paidContent.contentHtml ||
-      renderMarkdown(ecosystemStore.paidContent.content)
+    ? renderStoredRichText(
+        ecosystemStore.paidContent.content,
+        ecosystemStore.paidContent.contentHtml,
+      )
     : article.value
-      ? article.value.contentHtml || renderMarkdown(article.value.content)
+      ? renderStoredRichText(article.value.content, article.value.contentHtml)
       : "",
 );
 

@@ -2,14 +2,16 @@
 import { computed, onMounted } from "vue";
 import { usePagesStore } from "@/stores/pages";
 import { useSiteStore } from "@/stores/site";
-import { handleMarkdownInteraction, renderMarkdown } from "@/utils/markdown";
+import { handleMarkdownInteraction, renderStoredRichText } from "@/utils/markdown";
 
 const pagesStore = usePagesStore();
 const siteStore  = useSiteStore();
 
 const aboutPage       = computed(() => pagesStore.aboutPage);
 const renderedContent = computed(() =>
-  aboutPage.value ? renderMarkdown(aboutPage.value.content) : "",
+  aboutPage.value
+    ? renderStoredRichText(aboutPage.value.content, aboutPage.value.contentHtml)
+    : "",
 );
 const techStack    = computed(() => siteStore.aboutSettings.techStack);
 const timeline     = computed(() => siteStore.aboutSettings.timeline);

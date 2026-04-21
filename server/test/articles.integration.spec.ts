@@ -15,6 +15,7 @@ import {
 } from '../src/database/entities';
 import { HttpExceptionFilter } from '../src/common/filters/http-exception.filter';
 import { ResponseInterceptor } from '../src/common/interceptors/response.interceptor';
+import { SanitizePipe } from '../src/common/pipes/sanitize.pipe';
 import { CategoriesController } from '../src/modules/categories/categories.controller';
 import { CategoriesService } from '../src/modules/categories/categories.service';
 import { TagsController } from '../src/modules/tags/tags.controller';
@@ -362,6 +363,7 @@ describe('Articles integration', () => {
           enableImplicitConversion: true,
         },
       }),
+      new SanitizePipe(),
     );
     app.useGlobalFilters(new HttpExceptionFilter());
     app.useGlobalInterceptors(new ResponseInterceptor());
@@ -443,6 +445,31 @@ describe('Articles integration', () => {
         pageSize: 10,
       }),
     );
+  });
+
+  it('创建文章时应净化 contentHtml 中的危险标签与属性', async () => {
+    const categoryId = categoryRepository.items[0].id as string;
+
+    const response = await request(app.getHttpServer())
+      .post('/api/admin/articles')
+      .set('x-test-role', 'admin')
+      .set('x-test-user-id', 'author-richtext-1')
+      .send({
+        title: '富文本安全文章',
+        slug: 'richtext-safe-article',
+        content: '安全正文',
+        contentHtml:
+          '<h2 id="safe" onclick="alert(1)">标题</h2><script>alert(1)</script><a href="javascript:alert(1)">危险</a><a href="https://example.com">安全链接</a>',
+        categoryId,
+        status: 'draft',
+      })
+      .expect(201);
+
+    expect(response.body.data.contentHtml).toContain('<h2 id="safe">标题</h2>');
+    expect(response.body.data.contentHtml).toContain('href="https://example.com"');
+    expect(response.body.data.contentHtml).not.toContain('onclick');
+    expect(response.body.data.contentHtml).not.toContain('<script');
+    expect(response.body.data.contentHtml).not.toContain('javascript:');
   });
 
   it('scheduledAt 已到期的文章应出现在公开列表，详情请求应累计阅读量', async () => {

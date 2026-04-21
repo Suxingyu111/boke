@@ -1,4 +1,5 @@
 import { PipeTransform, Injectable, ArgumentMetadata } from '@nestjs/common';
+import { sanitizeRichTextHtml } from '@common/security/html-sanitizer.util';
 
 /**
  * XSS 清洗管道
@@ -13,17 +14,21 @@ export class SanitizePipe implements PipeTransform {
     return this.sanitize(value);
   }
 
-  private sanitize(value: unknown): unknown {
+  private sanitize(value: unknown, key?: string): unknown {
     if (typeof value === 'string') {
+      if (key === 'contentHtml') {
+        return sanitizeRichTextHtml(value);
+      }
+
       return this.escapeHtml(value);
     }
     if (Array.isArray(value)) {
-      return value.map(item => this.sanitize(item));
+      return value.map(item => this.sanitize(item, key));
     }
     if (value !== null && typeof value === 'object') {
       const sanitized: Record<string, unknown> = {};
       for (const [key, val] of Object.entries(value)) {
-        sanitized[key] = this.sanitize(val);
+        sanitized[key] = this.sanitize(val, key);
       }
       return sanitized;
     }

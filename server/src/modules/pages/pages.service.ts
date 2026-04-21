@@ -1,6 +1,7 @@
 import { ConflictException, Injectable, NotFoundException, Optional } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { PAGE_CACHE_PREFIXES } from '@common/security/cache-prefixes';
+import { sanitizeOptionalRichTextHtml } from '@common/security/html-sanitizer.util';
 import { ResponseCacheService } from '@common/security/response-cache.service';
 import { Repository } from 'typeorm';
 import { FriendLink, Page, User } from '@database/entities';
@@ -35,7 +36,7 @@ export class PagesService {
       slug: dto.slug.trim(),
       pageType: dto.pageType ?? 'custom',
       content: dto.content,
-      contentHtml: dto.contentHtml?.trim() ?? null,
+      contentHtml: sanitizeOptionalRichTextHtml(dto.contentHtml),
       summary: dto.summary?.trim() ?? null,
       isHomeVisible: dto.isHomeVisible ?? false,
       status: dto.status ?? 'draft',
@@ -84,7 +85,9 @@ export class PagesService {
       pageType: nextPageType,
       content: dto.content ?? page.content,
       contentHtml:
-        dto.contentHtml !== undefined ? (dto.contentHtml?.trim() ?? null) : page.contentHtml,
+        dto.contentHtml !== undefined
+          ? sanitizeOptionalRichTextHtml(dto.contentHtml)
+          : page.contentHtml,
       summary: dto.summary !== undefined ? (dto.summary?.trim() ?? null) : page.summary,
       isHomeVisible: dto.isHomeVisible ?? page.isHomeVisible,
       status: nextStatus,
