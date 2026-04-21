@@ -1,4 +1,5 @@
 import { Body, Controller, Get, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import {
   ApiBearerAuth,
   ApiOperation,
@@ -8,8 +9,10 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { Roles } from '../auth/decorators/roles.decorator';
+import { RequireStepUp } from '../auth/decorators/require-step-up.decorator';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
+import { StepUpGuard } from '../auth/guards/step-up.guard';
 import { CreateDatabaseTableRowDto } from './dto/create-database-table-row.dto';
 import { DeleteDatabaseTableRowDto } from './dto/delete-database-table-row.dto';
 import { ListDatabaseTableRowsDto } from './dto/list-database-table-rows.dto';
@@ -63,6 +66,9 @@ export class DatabaseAdminController {
   }
 
   @Post('tables/:tableName/rows')
+  @UseGuards(StepUpGuard)
+  @RequireStepUp('database-admin')
+  @Throttle({ default: { limit: 5, ttl: 60000 } })
   @ApiOperation({ summary: '向指定数据表新增一行数据' })
   @ApiParam({ name: 'tableName', description: '数据表名称', type: String })
   @ApiResponse({ status: 201, description: '新增成功' })
@@ -74,6 +80,9 @@ export class DatabaseAdminController {
   }
 
   @Patch('tables/:tableName/rows')
+  @UseGuards(StepUpGuard)
+  @RequireStepUp('database-admin')
+  @Throttle({ default: { limit: 5, ttl: 60000 } })
   @ApiOperation({ summary: '更新指定数据表中的一行数据' })
   @ApiParam({ name: 'tableName', description: '数据表名称', type: String })
   @ApiResponse({ status: 200, description: '更新成功' })
@@ -85,6 +94,9 @@ export class DatabaseAdminController {
   }
 
   @Post('tables/:tableName/rows/delete')
+  @UseGuards(StepUpGuard)
+  @RequireStepUp('database-admin')
+  @Throttle({ default: { limit: 5, ttl: 60000 } })
   @ApiOperation({ summary: '删除指定数据表中的一行数据' })
   @ApiParam({ name: 'tableName', description: '数据表名称', type: String })
   @ApiResponse({ status: 201, description: '删除成功' })

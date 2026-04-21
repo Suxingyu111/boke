@@ -1,4 +1,4 @@
-import { post, remove, request } from "@/api/http";
+import { http, post, remove, request } from "@/api/http";
 
 export interface BackupFile {
   filename: string;
@@ -29,6 +29,24 @@ export async function deleteBackup(filename: string) {
     `/admin/backup/${encodeURIComponent(filename)}`,
   );
   return response.data;
+}
+
+export async function downloadBackupFile(filename: string) {
+  const blob = await http.get<Blob, Blob>(
+    `/admin/backup/${encodeURIComponent(filename)}/download`,
+    {
+      responseType: "blob",
+    },
+  );
+
+  const objectUrl = window.URL.createObjectURL(blob);
+  const anchor = document.createElement("a");
+  anchor.href = objectUrl;
+  anchor.download = filename;
+  document.body.appendChild(anchor);
+  anchor.click();
+  anchor.remove();
+  window.URL.revokeObjectURL(objectUrl);
 }
 
 export function getBackupDownloadUrl(filename: string) {

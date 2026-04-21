@@ -38,6 +38,17 @@ export async function logout() {
   return response.data;
 }
 
+export async function confirmStepUp(payload: {
+  password: string;
+  scope: "backup" | "database-admin";
+}) {
+  const response = await post<
+    { message: string; expiresInSeconds: number; scope: string },
+    { password: string; scope: "backup" | "database-admin" }
+  >("/auth/step-up", payload);
+  return response.data;
+}
+
 export async function checkRegistrationAvailability(
   payload: RegistrationAvailabilityPayload,
 ) {

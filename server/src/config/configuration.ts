@@ -66,6 +66,9 @@ export const configuration = (): {
   };
   auth: {
     cookieName: string;
+    stepUpCookieName: string;
+    stepUpTtl: string;
+    stepUpWindowMs: number;
   };
   oauth: {
     clientUrl: string;
@@ -160,6 +163,9 @@ export const configuration = (): {
   },
   auth: {
     cookieName: process.env.AUTH_COOKIE_NAME || 'blog_auth_token',
+    stepUpCookieName: process.env.AUTH_STEP_UP_COOKIE_NAME || 'blog_admin_step_up',
+    stepUpTtl: process.env.AUTH_STEP_UP_TTL || '10m',
+    stepUpWindowMs: parseNumber(process.env.AUTH_STEP_UP_WINDOW_MS, 10 * 60 * 1000),
   },
   oauth: {
     clientUrl: process.env.CLIENT_URL || 'http://localhost:5173',

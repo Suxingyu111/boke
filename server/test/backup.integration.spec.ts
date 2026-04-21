@@ -9,6 +9,7 @@ import { BackupController } from '../src/modules/backup/backup.controller';
 import { BackupService } from '../src/modules/backup/backup.service';
 import { JwtAuthGuard } from '../src/modules/auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../src/modules/auth/guards/roles.guard';
+import { StepUpGuard } from '../src/modules/auth/guards/step-up.guard';
 import { User } from '../src/database/entities';
 
 const now = new Date('2026-04-20T11:00:00.000Z');
@@ -98,6 +99,8 @@ describe('Backup integration', () => {
       ],
     })
       .overrideGuard(JwtAuthGuard)
+      .useValue(new MockJwtAuthGuard())
+      .overrideGuard(StepUpGuard)
       .useValue(new MockJwtAuthGuard());
 
     const moduleRef: TestingModule = await moduleBuilder.compile();
@@ -120,7 +123,9 @@ describe('Backup integration', () => {
   });
 
   afterAll(async () => {
-    await app.close();
+    if (app) {
+      await app.close();
+    }
   });
 
   afterEach(() => {

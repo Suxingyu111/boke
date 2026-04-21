@@ -14,6 +14,8 @@ describe('AuthService OAuth 安全行为', () => {
     configValues = {
       'oauth.clientUrl': 'https://client.example.com',
       'auth.cookieName': 'blog_auth_token',
+      'auth.stepUpCookieName': 'blog_admin_step_up',
+      'auth.stepUpTtl': '10m',
       'jwt.expiresIn': '7d',
       nodeEnv: 'production',
     };
@@ -63,13 +65,14 @@ describe('AuthService OAuth 安全行为', () => {
     expect(target.searchParams.get('redirect')).toBe('/admin/articles');
   });
 
-  it('应写入 HttpOnly 鉴权 Cookie 并支持清除', () => {
+  it('应写入 HttpOnly 鉴权 Cookie 与 step-up Cookie，并支持统一清除', () => {
     const response = {
       cookie: jest.fn(),
       clearCookie: jest.fn(),
     };
 
     service.writeAuthCookie(response, 'oauth-access-token');
+    service.writeStepUpCookie(response, 'step-up-token');
     service.clearAuthCookie(response);
 
     expect(response.cookie).toHaveBeenCalledWith(
@@ -84,6 +87,25 @@ describe('AuthService OAuth 安全行为', () => {
     );
     expect(response.clearCookie).toHaveBeenCalledWith(
       'blog_auth_token',
+      expect.objectContaining({
+        httpOnly: true,
+        secure: true,
+        sameSite: 'lax',
+        path: '/',
+      }),
+    );
+    expect(response.cookie).toHaveBeenCalledWith(
+      'blog_admin_step_up',
+      'step-up-token',
+      expect.objectContaining({
+        httpOnly: true,
+        secure: true,
+        sameSite: 'lax',
+        path: '/',
+      }),
+    );
+    expect(response.clearCookie).toHaveBeenCalledWith(
+      'blog_admin_step_up',
       expect.objectContaining({
         httpOnly: true,
         secure: true,

@@ -25,6 +25,7 @@ import { RegistrationAvailabilityResponseDto } from './dto/registration-availabi
 import { RegistrationCodeSentDto } from './dto/registration-code-sent.dto';
 import { RegistrationVerificationResponseDto } from './dto/registration-verification-response.dto';
 import { SendRegistrationCodeDto } from './dto/send-registration-code.dto';
+import { StepUpDto } from './dto/step-up.dto';
 import { VerifyRegistrationCodeDto } from './dto/verify-registration-code.dto';
 import { AuthService } from './auth.service';
 import { CurrentUser } from './decorators/current-user.decorator';
@@ -105,6 +106,27 @@ export class AuthController {
   logout(@Res({ passthrough: true }) res: Response) {
     this.authService.clearAuthCookie(res);
     return { message: '已退出登录' };
+  }
+
+  @Post('step-up')
+  @HttpCode(HttpStatus.OK)
+  @UseGuards(JwtAuthGuard)
+  @Throttle({ default: { limit: 5, ttl: 60000 } })
+  @ApiBearerAuth('bearer')
+  @ApiOperation({ summary: '为高危后台操作执行二次认证' })
+  @ApiResponse({ status: 200, description: '二次认证成功' })
+  async stepUp(
+    @CurrentUser() user: User,
+    @Body() dto: StepUpDto,
+    @Res({ passthrough: true }) res: Response,
+  ): Promise<{ message: string; expiresInSeconds: number; scope: string }> {
+    const result = await this.authService.confirmStepUp(user.id, dto.password, dto.scope);
+    this.authService.writeStepUpCookie(res, result.token);
+    return {
+      message: '二次认证通过',
+      expiresInSeconds: result.expiresInSeconds,
+      scope: dto.scope,
+    };
   }
 
   @Get('me')

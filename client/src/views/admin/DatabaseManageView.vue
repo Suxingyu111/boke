@@ -1,10 +1,12 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref } from "vue";
+import * as authApi from "@/api/auth";
 import * as databaseAdminApi from "@/api/database-admin";
-import { getApiErrorMessage } from "@/api/auth";
+import { getApiErrorMessage, getApiStatusCode } from "@/api/auth";
 import ConfirmDialog from "@/components/ConfirmDialog.vue";
 import EmptyState from "@/components/EmptyState.vue";
 import Pagination from "@/components/Pagination.vue";
+import StepUpDialog from "@/components/StepUpDialog.vue";
 import type {
   DatabaseCellValue,
   DatabaseOverview,
@@ -51,6 +53,14 @@ const editorMode = ref<EditorMode>("");
 const editorPrimaryKey = ref<Record<string, DatabaseCellValue> | null>(null);
 const confirmRequest = ref<ConfirmRequest | null>(null);
 const confirmLoading = ref(false);
+const stepUpRequest = ref<{
+  title: string;
+  message: string;
+  scope: "database-admin";
+  action: () => Promise<void>;
+} | null>(null);
+const stepUpLoading = ref(false);
+const stepUpError = ref("");
 
 const tableFilters = reactive({
   keyword: "",
@@ -626,22 +636,31 @@ async function saveEditor() {
   notice.value = "";
 
   try {
-    const values = prepareEditorPayload();
-    if (editorMode.value === "create") {
-      const result = await databaseAdminApi.createDatabaseTableRow(selectedTableName.value, {
-        values,
-      });
-      notice.value = result.message;
-    } else if (editorMode.value === "edit" && editorPrimaryKey.value) {
-      const result = await databaseAdminApi.updateDatabaseTableRow(selectedTableName.value, {
-        primaryKey: editorPrimaryKey.value,
-        values,
-      });
-      notice.value = result.message;
-    }
+    await runWithStepUp(
+      async () => {
+        const values = prepareEditorPayload();
+        if (editorMode.value === "create") {
+          const result = await databaseAdminApi.createDatabaseTableRow(selectedTableName.value, {
+            values,
+          });
+          notice.value = result.message;
+        } else if (editorMode.value === "edit" && editorPrimaryKey.value) {
+          const result = await databaseAdminApi.updateDatabaseTableRow(selectedTableName.value, {
+            primaryKey: editorPrimaryKey.value,
+            values,
+          });
+          notice.value = result.message;
+        }
 
-    resetEditorState();
-    await refreshSelectedTable(true);
+        resetEditorState();
+        await refreshSelectedTable(true);
+      },
+      {
+        title: "数据库写操作需要二次认证",
+        message: "请输入当前登录密码后，再提交数据库写入变更。",
+        scope: "database-admin",
+      },
+    );
   } catch (error) {
     errorMessage.value = getApiErrorMessage(error, "记录保存失败");
   } finally {
@@ -667,14 +686,23 @@ function requestDeleteRow(row: DatabaseTableRecord) {
       notice.value = "";
 
       try {
-        const result = await databaseAdminApi.deleteDatabaseTableRow(selectedTableName.value, {
-          primaryKey: row.primaryKey,
-        });
-        notice.value = result.message;
-        if ((tableRows.value?.items.length ?? 0) === 1 && rowPage.value > 1) {
-          rowPage.value -= 1;
-        }
-        await refreshSelectedTable(true);
+        await runWithStepUp(
+          async () => {
+            const result = await databaseAdminApi.deleteDatabaseTableRow(selectedTableName.value, {
+              primaryKey: row.primaryKey,
+            });
+            notice.value = result.message;
+            if ((tableRows.value?.items.length ?? 0) === 1 && rowPage.value > 1) {
+              rowPage.value -= 1;
+            }
+            await refreshSelectedTable(true);
+          },
+          {
+            title: "删除数据行需要二次认证",
+            message: "请输入当前登录密码后，再执行数据库删除操作。",
+            scope: "database-admin",
+          },
+        );
       } catch (error) {
         errorMessage.value = getApiErrorMessage(error, "记录删除失败");
         throw error;
@@ -683,6 +711,39 @@ function requestDeleteRow(row: DatabaseTableRecord) {
       }
     },
   };
+}
+
+function openStepUpDialog(request: {
+  title: string;
+  message: string;
+  scope: "database-admin";
+  action: () => Promise<void>;
+}) {
+  stepUpError.value = "";
+  stepUpRequest.value = request;
+}
+
+async function runWithStepUp(
+  action: () => Promise<void>,
+  request: {
+    title: string;
+    message: string;
+    scope: "database-admin";
+  },
+) {
+  try {
+    await action();
+  } catch (error) {
+    if (getApiStatusCode(error) === 428) {
+      openStepUpDialog({
+        ...request,
+        action,
+      });
+      return;
+    }
+
+    throw error;
+  }
 }
 
 function closeConfirmDialog() {
@@ -702,6 +763,36 @@ async function executeConfirmDialog() {
     confirmRequest.value = null;
   } finally {
     confirmLoading.value = false;
+  }
+}
+
+function closeStepUpDialog() {
+  if (!stepUpLoading.value) {
+    stepUpRequest.value = null;
+    stepUpError.value = "";
+  }
+}
+
+async function executeStepUp(password: string) {
+  if (!stepUpRequest.value) {
+    return;
+  }
+
+  stepUpLoading.value = true;
+  stepUpError.value = "";
+  const pendingRequest = stepUpRequest.value;
+
+  try {
+    await authApi.confirmStepUp({
+      password,
+      scope: pendingRequest.scope,
+    });
+    stepUpRequest.value = null;
+    await pendingRequest.action();
+  } catch (error) {
+    stepUpError.value = getApiErrorMessage(error, "二次认证失败");
+  } finally {
+    stepUpLoading.value = false;
   }
 }
 
@@ -1320,5 +1411,14 @@ onMounted(() => {
     :variant="confirmRequest?.variant || 'primary'"
     @cancel="closeConfirmDialog"
     @confirm="executeConfirmDialog"
+  />
+  <StepUpDialog
+    :open="Boolean(stepUpRequest)"
+    :title="stepUpRequest?.title || ''"
+    :message="stepUpRequest?.message || ''"
+    :loading="stepUpLoading"
+    :error-message="stepUpError"
+    @cancel="closeStepUpDialog"
+    @confirm="executeStepUp"
   />
 </template>

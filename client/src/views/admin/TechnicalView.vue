@@ -1,12 +1,14 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref } from "vue";
 import * as announcementsApi from "@/api/announcements";
+import * as authApi from "@/api/auth";
 import * as backupApi from "@/api/backup";
 import * as i18nApi from "@/api/i18n";
 import * as seoApi from "@/api/seo";
-import { getApiErrorMessage } from "@/api/auth";
+import { getApiErrorMessage, getApiStatusCode } from "@/api/auth";
 import ConfirmDialog from "@/components/ConfirmDialog.vue";
 import EmptyState from "@/components/EmptyState.vue";
+import StepUpDialog from "@/components/StepUpDialog.vue";
 import { useCommunityStore } from "@/stores/community";
 import { useI18nStore } from "@/stores/i18n";
 import { useSiteStore } from "@/stores/site";
@@ -31,6 +33,14 @@ const confirmRequest = ref<{
   action: () => Promise<void>;
 } | null>(null);
 const confirmLoading = ref(false);
+const stepUpRequest = ref<{
+  title: string;
+  message: string;
+  scope: "backup";
+  action: () => Promise<void>;
+} | null>(null);
+const stepUpLoading = ref(false);
+const stepUpError = ref("");
 const localeForm = reactive({
   locale: i18nStore.locale,
 });
@@ -119,11 +129,40 @@ async function createBackup() {
   notice.value = "";
   errorMessage.value = "";
   try {
-    const backup = await backupApi.createBackup();
-    backups.value.unshift(backup);
-    notice.value = `备份已创建：${backup.filename}`;
+    await runWithStepUp(
+      async () => {
+        const backup = await backupApi.createBackup();
+        backups.value.unshift(backup);
+        notice.value = `备份已创建：${backup.filename}`;
+      },
+      {
+        title: "创建备份需要二次认证",
+        message: "请输入当前登录密码后，再执行数据库备份。",
+        scope: "backup",
+      },
+    );
   } catch (error) {
     errorMessage.value = getApiErrorMessage(error, "创建备份失败");
+  }
+}
+
+async function downloadBackup(filename: string) {
+  notice.value = "";
+  errorMessage.value = "";
+  try {
+    await runWithStepUp(
+      async () => {
+        await backupApi.downloadBackupFile(filename);
+        notice.value = `备份已开始下载：${filename}`;
+      },
+      {
+        title: "下载备份需要二次认证",
+        message: `请输入当前登录密码后，再下载备份 ${filename}。`,
+        scope: "backup",
+      },
+    );
+  } catch (error) {
+    errorMessage.value = getApiErrorMessage(error, "下载备份失败");
   }
 }
 
@@ -137,8 +176,17 @@ async function restoreBackup(filename: string) {
       notice.value = "";
       errorMessage.value = "";
       try {
-        const result = await backupApi.restoreBackup(filename);
-        notice.value = result.message;
+        await runWithStepUp(
+          async () => {
+            const result = await backupApi.restoreBackup(filename);
+            notice.value = result.message;
+          },
+          {
+            title: "恢复备份需要二次认证",
+            message: `请输入当前登录密码后，再从 ${filename} 恢复数据库。`,
+            scope: "backup",
+          },
+        );
       } catch (error) {
         errorMessage.value = getApiErrorMessage(error, "恢复备份失败");
         throw error;
@@ -155,15 +203,57 @@ async function deleteBackup(filename: string) {
     variant: "danger",
     action: async () => {
       try {
-        await backupApi.deleteBackup(filename);
-        backups.value = backups.value.filter((backup) => backup.filename !== filename);
-        notice.value = `已删除备份：${filename}`;
+        await runWithStepUp(
+          async () => {
+            await backupApi.deleteBackup(filename);
+            backups.value = backups.value.filter((backup) => backup.filename !== filename);
+            notice.value = `已删除备份：${filename}`;
+          },
+          {
+            title: "删除备份需要二次认证",
+            message: `请输入当前登录密码后，再删除备份 ${filename}。`,
+            scope: "backup",
+          },
+        );
       } catch (error) {
         errorMessage.value = getApiErrorMessage(error, "删除备份失败");
         throw error;
       }
     },
   };
+}
+
+function openStepUpDialog(request: {
+  title: string;
+  message: string;
+  scope: "backup";
+  action: () => Promise<void>;
+}) {
+  stepUpError.value = "";
+  stepUpRequest.value = request;
+}
+
+async function runWithStepUp(
+  action: () => Promise<void>,
+  request: {
+    title: string;
+    message: string;
+    scope: "backup";
+  },
+) {
+  try {
+    await action();
+  } catch (error) {
+    if (getApiStatusCode(error) === 428) {
+      openStepUpDialog({
+        ...request,
+        action,
+      });
+      return;
+    }
+
+    throw error;
+  }
 }
 
 function closeConfirmDialog() {
@@ -183,6 +273,36 @@ async function executeConfirmDialog() {
     confirmRequest.value = null;
   } finally {
     confirmLoading.value = false;
+  }
+}
+
+function closeStepUpDialog() {
+  if (!stepUpLoading.value) {
+    stepUpRequest.value = null;
+    stepUpError.value = "";
+  }
+}
+
+async function executeStepUp(password: string) {
+  if (!stepUpRequest.value) {
+    return;
+  }
+
+  stepUpLoading.value = true;
+  stepUpError.value = "";
+  const pendingRequest = stepUpRequest.value;
+
+  try {
+    await authApi.confirmStepUp({
+      password,
+      scope: pendingRequest.scope,
+    });
+    stepUpRequest.value = null;
+    await pendingRequest.action();
+  } catch (error) {
+    stepUpError.value = getApiErrorMessage(error, "二次认证失败");
+  } finally {
+    stepUpLoading.value = false;
   }
 }
 
@@ -352,12 +472,13 @@ onMounted(() => {
                 </p>
               </div>
               <div class="flex flex-wrap gap-2">
-                <a
+                <button
                   class="focus-ring min-h-9 rounded-md border border-line bg-white px-3 py-2 text-sm hover:border-brand hover:text-brand"
-                  :href="backupApi.getBackupDownloadUrl(backup.filename)"
+                  type="button"
+                  @click="downloadBackup(backup.filename)"
                 >
                   下载
-                </a>
+                </button>
                 <button
                   class="focus-ring min-h-9 rounded-md border border-line bg-white px-3 py-2 text-sm hover:border-moss hover:text-moss"
                   type="button"
@@ -554,5 +675,14 @@ onMounted(() => {
     :variant="confirmRequest?.variant || 'primary'"
     @cancel="closeConfirmDialog"
     @confirm="executeConfirmDialog"
+  />
+  <StepUpDialog
+    :open="Boolean(stepUpRequest)"
+    :title="stepUpRequest?.title || ''"
+    :message="stepUpRequest?.message || ''"
+    :loading="stepUpLoading"
+    :error-message="stepUpError"
+    @cancel="closeStepUpDialog"
+    @confirm="executeStepUp"
   />
 </template>

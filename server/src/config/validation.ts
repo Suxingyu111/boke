@@ -58,6 +58,9 @@ export const validationSchema = Joi.object({
   }),
   JWT_EXPIRATION: Joi.string().default('7d'),
   AUTH_COOKIE_NAME: Joi.string().trim().min(3).default('blog_auth_token'),
+  AUTH_STEP_UP_COOKIE_NAME: Joi.string().trim().min(3).default('blog_admin_step_up'),
+  AUTH_STEP_UP_TTL: Joi.string().default('10m'),
+  AUTH_STEP_UP_WINDOW_MS: Joi.number().integer().min(60000).default(600000),
   CLIENT_URL: Joi.string().uri().default('http://localhost:5173'),
 
   // OAuth（可选）

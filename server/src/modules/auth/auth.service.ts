@@ -61,6 +61,12 @@ interface RegistrationVerificationTokenPayload {
   contact: string;
 }
 
+interface StepUpTokenPayload {
+  purpose: 'step-up';
+  sub: string;
+  scope: string;
+}
+
 @Injectable()
 export class AuthService {
   private readonly logger = new Logger(AuthService.name);
@@ -433,8 +439,55 @@ export class AuthService {
     response.cookie(this.getAuthCookieName(), accessToken, this.getAuthCookieOptions());
   }
 
+  writeStepUpCookie(response: Pick<Response, 'cookie'>, token: string): void {
+    response.cookie(this.getStepUpCookieName(), token, this.getStepUpCookieOptions());
+  }
+
   clearAuthCookie(response: Pick<Response, 'clearCookie'>): void {
     response.clearCookie(this.getAuthCookieName(), this.getAuthCookieOptions());
+    response.clearCookie(this.getStepUpCookieName(), this.getStepUpCookieOptions());
+  }
+
+  async confirmStepUp(
+    userId: string,
+    password: string,
+    scope: string,
+  ): Promise<{ token: string; expiresInSeconds: number }> {
+    const user = await this.userRepository
+      .createQueryBuilder('user')
+      .addSelect('user.password')
+      .where('user.id = :userId', { userId })
+      .getOne();
+
+    if (!user) {
+      throw new UnauthorizedException(INVALID_TOKEN_MESSAGE);
+    }
+
+    if (!user.isActive) {
+      throw new ForbiddenException(USER_DISABLED_MESSAGE);
+    }
+
+    const isPasswordValid = await bcrypt.compare(password, user.password);
+    if (!isPasswordValid) {
+      throw new UnauthorizedException('当前密码错误');
+    }
+
+    const ttl = this.getStepUpTtl();
+    const token = await this.jwtService.signAsync(
+      {
+        purpose: 'step-up',
+        sub: user.id,
+        scope,
+      } satisfies StepUpTokenPayload,
+      {
+        expiresIn: ttl as StringValue,
+      },
+    );
+
+    return {
+      token,
+      expiresInSeconds: this.getStepUpTtlSeconds(),
+    };
   }
 
   private async resolveValidRegistrationVerification(dto: RegisterDto): Promise<VerificationCode> {
@@ -697,6 +750,10 @@ export class AuthService {
     return this.configService.get<string>('auth.cookieName', 'blog_auth_token');
   }
 
+  private getStepUpCookieName(): string {
+    return this.configService.get<string>('auth.stepUpCookieName', 'blog_admin_step_up');
+  }
+
   private getAuthCookieOptions(): CookieOptions {
     const expiresIn = this.configService.get<string>('jwt.expiresIn', '7d');
     const maxAge = ms(expiresIn as StringValue);
@@ -708,6 +765,27 @@ export class AuthService {
       path: '/',
       maxAge: typeof maxAge === 'number' ? maxAge : undefined,
     };
+  }
+
+  private getStepUpCookieOptions(): CookieOptions {
+    const maxAge = ms(this.getStepUpTtl() as StringValue);
+
+    return {
+      httpOnly: true,
+      secure: this.isProduction(),
+      sameSite: 'lax',
+      path: '/',
+      maxAge: typeof maxAge === 'number' ? maxAge : undefined,
+    };
+  }
+
+  private getStepUpTtl(): string {
+    return this.configService.get<string>('auth.stepUpTtl', '10m');
+  }
+
+  private getStepUpTtlSeconds(): number {
+    const ttl = ms(this.getStepUpTtl() as StringValue);
+    return typeof ttl === 'number' ? Math.floor(ttl / 1000) : 600;
   }
 
   private async dispatchRegistrationCode(
