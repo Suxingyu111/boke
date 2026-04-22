@@ -7,6 +7,7 @@ import * as bcrypt from 'bcrypt';
 import { Repository } from 'typeorm';
 import { User, VerificationCode } from '../src/database/entities';
 import { NotificationsService } from '../src/modules/notifications/notifications.service';
+import { SecurityAuditService } from '../src/modules/operation-logs/security-audit.service';
 import { AuthService } from '../src/modules/auth/auth.service';
 import { LoginDto } from '../src/modules/auth/dto/login.dto';
 import { RegisterDto } from '../src/modules/auth/dto/register.dto';
@@ -25,6 +26,7 @@ describe('AuthService', () => {
   let jwtService: { signAsync: jest.Mock; verifyAsync: jest.Mock };
   let configService: { get: jest.Mock };
   let notificationsService: { sendNotification: jest.Mock };
+  let securityAuditService: { recordBestEffort: jest.Mock };
 
   const registerDto: RegisterDto = {
     registerType: 'email',
@@ -121,6 +123,9 @@ describe('AuthService', () => {
     notificationsService = {
       sendNotification: jest.fn(),
     };
+    securityAuditService = {
+      recordBestEffort: jest.fn().mockResolvedValue(undefined),
+    };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -144,6 +149,10 @@ describe('AuthService', () => {
         {
           provide: NotificationsService,
           useValue: notificationsService,
+        },
+        {
+          provide: SecurityAuditService,
+          useValue: securityAuditService,
         },
       ],
     }).compile();

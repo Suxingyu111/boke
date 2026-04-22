@@ -15,6 +15,7 @@ import { AuthService } from '../src/modules/auth/auth.service';
 import { RolesGuard } from '../src/modules/auth/guards/roles.guard';
 import { JwtStrategy } from '../src/modules/auth/strategies/jwt.strategy';
 import { NotificationsService } from '../src/modules/notifications/notifications.service';
+import { SecurityAuditService } from '../src/modules/operation-logs/security-audit.service';
 
 type QueryBuilderMock = {
   addSelect: jest.Mock;
@@ -186,6 +187,9 @@ describe('Auth integration', () => {
   const notificationsService = {
     sendNotification: jest.fn(),
   };
+  const securityAuditService = {
+    recordBestEffort: jest.fn().mockResolvedValue(undefined),
+  };
 
   beforeAll(async () => {
     userRepository = createUserRepositoryMock();
@@ -234,6 +238,10 @@ describe('Auth integration', () => {
           provide: NotificationsService,
           useValue: notificationsService,
         },
+        {
+          provide: SecurityAuditService,
+          useValue: securityAuditService,
+        },
       ],
     }).compile();
 
@@ -256,7 +264,9 @@ describe('Auth integration', () => {
   });
 
   afterAll(async () => {
-    await app.close();
+    if (app) {
+      await app.close();
+    }
   });
 
   async function registerUser(

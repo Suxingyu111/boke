@@ -3,7 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { Reflector } from '@nestjs/core';
 import { User } from '@database/entities';
-import { OperationLogsService } from '../../operation-logs/operation-logs.service';
+import { SecurityAuditService } from '../../operation-logs/security-audit.service';
 import { StepUpGuard } from './step-up.guard';
 
 const now = new Date('2026-04-21T23:20:00.000Z');
@@ -12,7 +12,7 @@ describe('StepUpGuard', () => {
   let guard: StepUpGuard;
   let reflector: { getAllAndOverride: jest.Mock };
   let jwtService: { verifyAsync: jest.Mock };
-  let operationLogsService: { record: jest.Mock };
+  let securityAuditService: { record: jest.Mock };
 
   const buildUser = (overrides: Partial<User> = {}): User =>
     ({
@@ -66,7 +66,7 @@ describe('StepUpGuard', () => {
     jwtService = {
       verifyAsync: jest.fn(),
     };
-    operationLogsService = {
+    securityAuditService = {
       record: jest.fn().mockResolvedValue(undefined),
     };
 
@@ -82,7 +82,7 @@ describe('StepUpGuard', () => {
         }),
       } as unknown as ConfigService,
       jwtService as unknown as JwtService,
-      operationLogsService as unknown as OperationLogsService,
+      securityAuditService as unknown as SecurityAuditService,
     );
   });
 
@@ -143,7 +143,7 @@ describe('StepUpGuard', () => {
       ),
     ).rejects.toBeInstanceOf(HttpException);
 
-    expect(operationLogsService.record).toHaveBeenCalledWith(
+    expect(securityAuditService.record).toHaveBeenCalledWith(
       expect.objectContaining({
         moduleName: 'backup',
         actionName: 'step_up_required:backup',

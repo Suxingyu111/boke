@@ -19,6 +19,7 @@ import ms, { type StringValue } from 'ms';
 import { Repository } from 'typeorm';
 import { User, VerificationCode } from '@database/entities';
 import { NotificationsService } from '../notifications/notifications.service';
+import { SecurityAuditService } from '../operation-logs/security-audit.service';
 import { AuthResponseDto } from './dto/auth-response.dto';
 import { AuthUserDto } from './dto/auth-user.dto';
 import { LoginDto } from './dto/login.dto';
@@ -54,6 +55,11 @@ interface RequestMetadata {
   userAgent: string | null;
 }
 
+interface AuditRequestMetadata extends RequestMetadata {
+  requestPath?: string | null;
+  requestMethod?: string | null;
+}
+
 interface RegistrationVerificationTokenPayload {
   purpose: typeof REGISTRATION_TOKEN_PURPOSE;
   verificationId: string;
@@ -79,6 +85,7 @@ export class AuthService {
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
     private readonly notificationsService: NotificationsService,
+    private readonly securityAuditService: SecurityAuditService,
   ) {}
 
   async checkRegistrationAvailability(
@@ -289,7 +296,10 @@ export class AuthService {
     return this.buildAuthResponse(savedUser);
   }
 
-  async login(dto: LoginDto): Promise<AuthResponseDto> {
+  async login(
+    dto: LoginDto,
+    metadata: AuditRequestMetadata = { ip: null, userAgent: null },
+  ): Promise<AuthResponseDto> {
     const account = dto.account.trim();
     const normalizedEmail = account.toLowerCase();
     const normalizedPhone = this.tryNormalizePhone(account) ?? '__not_a_phone__';
@@ -304,15 +314,58 @@ export class AuthService {
       .getOne();
 
     if (!user) {
+      await this.recordAuthEvent({
+        actionName: 'login_failed',
+        eventType: 'auth.login_failed',
+        severity: 'warning',
+        responseCode: HttpStatus.UNAUTHORIZED,
+        alert: false,
+        summary: '账号登录失败：账号不存在',
+        metadata,
+        payload: {
+          account,
+          reason: 'account_not_found',
+        },
+      });
       throw new UnauthorizedException(INVALID_CREDENTIALS_MESSAGE);
     }
 
     if (!user.isActive) {
+      await this.recordAuthEvent({
+        actionName: 'login_failed',
+        eventType: 'auth.login_failed',
+        severity: 'warning',
+        responseCode: HttpStatus.FORBIDDEN,
+        operatorId: user.id,
+        targetId: user.id,
+        alert: true,
+        summary: '账号登录失败：账号已禁用',
+        metadata,
+        payload: {
+          account,
+          reason: 'user_disabled',
+        },
+      });
       throw new ForbiddenException(USER_DISABLED_MESSAGE);
     }
 
     const isPasswordValid = await bcrypt.compare(dto.password, user.password);
     if (!isPasswordValid) {
+      await this.recordAuthEvent({
+        actionName: 'login_failed',
+        eventType: 'auth.login_failed',
+        severity: 'warning',
+        responseCode: HttpStatus.UNAUTHORIZED,
+        operatorId: user.id,
+        targetId: user.id,
+        alert: false,
+        summary: '账号登录失败：密码错误',
+        metadata,
+        payload: {
+          account,
+          reason: 'invalid_password',
+        },
+      });
       throw new UnauthorizedException(INVALID_CREDENTIALS_MESSAGE);
     }
 
@@ -322,7 +375,23 @@ export class AuthService {
       user.lastLoginAt = lastLoginAt;
     }
 
-    return this.buildAuthResponse(user);
+    const authResponse = await this.buildAuthResponse(user);
+
+    await this.recordAuthEvent({
+      actionName: 'login_succeeded',
+      eventType: 'auth.login_succeeded',
+      severity: 'info',
+      responseCode: HttpStatus.OK,
+      operatorId: user.id,
+      targetId: user.id,
+      summary: '账号登录成功',
+      metadata,
+      payload: {
+        account,
+      },
+    });
+
+    return authResponse;
   }
 
   async getAuthenticatedUser(userId: string): Promise<User> {
@@ -406,8 +475,48 @@ export class AuthService {
     return user;
   }
 
-  async buildOAuthAuthResponse(user: User): Promise<AuthResponseDto> {
-    return this.buildAuthResponse(user);
+  async buildOAuthAuthResponse(
+    user: User,
+    metadata: AuditRequestMetadata = { ip: null, userAgent: null },
+  ): Promise<AuthResponseDto> {
+    const authResponse = await this.buildAuthResponse(user);
+
+    await this.recordAuthEvent({
+      actionName: 'oauth_login_succeeded',
+      eventType: 'auth.oauth_login_succeeded',
+      severity: 'info',
+      responseCode: HttpStatus.OK,
+      operatorId: user.id,
+      targetId: user.id,
+      summary: 'OAuth 登录成功',
+      metadata,
+      payload: {
+        provider: user.oauthProvider ?? 'unknown',
+        account: user.email ?? user.username,
+      },
+    });
+
+    return authResponse;
+  }
+
+  async recordOAuthFailure(
+    provider: OAuthProvider,
+    message: string,
+    metadata: AuditRequestMetadata = { ip: null, userAgent: null },
+  ): Promise<void> {
+    await this.recordAuthEvent({
+      actionName: 'oauth_login_failed',
+      eventType: 'auth.oauth_login_failed',
+      severity: 'warning',
+      responseCode: HttpStatus.UNAUTHORIZED,
+      alert: true,
+      summary: 'OAuth 登录失败',
+      metadata,
+      payload: {
+        provider,
+        reason: message,
+      },
+    });
   }
 
   buildOAuthSuccessRedirect(redirectPath?: string): string {
@@ -452,6 +561,7 @@ export class AuthService {
     userId: string,
     password: string,
     scope: string,
+    metadata: AuditRequestMetadata = { ip: null, userAgent: null },
   ): Promise<{ token: string; expiresInSeconds: number }> {
     const user = await this.userRepository
       .createQueryBuilder('user')
@@ -460,15 +570,60 @@ export class AuthService {
       .getOne();
 
     if (!user) {
+      await this.recordAuthEvent({
+        actionName: 'step_up_failed',
+        eventType: 'auth.step_up_failed',
+        severity: 'warning',
+        responseCode: HttpStatus.UNAUTHORIZED,
+        operatorId: userId,
+        targetId: userId,
+        alert: true,
+        summary: '二次认证失败：用户不存在',
+        metadata,
+        payload: {
+          scope,
+          reason: 'user_not_found',
+        },
+      });
       throw new UnauthorizedException(INVALID_TOKEN_MESSAGE);
     }
 
     if (!user.isActive) {
+      await this.recordAuthEvent({
+        actionName: 'step_up_failed',
+        eventType: 'auth.step_up_failed',
+        severity: 'warning',
+        responseCode: HttpStatus.FORBIDDEN,
+        operatorId: user.id,
+        targetId: user.id,
+        alert: true,
+        summary: '二次认证失败：账号已禁用',
+        metadata,
+        payload: {
+          scope,
+          reason: 'user_disabled',
+        },
+      });
       throw new ForbiddenException(USER_DISABLED_MESSAGE);
     }
 
     const isPasswordValid = await bcrypt.compare(password, user.password);
     if (!isPasswordValid) {
+      await this.recordAuthEvent({
+        actionName: 'step_up_failed',
+        eventType: 'auth.step_up_failed',
+        severity: 'warning',
+        responseCode: HttpStatus.UNAUTHORIZED,
+        operatorId: user.id,
+        targetId: user.id,
+        alert: true,
+        summary: '二次认证失败：密码错误',
+        metadata,
+        payload: {
+          scope,
+          reason: 'invalid_password',
+        },
+      });
       throw new UnauthorizedException('当前密码错误');
     }
 
@@ -483,6 +638,20 @@ export class AuthService {
         expiresIn: ttl as StringValue,
       },
     );
+
+    await this.recordAuthEvent({
+      actionName: 'step_up_succeeded',
+      eventType: 'auth.step_up_succeeded',
+      severity: 'info',
+      responseCode: HttpStatus.OK,
+      operatorId: user.id,
+      targetId: user.id,
+      summary: '二次认证成功',
+      metadata,
+      payload: {
+        scope,
+      },
+    });
 
     return {
       token,
@@ -820,7 +989,19 @@ export class AuthService {
         throw new ServiceUnavailableException('邮件验证码服务未配置');
       }
 
-      this.logger.log(`开发模式邮件验证码 [${contact}]: ${code}`);
+      this.logger.log(`开发模式邮件验证码已生成，目标：${this.maskContact('email', contact)}`);
+      await this.securityAuditService.recordBestEffort({
+        moduleName: 'auth',
+        actionName: 'registration_code_issued',
+        eventType: 'auth.registration_code_issued',
+        severity: 'info',
+        responseCode: HttpStatus.CREATED,
+        summary: '开发模式邮件验证码已生成',
+        payload: {
+          channel: 'email',
+          contact,
+        },
+      });
       return;
     }
 
@@ -828,7 +1009,19 @@ export class AuthService {
       throw new ServiceUnavailableException('短信验证码服务未配置');
     }
 
-    this.logger.log(`开发模式短信验证码 [${contact}]: ${code}`);
+    this.logger.log(`开发模式短信验证码已生成，目标：${this.maskContact('phone', contact)}`);
+    await this.securityAuditService.recordBestEffort({
+      moduleName: 'auth',
+      actionName: 'registration_code_issued',
+      eventType: 'auth.registration_code_issued',
+      severity: 'info',
+      responseCode: HttpStatus.CREATED,
+      summary: '开发模式短信验证码已生成',
+      payload: {
+        channel: 'sms',
+        contact,
+      },
+    });
   }
 
   private buildRegistrationCodeEmailBody(code: string): string {
@@ -909,6 +1102,61 @@ export class AuthService {
     }
 
     return `${digits.slice(0, 3)}****${digits.slice(-4)}`;
+  }
+
+  private async recordAuthEvent(input: {
+    actionName: string;
+    eventType: string;
+    severity: 'info' | 'warning' | 'critical';
+    responseCode: number;
+    summary: string;
+    metadata: AuditRequestMetadata;
+    payload?: Record<string, unknown> | null;
+    operatorId?: string | null;
+    targetId?: string | null;
+    alert?: boolean;
+  }): Promise<void> {
+    await this.securityAuditService.recordBestEffort({
+      operatorId: input.operatorId ?? null,
+      moduleName: 'auth',
+      actionName: input.actionName,
+      eventType: input.eventType,
+      severity: input.severity,
+      alert: input.alert,
+      summary: input.summary,
+      targetType: 'user',
+      targetId: input.targetId ?? null,
+      requestMethod: input.metadata.requestMethod ?? 'POST',
+      requestPath: input.metadata.requestPath ?? '/api/auth',
+      payload: input.payload
+        ? {
+            ...input.payload,
+            ...(input.payload.account
+              ? { account: this.maskAccount(String(input.payload.account)) }
+              : {}),
+          }
+        : null,
+      responseCode: input.responseCode,
+      ipAddress: input.metadata.ip,
+      userAgent: input.metadata.userAgent,
+    });
+  }
+
+  private maskAccount(account: string): string {
+    if (EMAIL_PATTERN.test(account)) {
+      return this.maskContact('email', account);
+    }
+
+    const normalizedPhone = this.tryNormalizePhone(account);
+    if (normalizedPhone) {
+      return this.maskContact('phone', normalizedPhone);
+    }
+
+    if (account.length <= 2) {
+      return '*'.repeat(account.length);
+    }
+
+    return `${account.slice(0, 1)}***${account.slice(-1)}`;
   }
 
   private shouldExposeDebugCode(): boolean {

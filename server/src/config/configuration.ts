@@ -108,6 +108,8 @@ export const configuration = (): {
     referrerPolicy: string;
     permissionsPolicy: string;
     cspReportOnly: boolean;
+    alertRecipients: string[];
+    alertCooldownSeconds: number;
   };
   database: {
     type: string;
@@ -223,6 +225,8 @@ export const configuration = (): {
       process.env.SECURITY_CSP_REPORT_ONLY,
       (process.env.NODE_ENV || 'development') !== 'production',
     ),
+    alertRecipients: parseStringList(process.env.SECURITY_ALERT_RECIPIENTS, []),
+    alertCooldownSeconds: parseNumber(process.env.SECURITY_ALERT_COOLDOWN_SECONDS, 300),
   },
   database: {
     type: process.env.DB_TYPE || 'mysql',

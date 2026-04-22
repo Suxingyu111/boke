@@ -4,6 +4,7 @@ import { getRepositoryToken } from '@nestjs/typeorm';
 import { JwtService } from '@nestjs/jwt';
 import { User, VerificationCode } from '@database/entities';
 import { NotificationsService } from '../notifications/notifications.service';
+import { SecurityAuditService } from '../operation-logs/security-audit.service';
 import { AuthService } from './auth.service';
 
 describe('AuthService OAuth 安全行为', () => {
@@ -51,6 +52,12 @@ describe('AuthService OAuth 安全行为', () => {
         {
           provide: NotificationsService,
           useValue: {},
+        },
+        {
+          provide: SecurityAuditService,
+          useValue: {
+            recordBestEffort: jest.fn(),
+          },
         },
       ],
     }).compile();

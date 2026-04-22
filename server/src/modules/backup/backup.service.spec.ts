@@ -1,5 +1,6 @@
 import * as fs from 'fs';
 import { ConfigService } from '@nestjs/config';
+import { SecurityAuditService } from '../operation-logs/security-audit.service';
 import { BackupService } from './backup.service';
 
 jest.mock('fs', () => {
@@ -26,6 +27,10 @@ describe('BackupService', () => {
     args: string[],
     options: { password: string; stdinFilePath?: string; stdoutFilePath?: string },
   ) => Promise<void>;
+  const createAuditServiceMock = () =>
+    ({
+      recordBestEffort: jest.fn().mockResolvedValue(undefined),
+    }) as unknown as SecurityAuditService;
 
   beforeEach(() => {
     jest.clearAllMocks();
@@ -38,7 +43,7 @@ describe('BackupService', () => {
       get: jest.fn().mockImplementation((key: string, fallback?: unknown) =>
         key in configValues ? configValues[key as keyof typeof configValues] : fallback,
       ),
-    } as unknown as ConfigService);
+    } as unknown as ConfigService, createAuditServiceMock());
     const internalService = service as unknown as { runDatabaseCommand: RunDatabaseCommand };
     const runSpy = jest
       .spyOn(internalService, 'runDatabaseCommand')
@@ -75,7 +80,7 @@ describe('BackupService', () => {
       get: jest.fn().mockImplementation((key: string, fallback?: unknown) =>
         key in configValues ? configValues[key as keyof typeof configValues] : fallback,
       ),
-    } as unknown as ConfigService);
+    } as unknown as ConfigService, createAuditServiceMock());
     const internalService = service as unknown as { runDatabaseCommand: RunDatabaseCommand };
     const runSpy = jest
       .spyOn(internalService, 'runDatabaseCommand')
@@ -110,7 +115,7 @@ describe('BackupService', () => {
       get: jest.fn().mockImplementation((key: string, fallback?: unknown) =>
         key in configValues ? configValues[key as keyof typeof configValues] : fallback,
       ),
-    } as unknown as ConfigService);
+    } as unknown as ConfigService, createAuditServiceMock());
     const sanitizeSensitiveText = (
       service as unknown as {
         ['sanitizeSensitiveText']: (message: string, password: string) => string;
@@ -124,5 +129,34 @@ describe('BackupService', () => {
 
     expect(sanitized).not.toContain('super-secret-password');
     expect(sanitized).toContain('[REDACTED]');
+  });
+
+  it('恢复不存在的备份时应记录结构化审计事件', async () => {
+    const auditService = {
+      recordBestEffort: jest.fn().mockResolvedValue(undefined),
+    };
+    (fs.existsSync as jest.MockedFunction<typeof fs.existsSync>)
+      .mockReturnValueOnce(true)
+      .mockReturnValueOnce(false);
+
+    const service = new BackupService(
+      {
+        get: jest.fn().mockImplementation((key: string, fallback?: unknown) =>
+          key in configValues ? configValues[key as keyof typeof configValues] : fallback,
+        ),
+      } as unknown as ConfigService,
+      auditService as unknown as SecurityAuditService,
+    );
+
+    await expect(service.restoreBackup('backup_blog_system_2026-04-20.sql')).rejects.toThrow(
+      '备份文件不存在：backup_blog_system_2026-04-20.sql',
+    );
+    expect(auditService.recordBestEffort).toHaveBeenCalledWith(
+      expect.objectContaining({
+        eventType: 'backup.restore_failed',
+        targetId: 'backup_blog_system_2026-04-20.sql',
+        responseCode: 404,
+      }),
+    );
   });
 });

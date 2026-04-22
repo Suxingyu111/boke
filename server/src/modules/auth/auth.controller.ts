@@ -92,9 +92,10 @@ export class AuthController {
   @ApiResponse({ status: 200, description: '登录成功', type: AuthResponseDto })
   async login(
     @Body() dto: LoginDto,
+    @Req() req: Request,
     @Res({ passthrough: true }) res: Response,
   ): Promise<AuthResponseDto> {
-    const authResponse = await this.authService.login(dto);
+    const authResponse = await this.authService.login(dto, this.buildAuditMetadata(req));
     this.authService.writeAuthCookie(res, authResponse.accessToken);
     return authResponse;
   }
@@ -118,9 +119,15 @@ export class AuthController {
   async stepUp(
     @CurrentUser() user: User,
     @Body() dto: StepUpDto,
+    @Req() req: Request,
     @Res({ passthrough: true }) res: Response,
   ): Promise<{ message: string; expiresInSeconds: number; scope: string }> {
-    const result = await this.authService.confirmStepUp(user.id, dto.password, dto.scope);
+    const result = await this.authService.confirmStepUp(
+      user.id,
+      dto.password,
+      dto.scope,
+      this.buildAuditMetadata(req),
+    );
     this.authService.writeStepUpCookie(res, result.token);
     return {
       message: '二次认证通过',
@@ -239,6 +246,11 @@ export class AuthController {
         { session: false },
         async (error: unknown, user: User | false | null) => {
           if (error || !user) {
+            await this.authService.recordOAuthFailure(
+              provider,
+              error instanceof Error ? error.message : `${providerLabel} OAuth 回调未获取到用户`,
+              this.buildAuditMetadata(req),
+            );
             res.redirect(
               this.authService.buildOAuthFailureRedirect(`${providerLabel} OAuth 登录失败`, redirect),
             );
@@ -247,15 +259,39 @@ export class AuthController {
           }
 
           try {
-            const authResponse = await this.authService.buildOAuthAuthResponse(user);
+            const authResponse = await this.authService.buildOAuthAuthResponse(
+              user,
+              this.buildAuditMetadata(req),
+            );
             this.authService.writeAuthCookie(res, authResponse.accessToken);
             res.redirect(this.authService.buildOAuthSuccessRedirect(redirect));
             resolve();
           } catch (authError) {
+            await this.authService.recordOAuthFailure(
+              provider,
+              authError instanceof Error ? authError.message : `${providerLabel} OAuth 登录失败`,
+              this.buildAuditMetadata(req),
+            );
             reject(authError);
           }
         },
       )(req, res, next instanceof Function ? next : undefined);
     });
+  }
+
+  private buildAuditMetadata(req: Request): {
+    ip: string | null;
+    userAgent: string | null;
+    requestPath: string | null;
+    requestMethod: string | null;
+  } {
+    const rawUserAgent = req.headers['user-agent'];
+
+    return {
+      ip: req.ip ?? null,
+      userAgent: Array.isArray(rawUserAgent) ? rawUserAgent.join('; ') : rawUserAgent ?? null,
+      requestPath: req.originalUrl ?? req.url ?? null,
+      requestMethod: req.method ?? null,
+    };
   }
 }

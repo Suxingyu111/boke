@@ -10,7 +10,7 @@ import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { Reflector } from '@nestjs/core';
 import { User } from '@database/entities';
-import { OperationLogsService } from '../../operation-logs/operation-logs.service';
+import { SecurityAuditService } from '../../operation-logs/security-audit.service';
 import { STEP_UP_KEY, StepUpRequirement } from '../decorators/require-step-up.decorator';
 
 interface StepUpTokenPayload {
@@ -35,7 +35,7 @@ export class StepUpGuard implements CanActivate {
     private readonly reflector: Reflector,
     private readonly configService: ConfigService,
     private readonly jwtService: JwtService,
-    private readonly operationLogsService: OperationLogsService,
+    private readonly securityAuditService: SecurityAuditService,
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
@@ -64,15 +64,19 @@ export class StepUpGuard implements CanActivate {
       return true;
     }
 
-    await this.operationLogsService.record({
+    await this.securityAuditService.record({
       operatorId: currentUser.id,
       moduleName: this.deriveModuleName(request),
       actionName: `step_up_required:${requirement.scope}`,
+      eventType: `auth.step_up_required.${requirement.scope}`,
+      severity: 'warning',
+      alert: false,
+      summary: '高危操作缺少二次认证',
       targetType: requirement.scope,
       targetId: this.deriveTargetId(request.params),
       requestMethod: request.method,
       requestPath: request.originalUrl ?? request.url,
-      requestPayload: { stepUpScope: requirement.scope },
+      payload: { stepUpScope: requirement.scope },
       responseCode: HttpStatus.PRECONDITION_REQUIRED,
       ipAddress: request.ip ?? null,
       userAgent: this.normalizeUserAgent(request.headers['user-agent']),

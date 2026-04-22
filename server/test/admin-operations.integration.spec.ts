@@ -1,5 +1,6 @@
 import 'reflect-metadata';
 import { CanActivate, ExecutionContext, INestApplication, ValidationPipe } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { APP_INTERCEPTOR } from '@nestjs/core';
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
@@ -21,6 +22,8 @@ import { ArticlesService } from '../src/modules/articles/articles.service';
 import { AdminOperationLogsController } from '../src/modules/operation-logs/admin-operation-logs.controller';
 import { OperationLogInterceptor } from '../src/modules/operation-logs/operation-log.interceptor';
 import { OperationLogsService } from '../src/modules/operation-logs/operation-logs.service';
+import { SecurityAuditService } from '../src/modules/operation-logs/security-audit.service';
+import { NotificationsService } from '../src/modules/notifications/notifications.service';
 import { ArticleVersionsService } from '../src/modules/articles/article-versions.service';
 import { JwtAuthGuard } from '../src/modules/auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../src/modules/auth/guards/roles.guard';
@@ -216,9 +219,12 @@ describe('Admin operations integration', () => {
   let userRepository: RepositoryMock<User>;
   let operationLogRepository: RepositoryMock<OperationLog>;
 
-  const articleVersionsService = {
-    recordVersion: jest.fn(),
-  };
+const articleVersionsService = {
+  recordVersion: jest.fn(),
+};
+const notificationsService = {
+  sendNotification: jest.fn().mockResolvedValue(undefined),
+};
 
   beforeAll(async () => {
     articleRepository = createRepositoryMock<Article>();
@@ -247,6 +253,7 @@ describe('Admin operations integration', () => {
       providers: [
         ArticlesService,
         OperationLogsService,
+        SecurityAuditService,
         RolesGuard,
         {
           provide: APP_INTERCEPTOR,
@@ -283,6 +290,16 @@ describe('Admin operations integration', () => {
         {
           provide: ArticleVersionsService,
           useValue: articleVersionsService,
+        },
+        {
+          provide: NotificationsService,
+          useValue: notificationsService,
+        },
+        {
+          provide: ConfigService,
+          useValue: {
+            get: jest.fn().mockImplementation((_key: string, fallback?: unknown) => fallback),
+          },
         },
       ],
     })

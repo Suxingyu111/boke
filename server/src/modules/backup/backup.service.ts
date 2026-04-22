@@ -4,13 +4,17 @@ import { sanitizeAttachmentFileName } from '@common/security/file-validation.uti
 import { spawn } from 'child_process';
 import * as fs from 'fs';
 import * as path from 'path';
+import { SecurityAuditService } from '../operation-logs/security-audit.service';
 
 @Injectable()
 export class BackupService {
   private readonly logger = new Logger(BackupService.name);
   private readonly backupDir: string;
 
-  constructor(private readonly configService: ConfigService) {
+  constructor(
+    private readonly configService: ConfigService,
+    private readonly securityAuditService: SecurityAuditService,
+  ) {
     this.backupDir = path.resolve(process.cwd(), 'backups');
     if (!fs.existsSync(this.backupDir)) {
       fs.mkdirSync(this.backupDir, { recursive: true });
@@ -41,6 +45,24 @@ export class BackupService {
       };
     } catch (error) {
       this.safeRemoveFile(filePath);
+      await this.securityAuditService.recordBestEffort({
+        moduleName: 'backup',
+        actionName: 'create_failed',
+        eventType: 'backup.create_failed',
+        severity: 'critical',
+        alert: true,
+        summary: '数据库备份失败',
+        targetType: 'backup',
+        targetId: filename,
+        requestPath: '/api/admin/backup',
+        requestMethod: 'POST',
+        responseCode: 500,
+        payload: {
+          filename,
+          database: connection.database,
+          reason: error instanceof Error ? error.message : String(error),
+        },
+      });
       this.logger.error(
         '数据库备份失败',
         this.sanitizeSensitiveText(error instanceof Error ? error.stack ?? error.message : String(error), connection.password),
@@ -75,6 +97,23 @@ export class BackupService {
     const filePath = path.join(this.backupDir, sanitizedFilename);
 
     if (!fs.existsSync(filePath)) {
+      await this.securityAuditService.recordBestEffort({
+        moduleName: 'backup',
+        actionName: 'restore_failed',
+        eventType: 'backup.restore_failed',
+        severity: 'warning',
+        alert: true,
+        summary: '数据库恢复失败：备份文件不存在',
+        targetType: 'backup',
+        targetId: sanitizedFilename,
+        requestPath: `/api/admin/backup/${sanitizedFilename}/restore`,
+        requestMethod: 'POST',
+        responseCode: 404,
+        payload: {
+          filename: sanitizedFilename,
+          reason: 'backup_not_found',
+        },
+      });
       throw new Error(`备份文件不存在：${sanitizedFilename}`);
     }
 
@@ -89,6 +128,24 @@ export class BackupService {
       this.logger.log(`数据库恢复完成：${sanitizedFilename}`);
       return { message: `数据库已从备份 ${sanitizedFilename} 恢复` };
     } catch (error) {
+      await this.securityAuditService.recordBestEffort({
+        moduleName: 'backup',
+        actionName: 'restore_failed',
+        eventType: 'backup.restore_failed',
+        severity: 'critical',
+        alert: true,
+        summary: '数据库恢复失败',
+        targetType: 'backup',
+        targetId: sanitizedFilename,
+        requestPath: `/api/admin/backup/${sanitizedFilename}/restore`,
+        requestMethod: 'POST',
+        responseCode: 500,
+        payload: {
+          filename: sanitizedFilename,
+          database: connection.database,
+          reason: error instanceof Error ? error.message : String(error),
+        },
+      });
       this.logger.error(
         '数据库恢复失败',
         this.sanitizeSensitiveText(error instanceof Error ? error.stack ?? error.message : String(error), connection.password),
@@ -103,6 +160,23 @@ export class BackupService {
     const filePath = path.join(this.backupDir, sanitizedFilename);
 
     if (!fs.existsSync(filePath)) {
+      void this.securityAuditService.recordBestEffort({
+        moduleName: 'backup',
+        actionName: 'download_failed',
+        eventType: 'backup.download_failed',
+        severity: 'warning',
+        alert: true,
+        summary: '备份下载失败：备份文件不存在',
+        targetType: 'backup',
+        targetId: sanitizedFilename,
+        requestPath: `/api/admin/backup/${sanitizedFilename}/download`,
+        requestMethod: 'GET',
+        responseCode: 404,
+        payload: {
+          filename: sanitizedFilename,
+          reason: 'backup_not_found',
+        },
+      });
       throw new Error(`备份文件不存在：${sanitizedFilename}`);
     }
 
@@ -119,6 +193,23 @@ export class BackupService {
     const filePath = path.join(this.backupDir, sanitizedFilename);
 
     if (!fs.existsSync(filePath)) {
+      await this.securityAuditService.recordBestEffort({
+        moduleName: 'backup',
+        actionName: 'delete_failed',
+        eventType: 'backup.delete_failed',
+        severity: 'warning',
+        alert: true,
+        summary: '备份删除失败：备份文件不存在',
+        targetType: 'backup',
+        targetId: sanitizedFilename,
+        requestPath: `/api/admin/backup/${sanitizedFilename}`,
+        requestMethod: 'DELETE',
+        responseCode: 404,
+        payload: {
+          filename: sanitizedFilename,
+          reason: 'backup_not_found',
+        },
+      });
       throw new Error(`备份文件不存在：${sanitizedFilename}`);
     }
 

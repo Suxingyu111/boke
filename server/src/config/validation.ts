@@ -70,6 +70,8 @@ export const validationSchema = Joi.object({
   AUTH_STEP_UP_TTL: Joi.string().default('10m'),
   AUTH_STEP_UP_WINDOW_MS: Joi.number().integer().min(60000).default(600000),
   SECURITY_CSP_REPORT_ONLY: Joi.boolean().optional(),
+  SECURITY_ALERT_RECIPIENTS: Joi.string().allow('').optional(),
+  SECURITY_ALERT_COOLDOWN_SECONDS: Joi.number().integer().min(60).default(300),
   SECURITY_REFERRER_POLICY: Joi.string()
     .valid(
       'no-referrer',

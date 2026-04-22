@@ -7,7 +7,8 @@ import {
 import { Observable, from, throwError } from 'rxjs';
 import { catchError, mergeMap, map } from 'rxjs/operators';
 import { User } from '@database/entities';
-import { OperationLogsService } from './operation-logs.service';
+import { SecurityAuditService } from './security-audit.service';
+import { sanitizeAuditPayload } from './security-audit.util';
 
 type RequestWithUser = {
   method: string;
@@ -23,7 +24,7 @@ type RequestWithUser = {
 
 @Injectable()
 export class OperationLogInterceptor implements NestInterceptor {
-  constructor(private readonly operationLogsService: OperationLogsService) {}
+  constructor(private readonly securityAuditService: SecurityAuditService) {}
 
   intercept(context: ExecutionContext, next: CallHandler): Observable<unknown> {
     const request = context.switchToHttp().getRequest<RequestWithUser>();
@@ -64,15 +65,19 @@ export class OperationLogInterceptor implements NestInterceptor {
     const actionName = this.deriveActionName(request.method, requestPath);
     const payload = this.buildPayload(request);
 
-    await this.operationLogsService.record({
+    await this.securityAuditService.record({
       operatorId: request.user?.id ?? null,
       moduleName,
       actionName,
+      eventType: `admin.${moduleName}.${actionName}`,
+      severity: this.deriveSeverity(moduleName, actionName, responseCode),
+      alert: this.shouldAlert(moduleName, actionName, responseCode),
+      summary: `${request.method.toUpperCase()} ${requestPath}`,
       targetType: this.deriveTargetType(moduleName),
       targetId: this.deriveTargetId(request.params),
       requestMethod: request.method,
       requestPath,
-      requestPayload: payload,
+      payload,
       responseCode,
       ipAddress: request.ip ?? null,
       userAgent: this.normalizeUserAgent(request.headers['user-agent']),
@@ -89,38 +94,7 @@ export class OperationLogInterceptor implements NestInterceptor {
       return null;
     }
 
-    return this.sanitizePayload(combined);
-  }
-
-  private sanitizePayload(value: unknown): Record<string, unknown> {
-    if (!value || typeof value !== 'object' || Array.isArray(value)) {
-      return {};
-    }
-
-    const payload: Record<string, unknown> = {};
-    for (const [key, currentValue] of Object.entries(value)) {
-      const normalizedKey = key.toLowerCase();
-      if (['password', 'token', 'buffer', 'file'].includes(normalizedKey)) {
-        payload[key] = '[REDACTED]';
-        continue;
-      }
-
-      if (Array.isArray(currentValue)) {
-        payload[key] = currentValue.map(item =>
-          typeof item === 'object' && item !== null ? this.sanitizePayload(item) : item,
-        );
-        continue;
-      }
-
-      if (typeof currentValue === 'object' && currentValue !== null) {
-        payload[key] = this.sanitizePayload(currentValue);
-        continue;
-      }
-
-      payload[key] = currentValue;
-    }
-
-    return payload;
+    return sanitizeAuditPayload(combined);
   }
 
   private deriveModuleName(requestPath: string): string {
@@ -176,5 +150,35 @@ export class OperationLogInterceptor implements NestInterceptor {
 
   private isMutationMethod(method: string): boolean {
     return ['POST', 'PATCH', 'PUT', 'DELETE'].includes(method.toUpperCase());
+  }
+
+  private deriveSeverity(
+    moduleName: string,
+    actionName: string,
+    responseCode: number,
+  ): 'info' | 'warning' | 'critical' {
+    if (responseCode >= 500) {
+      return 'critical';
+    }
+
+    if (responseCode >= 400 || this.isHighRiskOperation(moduleName, actionName)) {
+      return 'warning';
+    }
+
+    return 'info';
+  }
+
+  private shouldAlert(moduleName: string, actionName: string, responseCode: number): boolean {
+    return responseCode >= 500 || this.isHighRiskOperation(moduleName, actionName);
+  }
+
+  private isHighRiskOperation(moduleName: string, actionName: string): boolean {
+    const highRiskActions = new Set(['export', 'restore', 'delete']);
+
+    if (moduleName === 'backup' || moduleName === 'database-admin') {
+      return highRiskActions.has(actionName) || actionName === 'create';
+    }
+
+    return false;
   }
 }

@@ -49,6 +49,14 @@ describe('AuthController', () => {
     passwordChangedAt: new Date('2026-04-15T00:00:00.000Z'),
   } as User;
   const response = {} as Response;
+  const request = {
+    ip: '203.0.113.1',
+    method: 'POST',
+    originalUrl: '/api/auth/login',
+    headers: {
+      'user-agent': 'jest-agent',
+    },
+  } as never;
 
   it('应调用 service.register 完成注册', async () => {
     const service = {
@@ -72,7 +80,7 @@ describe('AuthController', () => {
 
     const controller = new AuthController(service);
 
-    await expect(controller.login(loginDto, response)).resolves.toEqual(authResult);
+    await expect(controller.login(loginDto, request, response)).resolves.toEqual(authResult);
     expect(service.writeAuthCookie).toHaveBeenCalledWith(response, authResult.accessToken);
   });
 
