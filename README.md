@@ -1,6 +1,6 @@
-# 📝 个人博客系统 (Personal Blog System)
+# 📝 个人博客系统
 
-一个功能完善的全栈博客系统，采用 **Vue 3 + NestJS** 架构，支持文章管理、评论系统、付费内容、多语言、SEO 优化、访客统计等 **26 个功能模块**。
+基于 **Vue 3 + NestJS** 的全栈博客系统，前后端完全分离，后端提供 **28 个功能模块**，覆盖内容管理、社区互动、付费变现、SEO 优化、安全防护、系统运维等完整能力。
 
 ---
 
@@ -9,47 +9,54 @@
 - [技术栈](#-技术栈)
 - [系统架构](#-系统架构)
 - [功能总览](#-功能总览)
-- [前端功能详情](#-前端功能详情)
-- [后端 API 模块详情](#-后端-api-模块详情)
+- [前端功能](#-前端功能)
+- [后端模块](#-后端模块)
 - [数据库设计](#-数据库设计)
 - [快速启动](#-快速启动)
-- [项目脚本](#-项目脚本)
+- [常用命令](#-常用命令)
 - [环境变量配置](#-环境变量配置)
 - [项目结构](#-项目结构)
+- [安全特性](#-安全特性)
+- [API 响应格式](#-api-响应格式)
 
 ---
 
 ## 🛠 技术栈
 
-### 前端 (Client)
+### 前端（client）
 
 | 技术 | 版本 | 说明 |
 |------|------|------|
-| Vue 3 | ^3.5 | 前端框架 (Composition API) |
+| Vue 3 | ^3.5 | 前端框架（Composition API） |
 | Vue Router | ^4.6 | 路由管理 |
 | Pinia | ^3.0 | 状态管理 |
 | Vite | ^8.0 | 构建工具 |
 | TypeScript | ~6.0 | 类型安全 |
 | Tailwind CSS | ^3.4 | 原子化 CSS 框架 |
 | Axios | ^1.15 | HTTP 请求 |
+| markdown-it | ^14.1 | Markdown 渲染 |
+| highlight.js | ^11.11 | 代码高亮 |
+| DOMPurify | ^3.4 | XSS 内容净化 |
+| Vitest | ^3.2 | 单元测试 |
 | Playwright | ^1.56 | E2E 测试 |
 
-### 后端 (Server)
+### 后端（server）
 
 | 技术 | 版本 | 说明 |
 |------|------|------|
 | NestJS | ^10.2 | 后端框架 |
 | TypeORM | ^0.3 | ORM 数据库操作 |
 | MySQL | 8.0 | 关系型数据库 |
-| Redis | 7 (Alpine) | 缓存与会话 |
+| Redis | 7（Alpine） | 缓存与会话 |
 | Elasticsearch | 8.13 | 全文搜索引擎 |
 | Passport + JWT | ^11.0 | 身份认证 |
 | Swagger | ^7.4 | API 文档 |
 | Sharp | ^0.34 | 图片处理与压缩 |
 | Nodemailer | ^8.0 | 邮件发送 |
-| Helmet | ^8.1 | 安全中间件 |
-| class-validator | ^0.14 | 数据验证 |
-| Docker | - | 容器化部署 |
+| Helmet | ^8.1 | HTTP 安全头中间件 |
+| class-validator | ^0.14 | DTO 数据校验 |
+| sanitize-html | ^2.17 | XSS 内容清理 |
+| Docker | — | 容器化部署 |
 
 ---
 
@@ -58,193 +65,196 @@
 ```
 ┌──────────────────────────────────────────────────────┐
 │                   用户浏览器                          │
-│            Vue 3 + Tailwind CSS + Pinia              │
+│        Vue 3 + Tailwind CSS + Pinia + Vue Router      │
 └──────────────────┬───────────────────────────────────┘
-                   │ HTTP/REST API
+                   │ HTTP/REST API（/api 前缀）
                    ▼
 ┌──────────────────────────────────────────────────────┐
-│                 NestJS API 服务器                     │
+│               NestJS API 服务器（:3000）              │
 │                                                      │
-│  ┌────────────┐ ┌────────────┐ ┌──────────────────┐ │
-│  │ Controllers│ │  Services  │ │ Guards/Pipes/     │ │
-│  │ (26 模块)  │ │ (业务逻辑) │ │ Interceptors     │ │
-│  └────────────┘ └────────────┘ └──────────────────┘ │
+│  ┌──────────────┐ ┌──────────────┐ ┌──────────────┐ │
+│  │ Controllers  │ │   Services   │ │ Guards/Pipes/ │ │
+│  │ (28 模块)    │ │  (业务逻辑)  │ │ Interceptors  │ │
+│  └──────────────┘ └──────────────┘ └──────────────┘ │
 └────────┬──────────────┬──────────────┬───────────────┘
          │              │              │
          ▼              ▼              ▼
 ┌──────────────┐ ┌────────────┐ ┌───────────────┐
 │  MySQL 8.0   │ │  Redis 7   │ │ Elasticsearch │
-│  (26 张表)   │ │  (缓存)    │ │ 8.13 (搜索)   │
+│   (数据持久) │ │  (缓存)    │ │  8.13 (搜索)  │
 └──────────────┘ └────────────┘ └───────────────┘
 ```
+
+**全局管线（所有请求自动经过）：**
+- `ThrottlerGuard`：全局限流（120 次/分钟）
+- `SanitizePipe`：XSS 内容清理
+- `OperationLogInterceptor`：自动记录管理操作日志
+- `ResponseInterceptor`：统一响应格式封装
+- `HttpExceptionFilter`：统一异常处理
 
 ---
 
 ## 🎯 功能总览
 
-### 核心内容管理
-| 功能 | 说明 | 状态 |
-|------|------|------|
-| 📄 文章管理 | CRUD、草稿/发布/定时发布/归档、版本历史、导出 | ✅ |
-| 📂 分类管理 | 层级分类、排序、颜色标识、可见性控制 | ✅ |
-| 🏷️ 标签管理 | 标签云、文章计数、Slug 唯一性 | ✅ |
-| 📑 自定义页面 | 关于、简历、作品集等多类型页面 | ✅ |
-| 📚 文章系列 | 多篇文章组成系列、排序管理 | ✅ |
-| 🔍 全文搜索 | Elasticsearch 搜索 + 数据库降级方案 | ✅ |
-| 📅 文章归档 | 按年月分组的时间线归档 | ✅ |
+### 内容管理
+| 功能 | 说明 |
+|------|------|
+| 📄 文章管理 | CRUD、草稿/定时发布/归档、版本历史、Markdown 编辑、导出 |
+| 📂 分类管理 | 层级分类、排序、颜色标识、可见性控制 |
+| 🏷️ 标签管理 | 标签云、文章计数、Slug 唯一性 |
+| 📑 自定义页面 | 关于/简历/作品集等多类型页面，含友情链接管理 |
+| 📚 文章系列 | 多篇文章组成系列、排序管理 |
+| 🔍 全文搜索 | Elasticsearch 搜索 + 数据库降级方案，关键词高亮 |
+| 📅 文章归档 | 按年月分组的时间线归档 |
 
 ### 用户与认证
-| 功能 | 说明 | 状态 |
-|------|------|------|
-| 🔐 JWT 认证 | 注册/登录、bcrypt 密码加密、角色控制 | ✅ |
-| 👤 用户管理 | 个人资料、头像上传压缩、密码修改 | ✅ |
-| 🛡️ 权限控制 | super_admin/admin/author/user 四级角色 | ✅ |
-| ⏱️ 请求限流 | 登录/注册接口独立限流、全局限流 | ✅ |
+| 功能 | 说明 |
+|------|------|
+| 🔐 JWT 认证 | 登录/注册/登出，Cookie 方式携带 Token |
+| 📧 邮箱验证注册 | 注册前发送验证码，校验后方可完成注册 |
+| 🔗 OAuth 登录 | GitHub / Google 第三方登录（可选） |
+| 🛡️ 二次认证（Step-Up） | 高危操作（如数据库管理、备份恢复）需二次密码确认 |
+| 👤 用户中心 | 个人资料、头像上传压缩、密码修改 |
+| 🎭 四级角色 | super_admin / admin / author / user |
 
 ### 社区互动
-| 功能 | 说明 | 状态 |
-|------|------|------|
-| 💬 评论系统 | 嵌套回复、审核管理、IP 追踪 | ✅ |
-| 📖 留言板 | 访客留言、审核、管理员回复 | ✅ |
-| ⭐ 文章收藏 | 收藏/取消收藏、批量检查 | ✅ |
-| 🔔 站内通知 | 评论回复通知、系统通知、已读管理 | ✅ |
-| 📢 公告管理 | 发布/置顶公告 | ✅ |
+| 功能 | 说明 |
+|------|------|
+| 💬 评论系统 | 嵌套回复（树形结构）、审核管理、IP 追踪 |
+| 📖 留言板 | 访客留言、审核、管理员回复、邮箱脱敏 |
+| ⭐ 文章收藏 | 收藏/取消收藏、批量检查状态 |
+| 🔔 站内通知 | 评论回复/系统/公告等通知、未读徽标、批量已读 |
+| 📢 公告管理 | 发布/置顶/管理公告 |
 
 ### 运营与变现
-| 功能 | 说明 | 状态 |
-|------|------|------|
-| 💰 付费内容 | 文章定价、预览百分比、购买记录 | ✅ |
-| 📧 邮件订阅 | 订阅确认、退订、新文章通知推送 | ✅ |
-| 🔗 友情链接 | 链接展示、申请提交、审核管理 | ✅ |
-| 📊 访客统计 | PV/UV、设备/浏览器/OS、来源分析 | ✅ |
+| 功能 | 说明 |
+|------|------|
+| 💰 付费内容 | 文章定价、可配置预览比例（默认 30%）、购买记录 |
+| 📧 邮件订阅 | 双重确认订阅、退订、新文章推送通知 |
+| 🔗 友情链接 | 展示、申请提交、审核管理 |
+| 📊 访客统计 | PV/UV、设备/浏览器/OS、热门页面、来源分析 |
+| 📰 RSS/Atom 订阅 | 自动生成标准订阅源，支持 Redis 缓存 |
 
 ### 系统管理
-| 功能 | 说明 | 状态 |
-|------|------|------|
-| ⚙️ 站点设置 | 标题/描述/Logo/SEO/社交链接等 | ✅ |
-| 🌐 SEO 优化 | OG 标签、Sitemap 生成、Meta 管理 | ✅ |
-| 🌍 国际化 (i18n) | 中文/英文切换、自定义翻译覆盖 | ✅ |
-| 💾 数据备份 | MySQL 备份/恢复/下载/删除 | ✅ |
-| 📝 操作日志 | 全局自动记录管理操作审计日志 | ✅ |
-| 🏥 健康检查 | MySQL + Redis 连通性检测 | ✅ |
-| 🤝 多人协作 | 草稿协作编辑、权限管理、变更记录 | ✅ |
-| 🖼️ 媒体库 | 文件上传、SHA256 去重、类型校验 | ✅ |
-| 📰 仪表盘 | 文章/评论/浏览统计、近期文章 | ✅ |
+| 功能 | 说明 |
+|------|------|
+| ⚙️ 站点设置 | 标题/描述/Logo/SEO/社交链接等 Key-Value 配置 |
+| 🌐 SEO 优化 | OG 标签、Sitemap 生成、Meta 管理 |
+| 🌍 国际化（i18n） | zh-CN / en-US 切换，内置翻译 + 数据库自定义覆盖 |
+| 💾 数据备份 | 基于 mysqldump 的备份/恢复/下载/删除（需二次认证） |
+| 📝 操作日志 | 全局自动记录管理操作审计日志 |
+| 🏥 健康检查 | MySQL + Redis 连通性检测 |
+| 🤝 多人协作 | 草稿协作编辑、协作者权限管理、变更历史 |
+| 🖼️ 媒体库 | 文件上传、SHA256 去重、类型/大小校验 |
+| 🗄️ 数据库管理 | Super Admin 专属，可直接浏览/增删改数据表行（需二次认证） |
+| �� 仪表盘 | 文章/评论/浏览统计，近期文章概览 |
 
 ---
 
-## 🖥 前端功能详情
+## 🖥 前端功能
 
 ### 公共页面
 
-#### 🏠 首页 (HomeView)
-- **轮播图**：Top 5 热门文章自动轮播（5 秒间隔，悬停暂停）
-- **文章列表**：最新 10 篇已发布文章，双列瀑布流布局
-- **响应式设计**：移动端单列、桌面端双列
+#### 🏠 首页
+- 热门文章轮播（Top 5，5 秒自动轮播，悬停暂停）
+- 最新文章双列瀑布流，移动端单列响应式布局
 - 懒加载图片、空状态提示
 
-#### 📄 文章详情 (ArticleDetailView)
-- **面包屑导航** + 标题/摘要/作者信息
-- **元信息展示**：发布时间、预计阅读时间、阅读量、点赞、评论数
-- **分享功能**：原生分享、微博、X/Twitter、复制链接
-- **目录导航**：根据 h2/h3 标题生成，移动端可折叠
-- **阅读进度条**：页面顶部进度指示器
-- **付费内容门控**：未购买显示价格与购买按钮
-- **相关文章推荐**：基于标签权重 (10)、分类权重 (4)、阅读量排序
-- **侧栏热门文章**：Top 4 高阅读量文章
-- **收藏按钮**：登录用户可收藏/取消
-- **评论区**：支持嵌套回复，管理员可直接回复
+#### 📄 文章详情
+- 面包屑导航、标题/摘要/作者/发布时间/阅读时间/阅读量/点赞/评论数
+- 分享功能（原生分享、微博、X/Twitter、复制链接）
+- 目录导航（根据 h2/h3 自动生成，移动端可折叠）
+- 页面顶部阅读进度条
+- 付费内容门控（未购买显示价格与购买按钮）
+- 相关文章推荐（基于标签/分类/阅读量权重排序）
+- 侧栏热门文章（Top 4）
+- 收藏按钮（登录用户可收藏/取消）
+- 评论区（支持嵌套回复）
 
-#### 🏷️ 分类/标签浏览 (CategoriesView)
+#### 🏷️ 分类/标签浏览
 - 标签云展示，显示文章计数
-- 点击标签筛选对应文章列表
-- 卡片网格布局
+- 点击标签筛选对应文章列表，卡片网格布局
 
-#### 📅 文章归档 (ArchivesView)
-- **侧栏导航**：年份/月份分组，逆序排列
-- **主内容区**：选中月份的文章列表 + 分页
-- URL 参数同步 (`?year=2024&month=1`)
+#### 📅 文章归档
+- 侧栏年份/月份分组导航（逆序排列）
+- 主内容区展示选中月份的文章列表 + 分页
+- URL 参数同步（`?year=2024&month=1`）
 
-#### 🔍 搜索 (SearchView)
+#### 🔍 搜索
 - 实时搜索（260ms 防抖）
-- 关键词高亮显示
-- 分页（每页 12 篇）
-- 可分享的搜索 URL (`?q=keyword`)
+- 关键词高亮、分页（每页 12 篇）
+- 可分享的搜索链接（`?q=keyword`）
 
-#### 📖 留言板 (GuestbookView)
-- 装饰性背景 + 浮动动画
+#### 📖 留言板
 - 留言时间线（按日期分组）
 - 用户头像（基于昵称哈希的彩色头像）
-- 留言表单：昵称、邮箱、内容（1000 字限制）
-- 实时字符计数、乐观更新
+- 留言表单（昵称、邮箱、内容，1000 字限制，实时计数）
+- 乐观更新、邮箱脱敏显示
 
-#### ℹ️ 关于页面 (AboutView)
-- 自定义页面内容渲染
-- 支持 Markdown 格式
-- 页面类型标签（关于/自定义/简历/作品集）
+#### ℹ️ 关于页面
+- Markdown 内容渲染，支持 about/custom/resume/portfolio 类型
 
-#### 📧 邮件订阅确认 (SubscriptionStatusView)
-- Token 验证、成功/失败提示
-- 退订页面
+#### 📧 邮件订阅确认
+- Token 验证确认订阅、退订操作、成功/失败提示
 
-### 用户中心 (ProfileView)
+### 用户中心（需登录）
+- 个人资料（首字母头像降级显示）
+- 编辑资料：上传头像（WebP 压缩）、修改昵称/简介
+- 修改密码（旧密码验证、新密码强度指示器）
+- 我的收藏（收藏文章列表，可跳转原文）
+- 通知中心（未读徽标、回复/点赞/系统通知、已读/删除）
+- 已购内容（付费文章购买记录）
 
-- **个人资料**：头像（首字母头像降级）、昵称、邮箱、简介
-- **编辑资料**：上传头像（FormData）、修改个人信息
-- **修改密码**：旧密码验证、新密码强度指示器（弱/中/强）
-- **我的收藏**：收藏文章列表，可跳转原文
-- **通知中心**：未读徽标、回复/点赞/系统通知、已读/删除
-- **已购内容**：付费文章购买记录
+### 管理后台（需登录 + 角色权限）
 
-### 管理后台
-
-#### 📊 仪表盘 (DashboardView)
+#### 📊 仪表盘（Admin+）
 - 文章总数、总阅读量、总评论数统计卡片
-- 近期更新文章表格（最近 5 篇）
+- 近期更新文章表格
 
-#### 📝 文章管理 (ArticleManageView)
-三个标签页：文章 / 分类 / 标签
+#### 📝 文章管理（Author+）
+- 文章列表：搜索 + 状态筛选（草稿/已发布/定时/归档）
+- 文章编辑：标题、Slug 自动生成、摘要、Markdown 内容、封面图
+- 分类选择、标签多选
+- 发布状态：草稿 / 立即发布 / 定时发布
+- SEO 字段：seoTitle、seoDescription、seoKeywords
+- Markdown 内容实时预览
+- 分类管理（名称/Slug/描述/颜色）
+- 标签管理（名称/Slug/文章计数）
 
-**文章管理**：
-- 搜索 + 状态筛选（草稿/已发布/定时/归档）
-- 文章表单：标题、Slug（自动生成）、摘要、Markdown 内容
-- 封面图、分类选择、标签多选
-- 发布状态：草稿/立即发布/定时发布
-- SEO 字段：标题、描述、关键词
-- Markdown 内容预览
-
-**分类管理**：名称、Slug、描述、颜色选择器
-**标签管理**：名称、Slug、文章计数
-
-#### 💬 评论管理 (CommentManageView)
+#### 💬 评论管理（Admin+）
 - 状态筛选（已通过/待审核/垃圾/已拒绝）
 - 统计：总评论数、待审核数、未回复数
-- 审核操作：通过/拒绝/标记垃圾
-- 内联回复表单
+- 审核操作：通过/拒绝/标记垃圾/内联回复
 
-#### 📑 页面管理 (PageManageView)
+#### 📑 页面管理（Admin+）
 - 已发布/草稿标签页
-- 页面表单：标题、Slug、类型（关于/自定义/简历/作品集）
-- Markdown 内容 + 预览、摘要、可见性、SEO 字段
+- 页面编辑：标题/Slug/类型/Markdown 内容/预览/可见性/SEO 字段
 
-#### ⚙️ 站点设置 (SettingsView)
-- **基础设置**：标题、副标题、描述、SEO 关键词、作者、Logo、Favicon、OG 图片、ICP 备案、版权信息
-- **社交链接**：动态添加/删除（名称 + URL）
-- **关于页设置**：技术栈标签、时间线条目、联系邮箱、GitHub 地址
+#### ⚙️ 站点设置（Admin+）
+- 基础设置：标题、副标题、描述、SEO 关键词、作者、Logo、Favicon、OG 图片、ICP 备案、版权信息
+- 社交链接：动态添加/删除
+- 关于页设置：技术栈标签、时间线条目、联系邮箱、GitHub 地址
 
-#### 🔧 技术管理 (TechnicalView)
-- **安全信息**：SQL 注入/XSS/CSRF/暴力破解防护说明
-- **备份管理**：创建/下载/恢复/删除数据库备份
-- **Sitemap**：生成与查看站点地图
-- **公告管理**：创建/编辑/删除/发布/置顶公告
-- **国际化**：语言切换（中文/英文）
-- **访客统计**：今日 PV/UV、平均停留、热门页面、来源、设备分布
+#### 🔧 技术管理（Admin+）
+- 安全信息：SQL 注入/XSS/CSRF/暴力破解防护说明
+- 备份管理：创建/下载/恢复/删除数据库备份（恢复操作需二次认证）
+- Sitemap：生成与查看站点地图
+- 公告管理：创建/编辑/删除/发布/置顶
+- 国际化：语言切换（中文/英文）
+- 访客统计：今日 PV/UV、平均停留时长、热门页面、来源分析、设备分布
 
-### 状态管理 (Pinia Stores)
+#### 🗄️ 数据库管理（Super Admin 专属）
+- 数据库概览（表数量/大小/引擎信息）
+- 数据表列表（支持按名称/引擎搜索筛选）
+- 表详情（字段、索引、外键结构）
+- 分页读取任意数据表行，支持关键字搜索
+- 增删改数据行（所有写操作均需二次认证）
+
+### 状态管理（Pinia Stores）
 
 | Store | 职责 |
 |-------|------|
-| `auth` | JWT Token、用户信息、登录/注册/登出 |
+| `auth` | JWT Token、用户信息、登录/注册/登出/二次认证 |
 | `content` | 文章/分类/标签 CRUD、公共内容加载 |
 | `ecosystem` | 归档、搜索、付费内容、购买记录 |
 | `user` | 个人资料、收藏、通知、头像上传 |
@@ -255,296 +265,320 @@
 
 ---
 
-## 🔌 后端 API 模块详情
+## 🔌 后端模块
 
-### 1. 认证模块 (Auth)
-| 端点 | 方法 | 说明 | 认证 |
+### 1. 认证模块（Auth）
+
+| 端点 | 方法 | 说明 | 限流 |
 |------|------|------|------|
-| `/auth/register` | POST | 用户注册（限流 3/分钟） | 无 |
-| `/auth/login` | POST | 用户登录（限流 5/分钟） | 无 |
-| `/auth/me` | GET | 获取当前用户信息 | JWT |
-| `/auth/admin/me` | GET | 获取管理员信息 | Admin |
+| `/api/auth/register/check-availability` | POST | 检查用户名/邮箱可用性 | 20/分钟 |
+| `/api/auth/register/send-code` | POST | 发送邮箱注册验证码 | 6/分钟 |
+| `/api/auth/register/verify-code` | POST | 校验注册验证码 | 12/分钟 |
+| `/api/auth/register` | POST | 完成注册 | 3/分钟 |
+| `/api/auth/login` | POST | 账号登录 | 5/分钟 |
+| `/api/auth/logout` | POST | 退出登录 | — |
+| `/api/auth/step-up` | POST | 二次认证（高危操作前） | 5/分钟 |
+| `/api/auth/me` | GET | 获取当前用户信息 | — |
+| `/api/auth/admin/me` | GET | 获取当前管理员信息 | — |
+| `/api/auth/oauth/providers` | GET | 查询 OAuth 提供商状态 | — |
+| `/api/auth/github` | GET | 发起 GitHub OAuth | — |
+| `/api/auth/github/callback` | GET | GitHub OAuth 回调 | — |
+| `/api/auth/google` | GET | 发起 Google OAuth | — |
+| `/api/auth/google/callback` | GET | Google OAuth 回调 | — |
 
-- JWT Token 认证，bcrypt 10 轮加密
-- 不区分大小写的邮箱登录
-- 账户激活状态检测
+- JWT Token 写入 HttpOnly Cookie
+- bcrypt 10 轮密码加密
+- 不区分大小写的邮箱匹配
 
-### 2. 文章模块 (Articles)
-| 端点 | 方法 | 说明 | 认证 |
-|------|------|------|------|
-| `/articles` | GET | 公开文章列表（分页/筛选） | 无 |
-| `/articles/:slug` | GET | 文章详情（自动增加阅读量） | 无 |
-| `/admin/articles` | POST | 创建文章 | Author |
-| `/admin/articles` | GET | 管理文章列表 | Author |
-| `/admin/articles/:id` | GET | 获取文章详情 | Author |
-| `/admin/articles/:id` | PATCH | 更新文章 | Author |
-| `/admin/articles/:id` | DELETE | 软删除（归档） | Author |
-| `/admin/articles/:id/permanent` | DELETE | 永久删除 | Author |
-| `/admin/articles/:id/export` | GET | 导出（Markdown/JSON） | Author |
+### 2. 文章模块（Articles）
 
-**文章版本管理**：
-| 端点 | 方法 | 说明 | 认证 |
-|------|------|------|------|
-| `/admin/articles/:id/versions` | GET | 版本列表 | Author |
-| `/admin/articles/:id/versions/:versionId` | GET | 版本详情 | Author |
-| `/admin/articles/:id/versions/:versionId/restore` | POST | 恢复版本 | Author |
+| 端点 | 说明 | 角色 |
+|------|------|------|
+| `GET /api/articles` | 公开文章列表（分页/筛选/排序） | 无 |
+| `GET /api/articles/:slug` | 文章详情（自动计阅读量） | 无 |
+| `POST /api/admin/articles` | 创建文章 | Author+ |
+| `GET /api/admin/articles` | 管理文章列表 | Author+ |
+| `GET /api/admin/articles/:id` | 获取文章详情 | Author+ |
+| `PATCH /api/admin/articles/:id` | 更新文章 | Author+ |
+| `DELETE /api/admin/articles/:id` | 软删除（归档） | Author+ |
+| `DELETE /api/admin/articles/:id/permanent` | 永久删除 | Author+ |
+| `GET /api/admin/articles/:id/export` | 导出（Markdown/JSON） | Author+ |
+| `GET /api/admin/articles/:id/versions` | 版本列表 | Author+ |
+| `GET /api/admin/articles/:id/versions/:versionId` | 版本详情 | Author+ |
+| `POST /api/admin/articles/:id/versions/:versionId/restore` | 恢复版本 | Author+ |
 
 - 状态：draft / scheduled / published / archived
 - 可见性：public / private / password
-- 定时发布、自动发布
-- SEO 字段（seoTitle, seoDescription, seoKeywords）
-- 封面图、分类和标签关联
+- 定时发布自动触发
 
-### 3. 分类模块 (Categories)
-| 端点 | 方法 | 说明 | 认证 |
-|------|------|------|------|
-| `/categories` | GET | 公开分类列表（仅可见） | 无 |
-| `/admin/categories` | GET | 全部分类列表 | Admin |
-| `/admin/categories/:id` | GET | 分类详情 | Admin |
-| `/admin/categories` | POST | 创建分类 | Admin |
-| `/admin/categories/:id` | PATCH | 更新分类 | Admin |
-| `/admin/categories/:id` | DELETE | 删除分类（使用中禁止删除） | Admin |
+### 3. 分类模块（Categories）
 
-- Slug 唯一性、排序、颜色标识、可见性控制
+| 端点 | 说明 | 角色 |
+|------|------|------|
+| `GET /api/categories` | 公开分类列表 | 无 |
+| `GET/POST/PATCH/DELETE /api/admin/categories` | 分类管理 CRUD | Admin+ |
 
-### 4. 标签模块 (Tags)
-| 端点 | 方法 | 说明 | 认证 |
-|------|------|------|------|
-| `/tags` | GET | 公开标签列表 | 无 |
-| `/admin/tags` | GET | 管理标签列表 | Admin |
-| `/admin/tags/:id` | GET | 标签详情 | Admin |
-| `/admin/tags` | POST | 创建标签 | Admin |
-| `/admin/tags/:id` | PATCH | 更新标签 | Admin |
-| `/admin/tags/:id` | DELETE | 删除标签（使用中禁止删除） | Admin |
+- Slug 唯一性、可见性控制、使用中禁止删除
 
-### 5. 评论模块 (Comments)
-| 端点 | 方法 | 说明 | 认证 |
-|------|------|------|------|
-| `/articles/:articleId/comments` | GET | 获取已审核评论（树形） | 无 |
-| `/articles/:articleId/comments` | POST | 发表评论（限流 5/分钟） | 可选 |
-| `/admin/comments` | GET | 管理评论列表（按状态筛选） | Admin |
-| `/admin/comments/:id/status` | PUT | 审核评论 | Admin |
-| `/admin/comments/:id/reply` | POST | 管理员回复 | Admin |
-| `/admin/comments/:id` | DELETE | 删除评论（含子评论） | Admin |
+### 4. 标签模块（Tags）
 
-- 嵌套评论（树形结构）、自动审核（默认待审核）
-- IP/UserAgent 追踪、评论计数同步
-- 新评论通知作者、回复通知评论者
+| 端点 | 说明 | 角色 |
+|------|------|------|
+| `GET /api/tags` | 公开标签列表 | 无 |
+| `GET/POST/PATCH/DELETE /api/admin/tags` | 标签管理 CRUD | Admin+ |
 
-### 6. 自定义页面模块 (Pages)
-| 端点 | 方法 | 说明 | 认证 |
-|------|------|------|------|
-| `/pages/about` | GET | 获取关于页面 | 无 |
-| `/pages/:slug` | GET | 获取页面详情 | 无 |
-| `/friend-links` | GET | 获取已审核友链 | 无 |
-| `/friend-links/applications` | POST | 申请友链 | 无 |
-| `/admin/pages` | POST/GET/PATCH/DELETE | 页面 CRUD | Admin |
-| `/admin/friend-links` | POST/GET/PATCH/DELETE | 友链 CRUD | Admin |
+### 5. 评论模块（Comments）
+
+| 端点 | 说明 | 角色 |
+|------|------|------|
+| `GET /api/articles/:articleId/comments` | 已审核评论（树形） | 无 |
+| `POST /api/articles/:articleId/comments` | 发表评论 | 可选（限流 5/分钟） |
+| `GET /api/admin/comments` | 管理评论列表 | Admin+ |
+| `PUT /api/admin/comments/:id/status` | 审核评论 | Admin+ |
+| `POST /api/admin/comments/:id/reply` | 管理员回复 | Admin+ |
+| `DELETE /api/admin/comments/:id` | 删除评论（含子评论） | Admin+ |
+
+- 嵌套评论树形结构、IP/UA 追踪
+- 新评论自动通知作者，回复自动通知评论者
+
+### 6. 留言板模块（Guestbook）
+
+| 端点 | 说明 | 角色 |
+|------|------|------|
+| `GET /api/guestbook` | 已审核留言（树形/分页） | 无 |
+| `POST /api/guestbook` | 提交留言 | 无（限流 5/分钟） |
+| `GET /api/admin/guestbook` | 管理留言列表 | Admin+ |
+| `PUT /api/admin/guestbook/:id/status` | 审核留言 | Admin+ |
+| `POST /api/admin/guestbook/:id/reply` | 管理员回复 | Admin+ |
+| `DELETE /api/admin/guestbook/:id` | 删除留言 | Admin+ |
+
+### 7. 自定义页面与友链（Pages）
+
+| 端点 | 说明 | 角色 |
+|------|------|------|
+| `GET /api/pages/about` | 获取关于页面 | 无 |
+| `GET /api/pages/:slug` | 页面详情 | 无 |
+| `GET /api/friend-links` | 已审核友链列表 | 无 |
+| `POST /api/friend-links/applications` | 申请友链 | 无 |
+| `CRUD /api/admin/pages` | 页面管理 | Admin+ |
+| `CRUD /api/admin/friend-links` | 友链管理 | Admin+ |
 
 - 页面类型：about / custom / resume / portfolio
-- 仅允许一个 About 页面
-- 友链申请与审核流程
 
-### 7. 文章系列模块 (Article Series)
-| 端点 | 方法 | 说明 | 认证 |
-|------|------|------|------|
-| `/series` | GET | 公开系列列表 | 无 |
-| `/series/:slug` | GET | 系列详情（含文章列表） | 无 |
-| `/admin/series` | POST/GET/PATCH/DELETE | 系列 CRUD | Author |
+### 8. 文章系列（Article Series）
 
-- Slug 唯一性、排序管理、权限检查
+| 端点 | 说明 | 角色 |
+|------|------|------|
+| `GET /api/series` | 公开系列列表 | 无 |
+| `GET /api/series/:slug` | 系列详情（含文章列表） | 无 |
+| `CRUD /api/admin/series` | 系列管理 | Author+ |
 
-### 8. 搜索模块 (Search)
-| 端点 | 方法 | 说明 | 认证 |
-|------|------|------|------|
-| `/search` | GET | 全文搜索 | 无 |
-| `/admin/search/rebuild-index` | POST | 重建索引 | Admin |
+### 9. 搜索模块（Search）
 
-- Elasticsearch 全文搜索 + 数据库降级方案
-- 关键词高亮、分类筛选、相关性评分
-- 批量索引（每批 100 篇）、自动恢复与冷却
+| 端点 | 说明 | 角色 |
+|------|------|------|
+| `GET /api/search` | 全文搜索（关键词/分类/分页） | 无 |
+| `POST /api/admin/search/rebuild-index` | 重建 ES 索引 | Admin+ |
 
-### 9. 归档模块 (Archives)
-| 端点 | 方法 | 说明 | 认证 |
-|------|------|------|------|
-| `/archives` | GET | 归档摘要（年/月/计数） | 无 |
-| `/archives/articles` | GET | 指定月份的文章列表 | 无 |
+- Elasticsearch 全文搜索，Elasticsearch 不可用时自动降级到数据库 LIKE 搜索
+- 批量索引（每批 100 篇），关键词高亮
 
-### 10. 留言板模块 (Guestbook)
-| 端点 | 方法 | 说明 | 认证 |
-|------|------|------|------|
-| `/guestbook` | GET | 已审核留言（树形/分页） | 无 |
-| `/guestbook` | POST | 提交留言（限流 5/分钟） | 无 |
-| `/admin/guestbook` | GET | 管理留言列表 | Admin |
-| `/admin/guestbook/:id/status` | PUT | 审核留言 | Admin |
-| `/admin/guestbook/:id/reply` | POST | 管理员回复 | Admin |
-| `/admin/guestbook/:id` | DELETE | 删除留言 | Admin |
+### 10. 归档模块（Archives）
 
-- 邮箱/IP 脱敏显示、嵌套回复、XSS 防护
+| 端点 | 说明 | 角色 |
+|------|------|------|
+| `GET /api/archives` | 归档摘要（年/月/计数） | 无 |
+| `GET /api/archives/articles` | 指定月份文章列表 | 无 |
 
-### 11. 收藏模块 (Favorites)
-| 端点 | 方法 | 说明 | 认证 |
-|------|------|------|------|
-| `/favorites/:articleId` | POST | 收藏文章 | JWT |
-| `/favorites/:articleId` | DELETE | 取消收藏 | JWT |
-| `/favorites/:articleId/check` | GET | 检查收藏状态 | JWT |
-| `/favorites/batch-check` | POST | 批量检查收藏状态 | JWT |
+### 11. 收藏模块（Favorites）
 
-### 12. 通知模块 (User Notifications)
-| 端点 | 方法 | 说明 | 认证 |
-|------|------|------|------|
-| `/notifications` | GET | 我的通知列表（分页） | JWT |
-| `/notifications/unread-count` | GET | 未读数量 | JWT |
-| `/notifications/:id/read` | PUT | 标记已读 | JWT |
-| `/notifications/read-all` | PUT | 全部已读 | JWT |
-| `/notifications/:id` | DELETE | 删除通知 | JWT |
-| `/admin/notifications/broadcast` | POST | 广播通知 | Admin |
+| 端点 | 说明 | 角色 |
+|------|------|------|
+| `POST /api/favorites/:articleId` | 收藏文章 | JWT |
+| `DELETE /api/favorites/:articleId` | 取消收藏 | JWT |
+| `GET /api/favorites/:articleId/check` | 检查收藏状态 | JWT |
+| `POST /api/favorites/batch-check` | 批量检查收藏状态 | JWT |
+
+### 12. 站内通知（User Notifications）
+
+| 端点 | 说明 | 角色 |
+|------|------|------|
+| `GET /api/notifications` | 我的通知列表（分页） | JWT |
+| `GET /api/notifications/unread-count` | 未读数量 | JWT |
+| `PUT /api/notifications/:id/read` | 标记已读 | JWT |
+| `PUT /api/notifications/read-all` | 全部标记已读 | JWT |
+| `DELETE /api/notifications/:id` | 删除通知 | JWT |
+| `POST /api/admin/notifications/broadcast` | 广播通知给所有用户 | Admin+ |
 
 - 通知类型：comment_reply / like / system / announcement / favorite
 
-### 13. 邮件订阅模块 (Notifications/Subscriptions)
-| 端点 | 方法 | 说明 | 认证 |
-|------|------|------|------|
-| `/subscriptions` | POST | 邮件订阅 | 无 |
-| `/subscriptions/confirm/:token` | GET | 确认订阅 | 无 |
-| `/subscriptions/unsubscribe/:token` | GET | 退订 | 无 |
-| `/admin/notifications/send` | POST | 发送邮件 | Admin |
-| `/admin/notifications/notify-subscribers` | POST | 新文章推送 | Admin |
-| `/admin/notifications/retry-failed` | POST | 重试失败邮件 | Admin |
-| `/admin/notifications/subscribers` | GET | 订阅者列表 | Admin |
+### 13. 邮件订阅与通知（Notifications）
 
-- SMTP 邮件发送、Token 验证、最多 3 次重试
+| 端点 | 说明 | 角色 |
+|------|------|------|
+| `POST /api/subscriptions` | 发起邮件订阅 | 无 |
+| `GET /api/subscriptions/confirm/:token` | 确认订阅 | 无 |
+| `GET /api/subscriptions/unsubscribe/:token` | 退订 | 无 |
+| `POST /api/admin/notifications/send` | 发送单封邮件 | Admin+ |
+| `POST /api/admin/notifications/notify-subscribers` | 新文章推送给所有订阅者 | Admin+ |
+| `POST /api/admin/notifications/retry-failed` | 重试失败邮件 | Admin+ |
+| `GET /api/admin/notifications/subscribers` | 订阅者列表 | Admin+ |
 
-### 14. 付费内容模块 (Paid Content)
-| 端点 | 方法 | 说明 | 认证 |
-|------|------|------|------|
-| `/paid-content/:articleId/info` | GET | 获取定价信息 | 可选 |
-| `/paid-content/:articleId/content` | GET | 获取内容（未购显示预览） | 可选 |
-| `/paid-content/purchase` | POST | 购买文章 | JWT |
-| `/paid-content/:articleId/check` | GET | 检查购买状态 | JWT |
-| `/paid-content/my-purchases` | GET | 我的购买记录 | JWT |
-| `/admin/paid-content/:articleId` | PUT | 设置付费内容 | Author |
-| `/admin/paid-content/:articleId` | DELETE | 取消付费 | Author |
-| `/admin/paid-content/:articleId/purchases` | GET | 购买记录 | Author |
+- SMTP 邮件发送、Token 验证双重确认、最多 3 次重试
 
-- 可配置预览百分比（默认 30%）、购买记录追踪
+### 14. 付费内容（Paid Content）
 
-### 15. 用户模块 (Users)
-| 端点 | 方法 | 说明 | 认证 |
-|------|------|------|------|
-| `/users/profile` | GET | 获取个人资料 | JWT |
-| `/users/profile` | PUT | 更新个人资料 | JWT |
-| `/users/avatar` | POST | 上传头像 | JWT |
-| `/users/password` | PUT | 修改密码 | JWT |
-| `/users/favorites` | GET | 收藏文章列表 | JWT |
+| 端点 | 说明 | 角色 |
+|------|------|------|
+| `GET /api/paid-content/:articleId/info` | 获取定价信息 | 可选 |
+| `GET /api/paid-content/:articleId/content` | 获取内容（未购显示预览） | 可选 |
+| `POST /api/paid-content/purchase` | 购买文章 | JWT |
+| `GET /api/paid-content/:articleId/check` | 检查购买状态 | JWT |
+| `GET /api/paid-content/my-purchases` | 我的购买记录 | JWT |
+| `PUT /api/admin/paid-content/:articleId` | 设置付费（价格/预览比例） | Author+ |
+| `DELETE /api/admin/paid-content/:articleId` | 取消付费 | Author+ |
+| `GET /api/admin/paid-content/:articleId/purchases` | 购买记录统计 | Author+ |
+
+### 15. 用户中心（Users）
+
+| 端点 | 说明 | 角色 |
+|------|------|------|
+| `GET /api/users/profile` | 获取个人资料 | JWT |
+| `PUT /api/users/profile` | 更新个人资料 | JWT |
+| `POST /api/users/avatar` | 上传头像 | JWT |
+| `PUT /api/users/password` | 修改密码 | JWT |
+| `GET /api/users/favorites` | 我的收藏文章列表 | JWT |
 
 - 头像压缩：WebP 格式、最大 1024px、质量 85%、自动 EXIF 旋转
 
-### 16. 公告模块 (Announcements)
-| 端点 | 方法 | 说明 | 认证 |
-|------|------|------|------|
-| `/announcements` | GET | 已发布公告列表 | 无 |
-| `/announcements/pinned` | GET | 最新置顶公告 | 无 |
-| `/admin/announcements` | POST/GET/PUT/DELETE | 公告 CRUD | Admin |
+### 16. 公告（Announcements）
 
-### 17. 站点设置模块 (Settings)
-| 端点 | 方法 | 说明 | 认证 |
-|------|------|------|------|
-| `/settings` | GET | 公开设置 | 无 |
-| `/admin/settings` | GET | 所有设置 | Admin |
-| `/admin/settings/:key` | GET | 单个设置 | Admin |
-| `/admin/settings` | PUT | 更新设置 | Admin |
-| `/admin/settings/batch` | PUT | 批量更新 | Admin |
-| `/admin/settings/:key` | DELETE | 删除设置 | Admin |
+| 端点 | 说明 | 角色 |
+|------|------|------|
+| `GET /api/announcements` | 已发布公告列表 | 无 |
+| `GET /api/announcements/pinned` | 最新置顶公告 | 无 |
+| `CRUD /api/admin/announcements` | 公告管理 | Admin+ |
+
+### 17. 站点设置（Settings）
+
+| 端点 | 说明 | 角色 |
+|------|------|------|
+| `GET /api/settings` | 公开设置 | 无 |
+| `GET/PUT/DELETE /api/admin/settings` | 设置管理 | Admin+ |
+| `PUT /api/admin/settings/batch` | 批量更新设置 | Admin+ |
 
 - Key-Value 存储、类型标注、分组管理、公开/私有标志
 
 ### 18. SEO 模块
-| 端点 | 方法 | 说明 | 认证 |
-|------|------|------|------|
-| `/seo/site` | GET | 站点 SEO 设置 | 无 |
-| `/seo/articles/:slug` | GET | 文章 SEO Meta | 无 |
-| `/seo/pages/:slug` | GET | 页面 SEO Meta | 无 |
-| `/seo/sitemap` | GET | 生成 Sitemap JSON | 无 |
 
-- OpenGraph 标签、作者归属、分类信息、发布日期
+| 端点 | 说明 | 角色 |
+|------|------|------|
+| `GET /api/seo/site` | 站点 SEO 配置 | 无 |
+| `GET /api/seo/articles/:slug` | 文章 SEO Meta | 无 |
+| `GET /api/seo/pages/:slug` | 页面 SEO Meta | 无 |
+| `GET /api/seo/sitemap` | 生成 Sitemap JSON | 无 |
 
-### 19. 国际化模块 (i18n)
-| 端点 | 方法 | 说明 | 认证 |
-|------|------|------|------|
-| `/i18n/locales` | GET | 支持的语言列表 | 无 |
-| `/i18n/default` | GET | 默认语言 | 无 |
-| `/i18n/translations/:locale` | GET | 翻译包 | 无 |
-| `/i18n/default` | PUT | 设置默认语言 | Admin |
+- OpenGraph 标签、作者归属、发布日期、分类信息
 
-- 支持 zh-CN / en-US、内置翻译 + 数据库自定义覆盖
+### 19. 国际化（i18n）
 
-### 20. 仪表盘模块 (Dashboard)
-| 端点 | 方法 | 说明 | 认证 |
-|------|------|------|------|
-| `/admin/dashboard/stats` | GET | 综合统计 | Admin |
-| `/admin/dashboard/recent-articles` | GET | 近期文章 | Admin |
+| 端点 | 说明 | 角色 |
+|------|------|------|
+| `GET /api/i18n/locales` | 支持的语言列表 | 无 |
+| `GET /api/i18n/default` | 默认语言 | 无 |
+| `GET /api/i18n/translations/:locale` | 翻译包 | 无 |
+| `PUT /api/i18n/default` | 设置默认语言 | Admin+ |
 
-- 文章/浏览/评论/分类/标签/草稿/页面/友链计数
+- 支持 zh-CN / en-US，内置翻译 + 数据库自定义覆盖
 
-### 21. 访客统计模块 (Visitor Stats)
-| 端点 | 方法 | 说明 | 认证 |
-|------|------|------|------|
-| `/stats/visit` | POST | 记录访问 | 无 |
-| `/admin/stats/today` | GET | 今日统计 | Admin |
-| `/admin/stats/range` | GET | 日期范围统计 | Admin |
-| `/admin/stats/top-pages` | GET | 热门页面 | Admin |
-| `/admin/stats/referers` | GET | 来源统计 | Admin |
-| `/admin/stats/devices` | GET | 设备分布 | Admin |
+### 20. 仪表盘（Dashboard）
 
-- IP/UserAgent 追踪、设备/浏览器/OS 识别、来源分析
+| 端点 | 说明 | 角色 |
+|------|------|------|
+| `GET /api/admin/dashboard/stats` | 综合统计数据 | Admin+ |
+| `GET /api/admin/dashboard/recent-articles` | 近期文章列表 | Admin+ |
 
-### 22. 备份模块 (Backup)
-| 端点 | 方法 | 说明 | 认证 |
-|------|------|------|------|
-| `/admin/backup` | POST | 创建备份 | Admin |
-| `/admin/backup` | GET | 备份列表 | Admin |
-| `/admin/backup/:filename/download` | GET | 下载备份 | Admin |
-| `/admin/backup/:filename/restore` | POST | 恢复备份 | Admin |
-| `/admin/backup/:filename` | DELETE | 删除备份 | Admin |
+### 21. 访客统计（Visitor Stats）
 
-- 基于 mysqldump 的数据库备份与恢复
+| 端点 | 说明 | 角色 |
+|------|------|------|
+| `POST /api/stats/visit` | 记录一次访问 | 无 |
+| `GET /api/admin/stats/today` | 今日统计 | Admin+ |
+| `GET /api/admin/stats/range` | 日期范围统计 | Admin+ |
+| `GET /api/admin/stats/top-pages` | 热门页面 Top N | Admin+ |
+| `GET /api/admin/stats/referers` | 来源统计 | Admin+ |
+| `GET /api/admin/stats/devices` | 设备/浏览器/OS 分布 | Admin+ |
 
-### 23. 协作模块 (Collaboration)
-| 端点 | 方法 | 说明 | 认证 |
-|------|------|------|------|
-| `/admin/collaboration/:articleId/collaborators` | POST | 添加协作者 | Author |
-| `/admin/collaboration/:articleId/collaborators/:id` | DELETE | 移除协作者 | Author |
-| `/admin/collaboration/:articleId/collaborators` | GET | 协作者列表 | Author |
-| `/admin/collaboration/:articleId/draft` | PATCH | 协作编辑草稿 | Author |
-| `/admin/collaboration/:articleId/history` | GET | 编辑历史 | Author |
+### 22. 数据备份（Backup）
 
-- 权限等级：viewer / editor、变更追踪
+| 端点 | 说明 | 角色 |
+|------|------|------|
+| `POST /api/admin/backup` | 创建备份 | Admin+ |
+| `GET /api/admin/backup` | 备份列表 | Admin+ |
+| `GET /api/admin/backup/:filename/download` | 下载备份 | Admin+ |
+| `POST /api/admin/backup/:filename/restore` | 恢复备份（需二次认证） | Admin+ |
+| `DELETE /api/admin/backup/:filename` | 删除备份 | Admin+ |
 
-### 24. 媒体库模块 (Media Assets)
-| 端点 | 方法 | 说明 | 认证 |
-|------|------|------|------|
-| `/media-assets/files/:fileName` | GET | 访问文件 | 无 |
-| `/admin/media-assets/upload` | POST | 上传文件（5MB 限制） | Author |
-| `/admin/media-assets` | GET | 媒体列表 | Author |
-| `/admin/media-assets/:id` | GET/PATCH/DELETE | 媒体 CRUD | Author |
+### 23. 多人协作（Collaboration）
 
-- 支持类型：JPEG, PNG, WebP, GIF, PDF, TXT, JSON, Markdown
-- SHA256 去重、Alt 文本支持
+| 端点 | 说明 | 角色 |
+|------|------|------|
+| `POST /api/admin/collaboration/:articleId/collaborators` | 添加协作者 | Author+ |
+| `DELETE /api/admin/collaboration/:articleId/collaborators/:id` | 移除协作者 | Author+ |
+| `GET /api/admin/collaboration/:articleId/collaborators` | 协作者列表 | Author+ |
+| `PATCH /api/admin/collaboration/:articleId/draft` | 协作编辑草稿 | Author+ |
+| `GET /api/admin/collaboration/:articleId/history` | 编辑历史 | Author+ |
 
-### 25. 操作日志模块 (Operation Logs)
-| 端点 | 方法 | 说明 | 认证 |
-|------|------|------|------|
-| `/admin/operation-logs` | GET | 日志列表（按模块/操作筛选） | Admin |
+- 权限等级：viewer / editor，变更追踪记录
 
-- 全局拦截器自动记录、模块名/操作名/目标/请求/响应/IP
+### 24. 媒体库（Media Assets）
 
-### 26. 健康检查模块 (Health)
-| 端点 | 方法 | 说明 | 认证 |
-|------|------|------|------|
-| `/health` | GET | 服务健康状态 | 无 |
+| 端点 | 说明 | 角色 |
+|------|------|------|
+| `GET /api/media-assets/files/:fileName` | 访问文件 | 无 |
+| `POST /api/admin/media-assets/upload` | 上传文件（5MB 限制） | Author+ |
+| `GET /api/admin/media-assets` | 媒体列表 | Author+ |
+| `GET/PATCH/DELETE /api/admin/media-assets/:id` | 媒体 CRUD | Author+ |
+
+- 支持：JPEG、PNG、WebP、GIF、PDF、TXT、JSON、Markdown
+- SHA256 内容去重、Alt 文本支持
+
+### 25. 操作日志（Operation Logs）
+
+| 端点 | 说明 | 角色 |
+|------|------|------|
+| `GET /api/admin/operation-logs` | 日志列表（按模块/操作筛选） | Admin+ |
+
+- 全局拦截器自动记录：模块名/操作名/目标/请求/响应/IP
+
+### 26. 健康检查（Health）
+
+| 端点 | 说明 | 角色 |
+|------|------|------|
+| `GET /api/health` | 服务健康状态 | 无 |
 
 - 检测 MySQL 和 Redis 连通性，返回 ok / degraded
+
+### 27. RSS/Atom 订阅源（Feed）
+
+| 端点 | 说明 | 角色 |
+|------|------|------|
+| `GET /api/feed/rss` | RSS 2.0 订阅源 | 无 |
+| `GET /api/feed/atom` | Atom 订阅源 | 无 |
+
+- Redis 缓存（5 分钟服务端缓存，2 分钟客户端缓存）
+
+### 28. 数据库管理（Database Admin）
+
+| 端点 | 说明 | 角色 |
+|------|------|------|
+| `GET /api/admin/database/overview` | 数据库概览信息 | Super Admin |
+| `GET /api/admin/database/tables` | 数据表列表（可搜索） | Super Admin |
+| `GET /api/admin/database/tables/:tableName` | 表详情（字段/索引/外键） | Super Admin |
+| `GET /api/admin/database/tables/:tableName/rows` | 分页读取数据行 | Super Admin |
+| `POST /api/admin/database/tables/:tableName/rows` | 新增数据行（需二次认证） | Super Admin |
+| `PATCH /api/admin/database/tables/:tableName/rows` | 更新数据行（需二次认证） | Super Admin |
+| `POST /api/admin/database/tables/:tableName/rows/delete` | 删除数据行（需二次认证） | Super Admin |
 
 ---
 
@@ -552,181 +586,180 @@
 
 系统共包含 **26 张数据表**，分三期建设：
 
-### 一期：核心表（MVP）
+### 核心表
+| 表名 | 说明 |
+|------|------|
+| `users` | 用户（username, email, password_hash, role, status） |
+| `categories` | 分类（name, slug, color, sort_order, is_visible） |
+| `tags` | 标签（name, slug, article_count） |
+| `articles` | 文章（title, slug, content_markdown, status, visibility, view_count） |
+| `article_tags` | 文章-标签关联 |
+| `pages` | 自定义页面（title, slug, page_type, content_markdown） |
+| `comments` | 评论（article_id, parent_id, content, status） |
+| `friend_links` | 友情链接（site_name, site_url, status） |
+| `site_settings` | 站点设置（setting_key, setting_value, is_public） |
 
-| 表名 | 说明 | 主要字段 |
-|------|------|----------|
-| `users` | 用户表 | username, email, password_hash, role, status |
-| `categories` | 分类表 | name, slug, color, sort_order, is_visible |
-| `tags` | 标签表 | name, slug, article_count |
-| `articles` | 文章表 | title, slug, content_markdown, status, visibility, view_count |
-| `article_tags` | 文章标签关联 | article_id, tag_id |
-| `pages` | 自定义页面 | title, slug, page_type, content_markdown |
-| `comments` | 评论表 | article_id, parent_id, content, status |
-| `friend_links` | 友情链接 | site_name, site_url, status |
-| `site_settings` | 站点设置 | setting_key, setting_value, is_public |
+### 扩展表
+| 表名 | 说明 |
+|------|------|
+| `article_versions` | 文章版本历史（version_no, content, change_note） |
+| `media_assets` | 媒体库（file_name, mime_type, file_path, hash_value） |
+| `operation_logs` | 操作日志（operator_id, module_name, action_name） |
+| `article_series` | 文章系列（name, slug, status） |
+| `article_series_items` | 系列文章关联（series_id, article_id, sort_order） |
+| `email_subscribers` | 邮件订阅（email, confirm_token, is_confirmed） |
 
-### 二期：扩展表
-
-| 表名 | 说明 | 主要字段 |
-|------|------|----------|
-| `article_versions` | 文章版本 | article_id, version_no, content, change_note |
-| `media_assets` | 媒体库 | file_name, mime_type, file_path, hash_value |
-| `operation_logs` | 操作日志 | operator_id, module_name, action_name |
-| `article_series` | 文章系列 | name, slug, status |
-| `article_series_items` | 系列文章关联 | series_id, article_id, sort_order |
-| `email_subscribers` | 邮件订阅 | email, confirm_token, is_confirmed |
-
-### 三期：社区与变现
-
-| 表名 | 说明 | 主要字段 |
-|------|------|----------|
-| `user_favorites` | 文章收藏 | user_id, article_id |
-| `user_notifications` | 站内通知 | user_id, type, title, is_read |
-| `visitor_logs` | 访客日志 | ip, path, device, browser, os |
-| `guestbook` | 留言板 | nickname, content, status |
-| `announcements` | 公告 | title, content, status, is_pinned |
-| `paid_contents` | 付费设置 | article_id, price, preview_percent |
-| `article_purchases` | 购买记录 | article_id, user_id, paid_amount |
-| `draft_collaborators` | 协作者 | article_id, user_id, permission |
-| `draft_edit_logs` | 协作编辑日志 | article_id, field_changed, old_value |
-| `email_notifications` | 邮件队列 | to_email, subject, status, retry_count |
-| `favorites` | 收藏记录 | user_id, article_id |
-
-### 主要关系
-```
-users ──1:M──> articles ──M:M──> tags
-  │                │
-  │                ├──M:1──> categories
-  │                ├──1:M──> comments (嵌套自引用)
-  │                ├──1:M──> article_versions
-  │                ├──1:1──> paid_contents
-  │                └──M:M──> article_series
-  │
-  ├──M:M──> articles (via favorites)
-  ├──1:M──> user_notifications
-  ├──1:M──> operation_logs
-  └──1:M──> media_assets
-```
+### 社区与变现表
+| 表名 | 说明 |
+|------|------|
+| `user_favorites` | 文章收藏（user_id, article_id） |
+| `user_notifications` | 站内通知（user_id, type, title, is_read） |
+| `visitor_logs` | 访客日志（ip, path, device, browser, os） |
+| `guestbook` | 留言板（nickname, content, status） |
+| `announcements` | 公告（title, content, status, is_pinned） |
+| `paid_contents` | 付费设置（article_id, price, preview_percent） |
+| `article_purchases` | 购买记录（article_id, user_id, paid_amount） |
+| `draft_collaborators` | 协作者（article_id, user_id, permission） |
+| `draft_edit_logs` | 协作编辑历史（article_id, field_changed, old_value） |
+| `email_notifications` | 邮件队列（to_email, subject, status, retry_count） |
 
 ---
 
 ## 🚀 快速启动
 
 ### 前置条件
+
 - Node.js >= 18
 - MySQL 8.0
 - Redis 7+
-- Elasticsearch 8.13+ （可选，搜索功能降级为数据库查询）
+- Elasticsearch 8.13+（可选，不配置时搜索自动降级为数据库查询）
 
 ### 1. 克隆项目
+
 ```bash
-git clone <repository-url>
+git clone <仓库地址>
 cd boke
 ```
 
 ### 2. 启动后端
+
 ```bash
 cd server
-cp .env.example .env       # 编辑 .env 配置数据库/Redis/JWT 等
+cp .env.example .env      # 按实际环境编辑配置项
 npm install
-npm run db:init             # 初始化数据库（建库建表）
-npm run start:dev           # 开发模式启动（http://localhost:3000）
+npm run db:init           # 初始化数据库（建库建表）
+npm run start:dev         # 开发模式启动（http://localhost:3000）
 ```
 
 ### 3. 启动前端
+
 ```bash
 cd client
-cp .env.example .env        # 编辑 .env 配置 API 地址
 npm install
-npm run dev                 # 开发模式启动（http://localhost:5173）
+npm run dev               # 开发模式启动（http://localhost:5173）
 ```
 
+前端 `/api` 代理到 `http://localhost:3000`，详见 `client/vite.config.ts`。
+
 ### 4. Docker 一键启动（可选）
+
 ```bash
 cd server
-docker-compose up -d        # 启动 MySQL + Redis + Elasticsearch + API
+docker-compose up -d      # 启动 MySQL + Redis + Elasticsearch + API
+```
+
+### 5. 导入示例数据（可选）
+
+```bash
+cd server
+npm run db:seed-content   # 导入用户/分类/标签/示例文章
+npm run db:seed:about     # 导入关于页面内容
+npm run db:seed-bulk      # 批量生成测试文章
+npm run search:refresh-local  # 同步数据到 Elasticsearch
 ```
 
 ---
 
-## 📜 项目脚本
+## 📜 常用命令
 
-### 后端 (Server)
+### 后端（server/）
 
-| 命令 | 说明 |
-|------|------|
-| `npm run start:dev` | 开发服务器（热重载） |
-| `npm run start:debug` | 调试模式 |
-| `npm run build` | 生产构建 |
-| `npm run start:prod` | 生产启动 |
-| `npm run db:init` | 初始化数据库（建库建表） |
-| `npm run db:seed-content` | 导入示例数据（用户/分类/标签/文章） |
-| `npm run db:seed:about` | 导入关于页面内容 |
-| `npm run db:seed-bulk` | 批量生成测试文章 |
-| `npm run search:refresh-local` | 数据导入 + Elasticsearch 重建索引 |
-| `npm test` | 运行单元测试 |
-| `npm run test:cov` | 测试覆盖率 |
-| `npm run lint` | ESLint 检查 |
-| `npm run format` | Prettier 格式化 |
+```bash
+npm run start:dev         # 开发服务器（热重载）
+npm run start:debug       # 调试模式
+npm run build             # 生产构建
+npm run start:prod        # 生产启动（需先 build）
+npm run db:init           # 初始化数据库
+npm run migration:run     # 执行数据库迁移
+npm run migration:revert  # 回滚数据库迁移
+npm test                  # 运行单元测试
+npm run test:cov          # 测试覆盖率
+npm run lint              # ESLint 检查（含自动修复）
+npm run format            # Prettier 格式化
+npm run docs:generate     # 导出 OpenAPI 文档
+```
 
-### 前端 (Client)
+### 前端（client/）
 
-| 命令 | 说明 |
-|------|------|
-| `npm run dev` | Vite 开发服务器 |
-| `npm run build` | 生产构建 |
-| `npm run preview` | 预览构建产物 |
-| `npm run typecheck` | TypeScript 类型检查 |
-| `npm run e2e` | Playwright E2E 测试 |
-| `npm run e2e:headed` | 有界面 E2E 测试 |
-| `npm run format` | Prettier 格式化 |
+```bash
+npm run dev               # Vite 开发服务器
+npm run build             # 生产构建（vue-tsc + vite build）
+npm run preview           # 预览构建产物
+npm run typecheck         # 仅执行 TypeScript 类型检查
+npm run test              # Vitest 单元测试
+npm run test:watch        # Vitest 监听模式
+npm run e2e               # Playwright E2E 测试
+npm run e2e:headed        # Playwright 有界面模式
+npm run format            # Prettier 格式化
+```
 
 ---
 
 ## 🔧 环境变量配置
 
-### 后端 (.env)
+完整示例见 `server/.env.example`，以下为关键配置项：
 
 ```env
 # 应用
 NODE_ENV=development
 PORT=3000
-APP_NAME=Blog System
-CORS_ORIGINS=http://localhost:3000,http://localhost:5173
+CORS_ORIGINS=http://localhost:5173
 
-# 数据库 (MySQL)
+# MySQL
 DB_HOST=localhost
 DB_PORT=3306
 DB_USERNAME=blog_user
 DB_PASSWORD=your_db_password
 DB_DATABASE=blog_system
-DB_SYNCHRONIZE=false
 
 # Redis
 REDIS_HOST=localhost
 REDIS_PORT=6379
 REDIS_PASSWORD=your_redis_password
-REDIS_DB=0
 
 # JWT
-JWT_SECRET=your_32_plus_char_random_secret
+JWT_SECRET=至少32位的随机字符串
 JWT_EXPIRATION=7d
 
-# 超级管理员（推荐使用 SUPER_ADMIN_*）
+# 超级管理员（首次启动自动创建）
 SUPER_ADMIN_USERNAME=rootmaster
-SUPER_ADMIN_PASSWORD=change_me_super_admin_password_strong
-SUPER_ADMIN_EMAIL=root@example.com
-SUPER_ADMIN_NICKNAME=系统超管
+SUPER_ADMIN_PASSWORD=强密码
+SUPER_ADMIN_EMAIL=admin@example.com
 
 # Elasticsearch（可选）
 ES_NODE=http://localhost:9200
 
-# SMTP 邮件（可选）
+# SMTP 邮件（可选，用于注册验证码和订阅通知）
 SMTP_HOST=smtp.example.com
 SMTP_PORT=465
 SMTP_USER=your_email@example.com
 SMTP_PASS=your_email_password
+
+# OAuth（可选）
+GITHUB_CLIENT_ID=
+GITHUB_CLIENT_SECRET=
+GOOGLE_CLIENT_ID=
+GOOGLE_CLIENT_SECRET=
 
 # 限流
 THROTTLE_TTL=60000
@@ -739,71 +772,61 @@ THROTTLE_LIMIT=120
 
 ```
 boke/
-├── README.md                      # 项目总文档（本文件）
-├── ARCHITECTURE.md                # 技术架构文档
-├── DATABASE.md                    # 数据库设计文档
-├── 需求文档.md                     # 产品需求文档
-├── 技术设计文档.md                  # 技术设计文档
-│
-├── server/                        # 后端 (NestJS)
+├── server/                         # 后端（NestJS）
 │   ├── src/
-│   │   ├── main.ts               # 应用入口
-│   │   ├── app.module.ts         # 根模块（26 模块注册）
-│   │   ├── config/               # 配置管理
-│   │   │   ├── configuration.ts  # 配置工厂
-│   │   │   ├── validation.ts     # Joi 环境变量验证
-│   │   │   └── cors.config.ts    # 动态 CORS 配置
-│   │   ├── common/               # 公共工具
-│   │   │   ├── filters/          # 全局异常过滤器
-│   │   │   ├── interceptors/     # 响应拦截器
-│   │   │   ├── pipes/            # XSS 清理管道
-│   │   │   └── redis/            # Redis 模块
-│   │   ├── database/             # 数据库
-│   │   │   ├── database.module.ts
-│   │   │   ├── entities/         # TypeORM 实体
-│   │   │   └── migrations/       # 数据库迁移
-│   │   └── modules/              # 功能模块
-│   │       ├── announcements/    # 公告
-│   │       ├── archives/         # 归档
-│   │       ├── article-series/   # 文章系列
-│   │       ├── articles/         # 文章（含版本管理）
-│   │       ├── auth/             # 认证
-│   │       ├── backup/           # 备份
-│   │       ├── categories/       # 分类
-│   │       ├── collaboration/    # 多人协作
-│   │       ├── comments/         # 评论
-│   │       ├── dashboard/        # 仪表盘
-│   │       ├── favorites/        # 收藏
-│   │       ├── guestbook/        # 留言板
-│   │       ├── health/           # 健康检查
-│   │       ├── i18n/             # 国际化
-│   │       ├── media-assets/     # 媒体库
-│   │       ├── notifications/    # 邮件通知
-│   │       ├── operation-logs/   # 操作日志
-│   │       ├── pages/            # 页面与友链
-│   │       ├── paid-content/     # 付费内容
-│   │       ├── search/           # 全文搜索
-│   │       ├── seo/              # SEO
-│   │       ├── settings/         # 站点设置
-│   │       ├── tags/             # 标签
-│   │       ├── user-notifications/ # 站内通知
-│   │       ├── users/            # 用户管理
-│   │       └── visitor-stats/    # 访客统计
-│   ├── sql/                      # SQL 文件
-│   │   └── init/001_init_schema.sql
-│   ├── scripts/                  # 初始化与数据脚本
-│   ├── docker-compose.yml        # Docker 编排
-│   ├── Dockerfile                # 容器化构建
+│   │   ├── main.ts                # 应用入口
+│   │   ├── app.module.ts          # 根模块（28 模块注册）
+│   │   ├── config/                # 配置管理（Joi 验证）
+│   │   ├── common/                # 公共工具
+│   │   │   ├── filters/           # 全局异常过滤器
+│   │   │   ├── interceptors/      # 响应拦截器
+│   │   │   ├── pipes/             # XSS 清理管道
+│   │   │   ├── redis/             # Redis 模块
+│   │   │   └── security/          # 安全模块（响应头/缓存）
+│   │   ├── database/              # 数据库（TypeORM 实体/迁移）
+│   │   └── modules/               # 功能模块（28 个）
+│   │       ├── announcements/     # 公告
+│   │       ├── archives/          # 归档
+│   │       ├── article-series/    # 文章系列
+│   │       ├── articles/          # 文章（含版本管理）
+│   │       ├── auth/              # 认证（JWT/OAuth/二次认证）
+│   │       ├── backup/            # 数据备份
+│   │       ├── categories/        # 分类
+│   │       ├── collaboration/     # 多人协作
+│   │       ├── comments/          # 评论
+│   │       ├── dashboard/         # 仪表盘
+│   │       ├── database-admin/    # 数据库管理
+│   │       ├── favorites/         # 收藏
+│   │       ├── feed/              # RSS/Atom
+│   │       ├── guestbook/         # 留言板
+│   │       ├── health/            # 健康检查
+│   │       ├── i18n/              # 国际化
+│   │       ├── media-assets/      # 媒体库
+│   │       ├── notifications/     # 邮件通知/订阅
+│   │       ├── operation-logs/    # 操作日志
+│   │       ├── pages/             # 页面与友链
+│   │       ├── paid-content/      # 付费内容
+│   │       ├── search/            # 全文搜索
+│   │       ├── seo/               # SEO
+│   │       ├── settings/          # 站点设置
+│   │       ├── tags/              # 标签
+│   │       ├── user-notifications/# 站内通知
+│   │       ├── users/             # 用户管理
+│   │       └── visitor-stats/     # 访客统计
+│   ├── sql/                       # 初始化 SQL
+│   ├── scripts/                   # 数据库初始化/种子脚本
+│   ├── docker-compose.yml
+│   ├── Dockerfile
 │   └── package.json
 │
-├── client/                       # 前端 (Vue 3)
+├── client/                        # 前端（Vue 3）
 │   ├── src/
-│   │   ├── main.ts              # 入口
-│   │   ├── App.vue              # 根组件
-│   │   ├── router/index.ts      # 路由配置
-│   │   ├── api/                 # API 请求层（16 个文件）
-│   │   ├── stores/              # Pinia 状态管理（8 个 Store）
-│   │   ├── views/               # 页面视图
+│   │   ├── main.ts               # 应用入口
+│   │   ├── App.vue               # 根组件
+│   │   ├── router/index.ts       # 路由（含权限守卫）
+│   │   ├── api/                  # API 请求层（18 个模块）
+│   │   ├── stores/               # Pinia（8 个 Store）
+│   │   ├── views/                # 页面视图
 │   │   │   ├── HomeView.vue
 │   │   │   ├── ArticleDetailView.vue
 │   │   │   ├── CategoriesView.vue
@@ -812,58 +835,64 @@ boke/
 │   │   │   ├── GuestbookView.vue
 │   │   │   ├── AboutView.vue
 │   │   │   ├── ProfileView.vue
-│   │   │   └── admin/           # 管理后台视图
-│   │   │       ├── DashboardView.vue
-│   │   │       ├── ArticleManageView.vue
-│   │   │       ├── CommentManageView.vue
-│   │   │       ├── PageManageView.vue
-│   │   │       ├── SettingsView.vue
-│   │   │       └── TechnicalView.vue
-│   │   ├── components/          # 公共组件
-│   │   ├── layouts/             # 布局组件
-│   │   ├── types/               # TypeScript 类型
-│   │   └── utils/               # 工具函数
-│   ├── tailwind.config.js
+│   │   │   └── admin/            # 管理后台（6 个视图）
+│   │   ├── components/           # 公共组件（13 个）
+│   │   ├── layouts/              # 布局（BlogLayout/AdminLayout）
+│   │   ├── composables/          # 组合式函数
+│   │   ├── types/                # TypeScript 类型定义
+│   │   └── utils/                # 工具函数
+│   ├── tests/                    # Playwright E2E 测试
 │   ├── vite.config.ts
 │   └── package.json
 │
-└── scripts/                     # 项目级脚本
+├── scripts/                       # 项目级脚本
+├── ARCHITECTURE.md                # 技术架构文档
+├── DATABASE.md                    # 数据库设计文档
+└── README.md                      # 本文件
 ```
 
 ---
 
 ## 🔐 安全特性
 
-- **Helmet**：HTTP 安全头
-- **CORS**：动态白名单 + 403 拒绝非法来源
-- **JWT**：Token 认证 + 角色权限控制
-- **bcrypt**：密码加密（10 轮）
-- **class-validator**：DTO 数据验证 + 白名单模式
-- **SanitizePipe**：XSS 防护（HTML 实体转义）
-- **ThrottlerGuard**：全局请求限流（120 次/分钟）
-- **接口限流**：登录 5/分钟、注册 3/分钟、评论 5/分钟
+| 特性 | 说明 |
+|------|------|
+| Helmet | HTTP 安全头（X-Frame-Options/HSTS/CSP 等） |
+| CORS | 动态白名单，非法来源返回 403 |
+| JWT + Cookie | HttpOnly Cookie 携带 Token，防 XSS 窃取 |
+| bcrypt | 密码加密（10 轮） |
+| 二次认证（Step-Up） | 高危操作需再次输入密码，带作用域控制 |
+| class-validator | DTO 白名单模式，未声明字段自动剔除 |
+| SanitizePipe | 全局 XSS 清理管道，自动转义 HTML 实体 |
+| ThrottlerGuard | 全局限流（120 次/分钟），各敏感接口独立限流 |
+| CSRF Token | 非 GET 请求携带 CSRF Token 验证 |
+| 角色权限 | super_admin / admin / author / user 四级 RBAC |
+
+---
 
 ## 📐 API 响应格式
 
 ### 成功响应
+
 ```json
 {
   "success": true,
   "statusCode": 200,
-  "data": { ... },
+  "data": {},
   "message": "Success",
-  "timestamp": "2026-04-19T13:00:00.000Z"
+  "timestamp": "2026-04-22T10:00:00.000Z"
 }
 ```
 
 ### 错误响应
+
 ```json
 {
   "success": false,
   "statusCode": 400,
-  "message": "Error description",
+  "message": "错误描述",
   "errors": null,
-  "timestamp": "2026-04-19T13:00:00.000Z"
+  "timestamp": "2026-04-22T10:00:00.000Z"
 }
 ```
 
