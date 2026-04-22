@@ -156,6 +156,14 @@ npm run start:prod
 
 默认安全基线包含：`HttpOnly + SameSite=Strict` Cookie、带凭证的精确 CORS 白名单、`Content-Security-Policy`、`Referrer-Policy` 与 `Permissions-Policy`。如果前后端部署在真正跨站点域名下，需要显式将 `AUTH_COOKIE_SAME_SITE=none` 且同时开启 `AUTH_COOKIE_SECURE=true`。
 
+## 供应链与镜像基线
+
+- Dockerfile 使用固定 digest 的 `node:18-alpine`，并在运行阶段切换到 `node` 非 root 用户。
+- `docker-compose.yml` 中的 MySQL / Redis / Elasticsearch 都固定到 digest，`blog-api` 额外启用 `no-new-privileges` 与 `cap_drop: [ALL]`。
+- `npm run sbom:generate` 会输出 `docs/sbom.cyclonedx.json`。
+- `npm run supply-chain:verify` 会校验锁文件、镜像 digest 与非 root 运行策略。
+- `npm run supply-chain:scan` 默认调用 `trivy`；如果当前环境还没安装扫描器，可先执行 `npm run supply-chain:scan -- --dry-run` 查看待扫描镜像列表。
+
 ## 📋 数据库实体
 
 ### User（用户）

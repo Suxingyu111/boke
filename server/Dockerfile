@@ -1,18 +1,33 @@
-FROM node:18-alpine@sha256:8d6421d663b4c28fd3ebc498332f249011d118945588d0a35cb9bc4b8ca09d9e
+FROM node:18-alpine@sha256:8d6421d663b4c28fd3ebc498332f249011d118945588d0a35cb9bc4b8ca09d9e AS deps
 
 WORKDIR /app
 
-# 复制 package 文件
 COPY package.json package-lock.json ./
-
-# 安装依赖
 RUN npm ci
 
-# 复制项目文件
-COPY . .
+FROM node:18-alpine@sha256:8d6421d663b4c28fd3ebc498332f249011d118945588d0a35cb9bc4b8ca09d9e AS build
 
-# 构建项目
+WORKDIR /app
+
+COPY --from=deps /app/node_modules ./node_modules
+COPY package.json package-lock.json ./
+COPY . .
 RUN npm run build
+
+FROM node:18-alpine@sha256:8d6421d663b4c28fd3ebc498332f249011d118945588d0a35cb9bc4b8ca09d9e AS runtime
+
+WORKDIR /app
+
+ENV NODE_ENV=production
+
+COPY package.json package-lock.json ./
+RUN npm ci --omit=dev --ignore-scripts && npm cache clean --force
+
+COPY --from=build /app/dist ./dist
+
+RUN mkdir -p /app/logs /app/backups /app/uploads && chown -R node:node /app
+
+USER node
 
 EXPOSE 3000
 

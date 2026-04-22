@@ -49,6 +49,10 @@
 
    # 需要完全复现 lockfile 的环境（CI / Docker）请改用：
    npm ci
+
+   # 供应链校验与 SBOM
+   npm run supply-chain:verify
+   npm run sbom:generate
    ```
 
 6. **启动应用**
