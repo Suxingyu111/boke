@@ -12,6 +12,7 @@
     "sbom:generate": "node ./node_modules/ts-node/dist/bin.js --project tsconfig.json scripts/generate-sbom.ts",
     "supply-chain:verify": "node ./node_modules/ts-node/dist/bin.js --project tsconfig.json scripts/verify-supply-chain.ts",
     "supply-chain:scan": "node ./node_modules/ts-node/dist/bin.js --project tsconfig.json scripts/scan-pinned-images.ts",
+    "backup:drill": "node ./node_modules/ts-node/dist/bin.js --project tsconfig.json scripts/run-backup-drill.ts",
     "db:init": "node ./node_modules/ts-node/dist/bin.js --project tsconfig.json scripts/init-db.ts",
     "db:seed:about": "node ./node_modules/ts-node/dist/bin.js --project tsconfig.json scripts/seed-about.ts",
     "db:seed-content": "node ./node_modules/ts-node/dist/bin.js --project tsconfig.json scripts/seed-content.ts",

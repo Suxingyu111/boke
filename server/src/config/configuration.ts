@@ -121,6 +121,12 @@ export const configuration = (): {
     synchronize: boolean;
     logging: boolean;
   };
+  backup: {
+    drillDatabase: string;
+    drillCleanup: boolean;
+    drillRtoSeconds: number;
+    drillRpoSeconds: number;
+  };
   redis: {
     host: string | undefined;
     port: number;
@@ -237,6 +243,14 @@ export const configuration = (): {
     database: process.env.DB_DATABASE,
     synchronize: process.env.DB_SYNCHRONIZE === 'true',
     logging: process.env.DB_LOGGING === 'true',
+  },
+  backup: {
+    drillDatabase:
+      process.env.BACKUP_DRILL_DATABASE ||
+      `${process.env.DB_DATABASE || 'blog_system'}_drill`,
+    drillCleanup: parseBoolean(process.env.BACKUP_DRILL_CLEANUP, true),
+    drillRtoSeconds: parseNumber(process.env.BACKUP_DRILL_RTO_SECONDS, 900),
+    drillRpoSeconds: parseNumber(process.env.BACKUP_DRILL_RPO_SECONDS, 86400),
   },
   redis: {
     host: process.env.REDIS_HOST,

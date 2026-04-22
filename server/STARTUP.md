@@ -149,6 +149,10 @@ npm run migration:run
 
 # 回滚上一次迁移
 npm run migration:revert
+
+# 执行恢复演练（默认取最新备份，也可用 --filename 指定）
+npm run backup:drill
+npm run backup:drill -- --filename backup_blog_system_2026-04-20.sql
 ```
 
 ---
@@ -252,6 +256,27 @@ docker run -d -p 6379:6379 redis:alpine
 ### 问题：`Error: Failed to connect to MySQL`
 **原因**：数据库凭证错误
 **解决**：检查 `.env` 文件中的数据库配置是否与实际凭证匹配
+
+---
+
+## 🚨 灾备恢复演练 Runbook
+
+### 建议基线
+- 每月至少执行一次恢复演练。
+- 使用独立演练库 `BACKUP_DRILL_DATABASE`，默认值为 `blog_system_drill`。
+- 目标指标：`BACKUP_DRILL_RTO_SECONDS` 控制恢复时间目标，`BACKUP_DRILL_RPO_SECONDS` 控制允许的数据回退窗口。
+
+### 推荐流程
+1. 先确认最新备份已生成：`GET /api/admin/backup` 或在后台技术页面查看备份列表。
+2. 执行恢复演练：`npm run backup:drill -- --filename <backup.sql>`，或调用 `POST /api/admin/backup/:filename/drill`。
+3. 查看演练历史与指标摘要：`GET /api/admin/backup/drills`。
+4. 若演练失败，优先检查 MySQL 客户端工具、目标演练库权限、备份文件完整性，以及 `backups/drill-reports.json` 中的失败原因。
+
+### 应急处置建议
+1. 先冻结高风险后台写操作，避免继续扩大 RPO。
+2. 选择最近一次完整备份，必要时先在演练库验证可恢复性，再切换到正式恢复。
+3. 记录本次事故的实际 RTO / RPO，与阈值比较后回填到演练报告或事故复盘。
+4. 若 `BACKUP_DRILL_CLEANUP=false`，演练完成后需手动清理演练库，避免长期残留旧数据。
 
 ---
 

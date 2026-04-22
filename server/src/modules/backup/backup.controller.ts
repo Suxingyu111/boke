@@ -38,6 +38,12 @@ export class BackupController {
     return this.backupService.listBackups();
   }
 
+  /** 获取恢复演练历史与指标 */
+  @Get('drills')
+  listRecoveryDrills() {
+    return this.backupService.listRecoveryDrills();
+  }
+
   /** 下载备份文件 */
   @Get(':filename/download')
   @UseGuards(StepUpGuard)
@@ -51,6 +57,15 @@ export class BackupController {
       'Content-Disposition': `attachment; filename="${sanitizedFilename}"`,
     });
     streamable.getStream().pipe(res);
+  }
+
+  /** 恢复指定备份 */
+  @Post(':filename/drill')
+  @UseGuards(StepUpGuard)
+  @RequireStepUp('backup')
+  @Throttle({ default: { limit: 2, ttl: 60000 } })
+  runRecoveryDrill(@Param('filename') filename: string) {
+    return this.backupService.runRecoveryDrill(filename);
   }
 
   /** 恢复指定备份 */

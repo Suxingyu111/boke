@@ -38,6 +38,12 @@ export const validationSchema = Joi.object({
   DB_SYNCHRONIZE: Joi.boolean().default(false),
   DB_LOGGING: Joi.boolean().default(false),
   DB_POOL_SIZE: Joi.number().integer().min(1).default(10),
+  BACKUP_DRILL_DATABASE: Joi.string()
+    .pattern(/^[A-Za-z0-9_]+$/)
+    .default('blog_system_drill'),
+  BACKUP_DRILL_CLEANUP: Joi.boolean().default(true),
+  BACKUP_DRILL_RTO_SECONDS: Joi.number().integer().min(60).default(900),
+  BACKUP_DRILL_RPO_SECONDS: Joi.number().integer().min(300).default(86400),
 
   // Redis
   REDIS_HOST: Joi.string().required(),

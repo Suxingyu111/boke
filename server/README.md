@@ -85,6 +85,10 @@ DB_PORT=3306
 DB_USERNAME=blog_user
 DB_PASSWORD=blog_password
 DB_DATABASE=blog_system
+BACKUP_DRILL_DATABASE=blog_system_drill
+BACKUP_DRILL_CLEANUP=true
+BACKUP_DRILL_RTO_SECONDS=900
+BACKUP_DRILL_RPO_SECONDS=86400
 
 # Redis
 REDIS_HOST=localhost
@@ -154,9 +158,10 @@ npm run start:dev
 ```bash
 npm run build
 npm run start:prod
+npm run backup:drill -- --filename backup_blog_system_2026-04-20.sql
 ```
 
-默认安全基线包含：`HttpOnly + SameSite=Strict` Cookie、带凭证的精确 CORS 白名单、`Content-Security-Policy`、`Referrer-Policy`、`Permissions-Policy`，以及针对认证异常和高危后台动作的结构化安全审计/告警。若已配置 SMTP，可通过 `SECURITY_ALERT_RECIPIENTS` 指定告警邮箱列表；未配置时仍会保留结构化审计日志。如果前后端部署在真正跨站点域名下，需要显式将 `AUTH_COOKIE_SAME_SITE=none` 且同时开启 `AUTH_COOKIE_SECURE=true`。
+默认安全基线包含：`HttpOnly + SameSite=Strict` Cookie、带凭证的精确 CORS 白名单、`Content-Security-Policy`、`Referrer-Policy`、`Permissions-Policy`，以及针对认证异常和高危后台动作的结构化安全审计/告警。若已配置 SMTP，可通过 `SECURITY_ALERT_RECIPIENTS` 指定告警邮箱列表；未配置时仍会保留结构化审计日志。备份模块进一步提供恢复演练记录、RTO/RPO 指标与 `npm run backup:drill` 自动化入口，可配合月度演练制度化执行。如果前后端部署在真正跨站点域名下，需要显式将 `AUTH_COOKIE_SAME_SITE=none` 且同时开启 `AUTH_COOKIE_SECURE=true`。
 
 ## 供应链与镜像基线
 

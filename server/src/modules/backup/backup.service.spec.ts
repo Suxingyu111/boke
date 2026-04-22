@@ -10,7 +10,9 @@ jest.mock('fs', () => {
     ...actual,
     existsSync: jest.fn(),
     mkdirSync: jest.fn(),
+    readFileSync: jest.fn(),
     statSync: jest.fn(),
+    writeFileSync: jest.fn(),
   };
 });
 
@@ -36,6 +38,10 @@ describe('BackupService', () => {
     jest.clearAllMocks();
     (fs.existsSync as jest.MockedFunction<typeof fs.existsSync>).mockReturnValue(true);
     (fs.mkdirSync as jest.MockedFunction<typeof fs.mkdirSync>).mockImplementation(() => undefined);
+    (fs.writeFileSync as jest.MockedFunction<typeof fs.writeFileSync>).mockImplementation(
+      () => undefined,
+    );
+    (fs.readFileSync as jest.MockedFunction<typeof fs.readFileSync>).mockReturnValue('[]' as never);
   });
 
   it('创建备份时不应将数据库密码拼接进命令参数', async () => {
@@ -156,6 +162,65 @@ describe('BackupService', () => {
         eventType: 'backup.restore_failed',
         targetId: 'backup_blog_system_2026-04-20.sql',
         responseCode: 404,
+      }),
+    );
+  });
+
+  it('恢复演练成功时应输出 RTO/RPO 报告并写入历史', async () => {
+    const auditService = {
+      recordBestEffort: jest.fn().mockResolvedValue(undefined),
+    };
+    const service = new BackupService(
+      {
+        get: jest.fn().mockImplementation((key: string, fallback?: unknown) => {
+          const values: Record<string, unknown> = {
+            ...configValues,
+            'backup.drillDatabase': 'blog_system_drill',
+            'backup.drillCleanup': true,
+            'backup.drillRtoSeconds': 900,
+            'backup.drillRpoSeconds': 604800,
+          };
+
+          return key in values ? values[key] : fallback;
+        }),
+      } as unknown as ConfigService,
+      auditService as unknown as SecurityAuditService,
+    );
+    const internalService = service as unknown as {
+      runDatabaseCommand: (
+        executable: string,
+        args: string[],
+        options: { password: string; stdinFilePath?: string; stdoutFilePath?: string; captureStdout?: boolean },
+      ) => Promise<string>;
+    };
+    jest
+      .spyOn(internalService, 'runDatabaseCommand')
+      .mockImplementation(async (_executable, args) => {
+        if (args.some(arg => arg.includes('SELECT COUNT(*)'))) {
+          return '12';
+        }
+
+        return '';
+      });
+    (fs.statSync as jest.MockedFunction<typeof fs.statSync>).mockReturnValue({
+      mtime: new Date('2026-04-20T10:00:00.000Z'),
+    } as fs.Stats);
+
+    const report = await service.runRecoveryDrill('backup_blog_system_2026-04-20.sql');
+
+    expect(report).toEqual(
+      expect.objectContaining({
+        filename: 'backup_blog_system_2026-04-20.sql',
+        targetDatabase: 'blog_system_drill',
+        validatedTableCount: 12,
+        cleanupPerformed: true,
+        success: true,
+      }),
+    );
+    expect(fs.writeFileSync).toHaveBeenCalled();
+    expect(auditService.recordBestEffort).toHaveBeenCalledWith(
+      expect.objectContaining({
+        eventType: 'backup.drill_succeeded',
       }),
     );
   });

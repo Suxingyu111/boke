@@ -6,6 +6,7 @@ import request from 'supertest';
 import { HttpExceptionFilter } from '../src/common/filters/http-exception.filter';
 import { ResponseInterceptor } from '../src/common/interceptors/response.interceptor';
 import { BackupController } from '../src/modules/backup/backup.controller';
+import { BackupDrillReport } from '../src/modules/backup/backup.service';
 import { BackupService } from '../src/modules/backup/backup.service';
 import { JwtAuthGuard } from '../src/modules/auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../src/modules/auth/guards/roles.guard';
@@ -84,6 +85,56 @@ describe('Backup integration', () => {
     }),
     deleteBackup: jest.fn().mockImplementation(async (filename: string) => {
       return { message: `备份文件 ${filename} 已删除` };
+    }),
+    runRecoveryDrill: jest.fn().mockImplementation(async (filename: string) => {
+      return {
+        id: 'drill-1',
+        filename,
+        targetDatabase: 'blog_system_drill',
+        backupCreatedAt: '2026-04-20T11:00:00.000Z',
+        startedAt: '2026-04-20T11:10:00.000Z',
+        finishedAt: '2026-04-20T11:10:45.000Z',
+        durationMs: 45000,
+        rtoSeconds: 45,
+        rpoSeconds: 600,
+        rtoTargetSeconds: 900,
+        rpoTargetSeconds: 86400,
+        validatedTableCount: 18,
+        cleanupPerformed: true,
+        success: true,
+        failureReason: null,
+      } satisfies BackupDrillReport;
+    }),
+    listRecoveryDrills: jest.fn().mockResolvedValue({
+      items: [
+        {
+          id: 'drill-1',
+          filename: 'backup_blog_system_2026-04-20.sql',
+          targetDatabase: 'blog_system_drill',
+          backupCreatedAt: '2026-04-20T11:00:00.000Z',
+          startedAt: '2026-04-20T11:10:00.000Z',
+          finishedAt: '2026-04-20T11:10:45.000Z',
+          durationMs: 45000,
+          rtoSeconds: 45,
+          rpoSeconds: 600,
+          rtoTargetSeconds: 900,
+          rpoTargetSeconds: 86400,
+          validatedTableCount: 18,
+          cleanupPerformed: true,
+          success: true,
+          failureReason: null,
+        },
+      ],
+      summary: {
+        total: 1,
+        successCount: 1,
+        failureCount: 0,
+        successRate: 1,
+        rtoTargetSeconds: 900,
+        rpoTargetSeconds: 86400,
+        lastDrillAt: '2026-04-20T11:10:00.000Z',
+        lastSuccessfulDrillAt: '2026-04-20T11:10:00.000Z',
+      },
     }),
   };
 
@@ -176,6 +227,24 @@ describe('Backup integration', () => {
     expect(backupService.deleteBackup).toHaveBeenCalledWith(
       'backup_blog_system_2026-04-20.sql',
     );
+
+    const drillResponse = await request(app.getHttpServer())
+      .post('/api/admin/backup/backup_blog_system_2026-04-20.sql/drill')
+      .set('x-test-role', 'admin')
+      .expect(201);
+
+    expect(drillResponse.body.data).toEqual(
+      expect.objectContaining({
+        id: 'drill-1',
+        filename: 'backup_blog_system_2026-04-20.sql',
+        success: true,
+        rtoSeconds: 45,
+        rpoSeconds: 600,
+      }),
+    );
+    expect(backupService.runRecoveryDrill).toHaveBeenCalledWith(
+      'backup_blog_system_2026-04-20.sql',
+    );
   });
 
   it('应支持管理员下载备份，并设置正确响应头', async () => {
@@ -199,5 +268,21 @@ describe('Backup integration', () => {
       .get('/api/admin/backup')
       .set('x-test-role', 'user')
       .expect(403);
+  });
+
+  it('应返回恢复演练历史与指标摘要', async () => {
+    const response = await request(app.getHttpServer())
+      .get('/api/admin/backup/drills')
+      .set('x-test-role', 'admin')
+      .expect(200);
+
+    expect(response.body.data.summary).toEqual(
+      expect.objectContaining({
+        total: 1,
+        successRate: 1,
+      }),
+    );
+    expect(response.body.data.items).toHaveLength(1);
+    expect(backupService.listRecoveryDrills).toHaveBeenCalledTimes(1);
   });
 });
