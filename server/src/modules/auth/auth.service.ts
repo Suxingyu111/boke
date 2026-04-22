@@ -754,14 +754,25 @@ export class AuthService {
     return this.configService.get<string>('auth.stepUpCookieName', 'blog_admin_step_up');
   }
 
+  private getCookieSecure(): boolean {
+    return this.configService.get<boolean>('security.cookieSecure', this.isProduction());
+  }
+
+  private getCookieSameSite(): NonNullable<CookieOptions['sameSite']> {
+    return this.configService.get<NonNullable<CookieOptions['sameSite']>>(
+      'security.cookieSameSite',
+      'strict',
+    );
+  }
+
   private getAuthCookieOptions(): CookieOptions {
     const expiresIn = this.configService.get<string>('jwt.expiresIn', '7d');
     const maxAge = ms(expiresIn as StringValue);
 
     return {
       httpOnly: true,
-      secure: this.isProduction(),
-      sameSite: 'lax',
+      secure: this.getCookieSecure(),
+      sameSite: this.getCookieSameSite(),
       path: '/',
       maxAge: typeof maxAge === 'number' ? maxAge : undefined,
     };
@@ -772,9 +783,9 @@ export class AuthService {
 
     return {
       httpOnly: true,
-      secure: this.isProduction(),
-      sameSite: 'lax',
-      path: '/',
+      secure: this.getCookieSecure(),
+      sameSite: this.getCookieSameSite(),
+      path: this.configService.get<string>('auth.stepUpCookiePath', '/api/admin'),
       maxAge: typeof maxAge === 'number' ? maxAge : undefined,
     };
   }

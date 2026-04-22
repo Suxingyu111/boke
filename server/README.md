@@ -88,6 +88,8 @@ REDIS_PORT=6379
 
 # JWT
 JWT_SECRET=your_secret_key_here
+AUTH_COOKIE_SECURE=false
+AUTH_COOKIE_SAME_SITE=strict
 
 # 连接池与文档
 DB_POOL_SIZE=10
@@ -95,6 +97,11 @@ SWAGGER_ENABLED=true
 
 # 前端地址与 OAuth（可选）
 CLIENT_URL=http://localhost:5173
+CORS_ALLOW_REQUESTS_WITHOUT_ORIGIN=true
+CORS_ALLOWED_HEADERS=Accept,Authorization,Content-Type,Origin,X-CSRF-Token,X-Requested-With
+CORS_EXPOSED_HEADERS=Content-Disposition,X-Cache
+SECURITY_CSP_REPORT_ONLY=true
+SECURITY_REFERRER_POLICY=strict-origin-when-cross-origin
 GITHUB_CLIENT_ID=
 GITHUB_CLIENT_SECRET=
 GITHUB_CALLBACK_URL=http://localhost:3000/api/auth/github/callback
@@ -138,6 +145,8 @@ npm run start:dev
 npm run build
 npm run start:prod
 ```
+
+默认安全基线包含：`HttpOnly + SameSite=Strict` Cookie、带凭证的精确 CORS 白名单、`Content-Security-Policy`、`Referrer-Policy` 与 `Permissions-Policy`。如果前后端部署在真正跨站点域名下，需要显式将 `AUTH_COOKIE_SAME_SITE=none` 且同时开启 `AUTH_COOKIE_SECURE=true`。
 
 ## 📋 数据库实体
 

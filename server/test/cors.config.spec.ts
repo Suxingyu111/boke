@@ -5,9 +5,17 @@ describe('buildCorsOptions', () => {
     const options = buildCorsOptions({
       allowedOrigins: ['http://localhost:5173'],
       allowRequestsWithoutOrigin: true,
+      allowedMethods: ['GET', 'POST', 'OPTIONS'],
+      allowedHeaders: ['Accept', 'Content-Type', 'X-CSRF-Token'],
+      exposedHeaders: ['Content-Disposition', 'X-Cache'],
+      maxAgeSeconds: 600,
     });
 
     expect(options.credentials).toBe(true);
+    expect(options.methods).toEqual(['GET', 'POST', 'OPTIONS']);
+    expect(options.allowedHeaders).toEqual(['Accept', 'Content-Type', 'X-CSRF-Token']);
+    expect(options.exposedHeaders).toEqual(['Content-Disposition', 'X-Cache']);
+    expect(options.maxAge).toBe(600);
     expect(options.origin).toEqual(expect.any(Function));
 
     const originDelegate = options.origin as (
@@ -28,6 +36,10 @@ describe('buildCorsOptions', () => {
     const options = buildCorsOptions({
       allowedOrigins: ['http://localhost:5173'],
       allowRequestsWithoutOrigin: false,
+      allowedMethods: ['GET'],
+      allowedHeaders: ['Accept'],
+      exposedHeaders: [],
+      maxAgeSeconds: 0,
     });
 
     const originDelegate = options.origin as (

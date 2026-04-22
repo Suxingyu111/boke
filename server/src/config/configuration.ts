@@ -1,6 +1,66 @@
+type CookieSameSiteValue = 'strict' | 'lax' | 'none';
+
+const DEFAULT_CORS_METHODS = ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE', 'OPTIONS'];
+const DEFAULT_CORS_ALLOWED_HEADERS = [
+  'Accept',
+  'Authorization',
+  'Content-Type',
+  'Origin',
+  'X-CSRF-Token',
+  'X-Requested-With',
+];
+const DEFAULT_CORS_EXPOSED_HEADERS = ['Content-Disposition', 'X-Cache'];
+const DEFAULT_PERMISSIONS_POLICY = [
+  'accelerometer=()',
+  'autoplay=()',
+  'camera=()',
+  'display-capture=()',
+  'encrypted-media=()',
+  'fullscreen=(self)',
+  'geolocation=()',
+  'gyroscope=()',
+  'magnetometer=()',
+  'microphone=()',
+  'midi=()',
+  'payment=()',
+  'usb=()',
+  'xr-spatial-tracking=()',
+].join(', ');
+
 const parseNumber = (value: string | undefined, fallback: number): number => {
   const parsed = Number.parseInt(value ?? '', 10);
   return Number.isNaN(parsed) ? fallback : parsed;
+};
+
+const parseBoolean = (value: string | undefined, fallback: boolean): boolean => {
+  if (value === undefined) {
+    return fallback;
+  }
+
+  return value === 'true';
+};
+
+const parseStringList = (value: string | undefined, fallback: string[]): string[] => {
+  if (!value || value.trim().length === 0) {
+    return [...fallback];
+  }
+
+  return value
+    .split(',')
+    .map(item => item.trim())
+    .filter(Boolean);
+};
+
+const parseCookieSameSite = (
+  value: string | undefined,
+  fallback: CookieSameSiteValue,
+): CookieSameSiteValue => {
+  const normalizedValue = value?.trim().toLowerCase();
+  if (normalizedValue === 'strict' || normalizedValue === 'lax' || normalizedValue === 'none') {
+    return normalizedValue;
+  }
+
+  return fallback;
 };
 
 const parseCorsOrigins = (value: string | undefined, nodeEnv: string): string[] => {
@@ -43,6 +103,11 @@ export const configuration = (): {
   security: {
     trustProxy: boolean;
     hstsEnabled: boolean;
+    cookieSecure: boolean;
+    cookieSameSite: CookieSameSiteValue;
+    referrerPolicy: string;
+    permissionsPolicy: string;
+    cspReportOnly: boolean;
   };
   database: {
     type: string;
@@ -67,6 +132,7 @@ export const configuration = (): {
   auth: {
     cookieName: string;
     stepUpCookieName: string;
+    stepUpCookiePath: string;
     stepUpTtl: string;
     stepUpWindowMs: number;
   };
@@ -92,6 +158,10 @@ export const configuration = (): {
   cors: {
     origins: string[];
     allowRequestsWithoutOrigin: boolean;
+    allowedMethods: string[];
+    allowedHeaders: string[];
+    exposedHeaders: string[];
+    maxAgeSeconds: number;
   };
   elasticsearch: {
     node: string;
@@ -140,6 +210,19 @@ export const configuration = (): {
       process.env.SECURITY_HSTS_ENABLED !== undefined
         ? process.env.SECURITY_HSTS_ENABLED === 'true'
         : (process.env.NODE_ENV || 'development') === 'production',
+    cookieSecure: parseBoolean(
+      process.env.AUTH_COOKIE_SECURE,
+      (process.env.NODE_ENV || 'development') === 'production',
+    ),
+    cookieSameSite: parseCookieSameSite(process.env.AUTH_COOKIE_SAME_SITE, 'strict'),
+    referrerPolicy:
+      process.env.SECURITY_REFERRER_POLICY || 'strict-origin-when-cross-origin',
+    permissionsPolicy:
+      process.env.SECURITY_PERMISSIONS_POLICY || DEFAULT_PERMISSIONS_POLICY,
+    cspReportOnly: parseBoolean(
+      process.env.SECURITY_CSP_REPORT_ONLY,
+      (process.env.NODE_ENV || 'development') !== 'production',
+    ),
   },
   database: {
     type: process.env.DB_TYPE || 'mysql',
@@ -164,6 +247,7 @@ export const configuration = (): {
   auth: {
     cookieName: process.env.AUTH_COOKIE_NAME || 'blog_auth_token',
     stepUpCookieName: process.env.AUTH_STEP_UP_COOKIE_NAME || 'blog_admin_step_up',
+    stepUpCookiePath: process.env.AUTH_STEP_UP_COOKIE_PATH || '/api/admin',
     stepUpTtl: process.env.AUTH_STEP_UP_TTL || '10m',
     stepUpWindowMs: parseNumber(process.env.AUTH_STEP_UP_WINDOW_MS, 10 * 60 * 1000),
   },
@@ -188,7 +272,20 @@ export const configuration = (): {
   },
   cors: {
     origins: parseCorsOrigins(process.env.CORS_ORIGINS, process.env.NODE_ENV || 'development'),
-    allowRequestsWithoutOrigin: (process.env.NODE_ENV || 'development') !== 'production',
+    allowRequestsWithoutOrigin: parseBoolean(
+      process.env.CORS_ALLOW_REQUESTS_WITHOUT_ORIGIN,
+      (process.env.NODE_ENV || 'development') !== 'production',
+    ),
+    allowedMethods: parseStringList(process.env.CORS_ALLOWED_METHODS, DEFAULT_CORS_METHODS),
+    allowedHeaders: parseStringList(
+      process.env.CORS_ALLOWED_HEADERS,
+      DEFAULT_CORS_ALLOWED_HEADERS,
+    ),
+    exposedHeaders: parseStringList(
+      process.env.CORS_EXPOSED_HEADERS,
+      DEFAULT_CORS_EXPOSED_HEADERS,
+    ),
+    maxAgeSeconds: parseNumber(process.env.CORS_MAX_AGE_SECONDS, 600),
   },
   elasticsearch: {
     node: process.env.ES_NODE || 'http://localhost:9200',

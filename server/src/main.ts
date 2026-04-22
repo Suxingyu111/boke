@@ -4,6 +4,7 @@ import { json, urlencoded } from 'express';
 import { NestFactory } from '@nestjs/core';
 import { Logger, ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import type { NextFunction, Request, Response } from 'express';
 import { AppModule } from './app.module';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 import { ResponseInterceptor } from './common/interceptors/response.interceptor';
@@ -15,6 +16,11 @@ import {
   setupSwagger,
 } from './common/swagger/swagger-document';
 import { buildCorsOptions } from './config/cors.config';
+import {
+  DEFAULT_PERMISSIONS_POLICY,
+  ReferrerPolicyValue,
+  buildHelmetOptions,
+} from './config/security-headers.config';
 
 const bootstrapLogger = new Logger('Bootstrap');
 
@@ -27,8 +33,39 @@ async function bootstrap(): Promise<void> {
     'cors.allowRequestsWithoutOrigin',
     true,
   );
+  const corsAllowedMethods = configService.get<string[]>('cors.allowedMethods', [
+    'GET',
+    'HEAD',
+    'PUT',
+    'PATCH',
+    'POST',
+    'DELETE',
+    'OPTIONS',
+  ]);
+  const corsAllowedHeaders = configService.get<string[]>('cors.allowedHeaders', [
+    'Accept',
+    'Authorization',
+    'Content-Type',
+    'Origin',
+    'X-CSRF-Token',
+    'X-Requested-With',
+  ]);
+  const corsExposedHeaders = configService.get<string[]>('cors.exposedHeaders', [
+    'Content-Disposition',
+    'X-Cache',
+  ]);
+  const corsMaxAgeSeconds = configService.get<number>('cors.maxAgeSeconds', 600);
   const trustProxy = configService.get<boolean>('security.trustProxy', false);
   const hstsEnabled = configService.get<boolean>('security.hstsEnabled', nodeEnv === 'production');
+  const referrerPolicy = configService.get<ReferrerPolicyValue>(
+    'security.referrerPolicy',
+    'strict-origin-when-cross-origin',
+  );
+  const permissionsPolicy = configService.get<string>(
+    'security.permissionsPolicy',
+    DEFAULT_PERMISSIONS_POLICY,
+  );
+  const cspReportOnly = configService.get<boolean>('security.cspReportOnly', nodeEnv !== 'production');
   const swaggerEnabledValue = configService.get<string | boolean>('SWAGGER_ENABLED');
   const swaggerEnabled =
     typeof swaggerEnabledValue === 'boolean'
@@ -38,10 +75,19 @@ async function bootstrap(): Promise<void> {
         : nodeEnv !== 'production';
 
   app.use(
-    helmet({
-      hsts: hstsEnabled,
-    }),
+    helmet(
+      buildHelmetOptions({
+        allowedOrigins: corsOrigins,
+        hstsEnabled,
+        referrerPolicy,
+        cspReportOnly,
+      }),
+    ),
   );
+  app.use((_request: Request, response: Response, next: NextFunction) => {
+    response.setHeader('Permissions-Policy', permissionsPolicy);
+    next();
+  });
   app.getHttpAdapter().getInstance().disable('x-powered-by');
   if (trustProxy) {
     app.getHttpAdapter().getInstance().set('trust proxy', 1);
@@ -56,6 +102,10 @@ async function bootstrap(): Promise<void> {
     buildCorsOptions({
       allowedOrigins: corsOrigins,
       allowRequestsWithoutOrigin,
+      allowedMethods: corsAllowedMethods,
+      allowedHeaders: corsAllowedHeaders,
+      exposedHeaders: corsExposedHeaders,
+      maxAgeSeconds: corsMaxAgeSeconds,
     }),
   );
 

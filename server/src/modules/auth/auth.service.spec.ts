@@ -8,15 +8,18 @@ import { AuthService } from './auth.service';
 
 describe('AuthService OAuth 安全行为', () => {
   let service: AuthService;
-  let configValues: Record<string, string>;
+  let configValues: Record<string, string | boolean>;
 
   beforeEach(async () => {
     configValues = {
       'oauth.clientUrl': 'https://client.example.com',
       'auth.cookieName': 'blog_auth_token',
       'auth.stepUpCookieName': 'blog_admin_step_up',
+      'auth.stepUpCookiePath': '/api/admin',
       'auth.stepUpTtl': '10m',
       'jwt.expiresIn': '7d',
+      'security.cookieSecure': true,
+      'security.cookieSameSite': 'strict',
       nodeEnv: 'production',
     };
 
@@ -81,7 +84,7 @@ describe('AuthService OAuth 安全行为', () => {
       expect.objectContaining({
         httpOnly: true,
         secure: true,
-        sameSite: 'lax',
+        sameSite: 'strict',
         path: '/',
       }),
     );
@@ -90,7 +93,7 @@ describe('AuthService OAuth 安全行为', () => {
       expect.objectContaining({
         httpOnly: true,
         secure: true,
-        sameSite: 'lax',
+        sameSite: 'strict',
         path: '/',
       }),
     );
@@ -100,8 +103,8 @@ describe('AuthService OAuth 安全行为', () => {
       expect.objectContaining({
         httpOnly: true,
         secure: true,
-        sameSite: 'lax',
-        path: '/',
+        sameSite: 'strict',
+        path: '/api/admin',
       }),
     );
     expect(response.clearCookie).toHaveBeenCalledWith(
@@ -109,8 +112,8 @@ describe('AuthService OAuth 安全行为', () => {
       expect.objectContaining({
         httpOnly: true,
         secure: true,
-        sameSite: 'lax',
-        path: '/',
+        sameSite: 'strict',
+        path: '/api/admin',
       }),
     );
   });

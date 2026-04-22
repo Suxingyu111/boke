@@ -96,6 +96,8 @@ export const http = axios.create({
 });
 
 http.interceptors.request.use((config) => {
+  config.withCredentials = true;
+  config.headers.Accept = "application/json";
   config.headers["X-Requested-With"] = "XMLHttpRequest";
 
   if (!["get", "head", "options"].includes(config.method ?? "get")) {
@@ -115,9 +117,10 @@ http.interceptors.response.use(
       sessionStorage.removeItem("blog_session_token");
       sessionStorage.removeItem("blog_user");
       sessionStorage.removeItem("blog_session_auth");
+      sessionStorage.removeItem(csrfStorageKey);
     }
 
-  return Promise.reject(error);
+    return Promise.reject(error);
   },
 );
 

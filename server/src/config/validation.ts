@@ -12,6 +12,11 @@ export const validationSchema = Joi.object({
   APP_NAME: Joi.string().default('Blog System'),
   APP_DESC: Joi.string(),
   CORS_ORIGINS: Joi.string().allow('').optional(),
+  CORS_ALLOW_REQUESTS_WITHOUT_ORIGIN: Joi.boolean().optional(),
+  CORS_ALLOWED_METHODS: Joi.string().allow('').optional(),
+  CORS_ALLOWED_HEADERS: Joi.string().allow('').optional(),
+  CORS_EXPOSED_HEADERS: Joi.string().allow('').optional(),
+  CORS_MAX_AGE_SECONDS: Joi.number().integer().min(0).default(600),
   THROTTLE_TTL: Joi.number().default(60000),
   THROTTLE_LIMIT: Joi.number().default(120),
   CACHE_ENABLED: Joi.boolean().default(true),
@@ -58,9 +63,26 @@ export const validationSchema = Joi.object({
   }),
   JWT_EXPIRATION: Joi.string().default('7d'),
   AUTH_COOKIE_NAME: Joi.string().trim().min(3).default('blog_auth_token'),
+  AUTH_COOKIE_SECURE: Joi.boolean().optional(),
+  AUTH_COOKIE_SAME_SITE: Joi.string().valid('strict', 'lax', 'none').default('strict'),
   AUTH_STEP_UP_COOKIE_NAME: Joi.string().trim().min(3).default('blog_admin_step_up'),
+  AUTH_STEP_UP_COOKIE_PATH: Joi.string().pattern(/^\//).default('/api/admin'),
   AUTH_STEP_UP_TTL: Joi.string().default('10m'),
   AUTH_STEP_UP_WINDOW_MS: Joi.number().integer().min(60000).default(600000),
+  SECURITY_CSP_REPORT_ONLY: Joi.boolean().optional(),
+  SECURITY_REFERRER_POLICY: Joi.string()
+    .valid(
+      'no-referrer',
+      'no-referrer-when-downgrade',
+      'origin',
+      'origin-when-cross-origin',
+      'same-origin',
+      'strict-origin',
+      'strict-origin-when-cross-origin',
+      'unsafe-url',
+    )
+    .default('strict-origin-when-cross-origin'),
+  SECURITY_PERMISSIONS_POLICY: Joi.string().trim().min(1).optional(),
   CLIENT_URL: Joi.string().uri().default('http://localhost:5173'),
 
   // OAuth（可选）
@@ -98,6 +120,16 @@ export const validationSchema = Joi.object({
   SWAGGER_ENABLED: Joi.boolean().optional(),
 })
   .custom((value, helpers) => {
+    const cookieSecure =
+      value.AUTH_COOKIE_SECURE !== undefined
+        ? value.AUTH_COOKIE_SECURE
+        : value.NODE_ENV === 'production';
+    if (value.AUTH_COOKIE_SAME_SITE === 'none' && !cookieSecure) {
+      return helpers.error('any.custom', {
+        message: 'AUTH_COOKIE_SAME_SITE=none requires AUTH_COOKIE_SECURE=true',
+      });
+    }
+
     if (value.NODE_ENV !== 'production') {
       return value;
     }

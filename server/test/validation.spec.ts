@@ -75,4 +75,15 @@ describe('validationSchema', () => {
 
     expect(error).toBeUndefined();
   });
+
+  it('AUTH_COOKIE_SAME_SITE=none 时必须同时启用安全 Cookie', () => {
+    const { error } = validationSchema.validate({
+      ...baseEnv,
+      AUTH_COOKIE_SAME_SITE: 'none',
+      AUTH_COOKIE_SECURE: false,
+    });
+
+    expect(error).toBeDefined();
+    expect(error?.message).toContain('AUTH_COOKIE_SAME_SITE=none');
+  });
 });
