@@ -29,7 +29,9 @@ const articles = computed(() =>
 
 onMounted(async () => {
   await Promise.all([
-    contentStore.loadAdminContent(),
+    contentStore.loadAdminContent().catch(() => {
+      // 内容加载失败时优雅降级，不让错误传播触发错误边界
+    }),
     siteStore.loadDashboardStats(),
     siteStore.loadRecentArticles(5),
   ]);
@@ -46,6 +48,12 @@ onMounted(async () => {
       class="mt-5 rounded-md border border-coral/30 bg-coral/10 px-3 py-2 text-sm text-coral"
     >
       {{ siteStore.statsError }}
+    </p>
+    <p
+      v-if="contentStore.errorMessage"
+      class="mt-3 rounded-md border border-coral/30 bg-coral/10 px-3 py-2 text-sm text-coral"
+    >
+      {{ contentStore.errorMessage }}
     </p>
 
     <div class="mt-8 grid gap-4 md:grid-cols-3">

@@ -348,11 +348,11 @@ function removeTimelineItem(index: number) {
         >
           {{ siteStore.aboutSettingsSaving ? "正在保存..." : "保存关于页" }}
         </button>
-        <span v-if="siteStore.settingsNotice" class="text-sm text-green-600">
-          {{ siteStore.settingsNotice }}
+        <span v-if="siteStore.aboutSettingsNotice" class="text-sm text-green-600">
+          {{ siteStore.aboutSettingsNotice }}
         </span>
-        <span v-if="siteStore.settingsError" class="text-sm text-red-600">
-          {{ siteStore.settingsError }}
+        <span v-if="siteStore.aboutSettingsError" class="text-sm text-red-600">
+          {{ siteStore.aboutSettingsError }}
         </span>
       </div>
     </form>

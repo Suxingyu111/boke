@@ -269,6 +269,8 @@ export const useSiteStore = defineStore("site", {
     recentArticlesLoading: false,
     settingsError: "",
     settingsNotice: "",
+    aboutSettingsNotice: "",
+    aboutSettingsError: "",
     statsError: "",
     recentArticlesError: "",
   }),
@@ -348,15 +350,15 @@ export const useSiteStore = defineStore("site", {
     },
     async saveAboutSettings(settings: AboutSettings) {
       this.aboutSettingsSaving = true;
-      this.settingsError = "";
-      this.settingsNotice = "";
+      this.aboutSettingsError = "";
+      this.aboutSettingsNotice = "";
       try {
         const raw = await settingsApi.saveAboutSettings(settings);
         this.aboutSettings = normalizeAboutSettings(raw);
-        this.settingsNotice = "关于页信息已保存";
+        this.aboutSettingsNotice = "关于页信息已保存";
         return true;
       } catch (error) {
-        this.settingsError = getApiErrorMessage(error, "关于页信息保存失败");
+        this.aboutSettingsError = getApiErrorMessage(error, "关于页信息保存失败");
         return false;
       } finally {
         this.aboutSettingsSaving = false;

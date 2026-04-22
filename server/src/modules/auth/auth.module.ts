@@ -53,6 +53,6 @@ import { JwtStrategy } from './strategies/jwt.strategy';
     StepUpGuard,
     SuperAdminBootstrapService,
   ],
-  exports: [AuthService, StepUpGuard],
+  exports: [AuthService, StepUpGuard, JwtModule],
 })
 export class AuthModule {}
