@@ -46,8 +46,9 @@
 5. **安装依赖**
    ```bash
    npm install
-   # 或使用 pnpm（推荐）
-   pnpm install
+
+   # 需要完全复现 lockfile 的环境（CI / Docker）请改用：
+   npm ci
    ```
 
 6. **启动应用**

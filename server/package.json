@@ -4,6 +4,7 @@
   "description": "Personal blog system backend with NestJS",
   "author": "Blog Author",
   "private": true,
+  "packageManager": "npm@10.8.2",
   "license": "MIT",
   "scripts": {
     "build": "nest build",

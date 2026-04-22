@@ -56,8 +56,12 @@ server/
 ```bash
 cd server
 npm install
-# 或
-pnpm install
+```
+
+CI / Docker 等需要可复现依赖树的场景请使用：
+
+```bash
+npm ci
 ```
 
 ### 2. 配置环境变量
@@ -102,6 +106,8 @@ CORS_ALLOWED_HEADERS=Accept,Authorization,Content-Type,Origin,X-CSRF-Token,X-Req
 CORS_EXPOSED_HEADERS=Content-Disposition,X-Cache
 SECURITY_CSP_REPORT_ONLY=true
 SECURITY_REFERRER_POLICY=strict-origin-when-cross-origin
+SUPER_ADMIN_USERNAME=rootmaster
+SUPER_ADMIN_PASSWORD=change_me_super_admin_password_strong
 GITHUB_CLIENT_ID=
 GITHUB_CLIENT_SECRET=
 GITHUB_CALLBACK_URL=http://localhost:3000/api/auth/github/callback
@@ -109,6 +115,8 @@ GOOGLE_CLIENT_ID=
 GOOGLE_CLIENT_SECRET=
 GOOGLE_CALLBACK_URL=http://localhost:3000/api/auth/google/callback
 ```
+
+后端默认仅支持 **npm + package-lock.json**。Dockerfile 与 CI 统一使用 `npm ci`，不要再引入 `pnpm-lock.yaml` 或其他锁文件。
 
 ### 3. 初始化数据库
 
