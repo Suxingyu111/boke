@@ -1,6 +1,6 @@
 # 📝 个人博客系统
 
-基于 **Vue 3 + NestJS** 的全栈博客系统，前后端完全分离，后端提供 **28 个功能模块**，覆盖内容管理、社区互动、付费变现、SEO 优化、安全防护、系统运维等完整能力。
+基于 **Vue 3 + NestJS** 的全栈博客系统，前后端完全分离，后端提供 **27 个功能模块**，覆盖内容管理、社区互动、SEO 优化、安全防护、系统运维等完整能力。
 
 ---
 
@@ -74,7 +74,7 @@
 │                                                      │
 │  ┌──────────────┐ ┌──────────────┐ ┌──────────────┐ │
 │  │ Controllers  │ │   Services   │ │ Guards/Pipes/ │ │
-│  │ (28 模块)    │ │  (业务逻辑)  │ │ Interceptors  │ │
+│  │ (27 模块)    │ │  (业务逻辑)  │ │ Interceptors  │ │
 │  └──────────────┘ └──────────────┘ └──────────────┘ │
 └────────┬──────────────┬──────────────┬───────────────┘
          │              │              │
@@ -126,10 +126,9 @@
 | 🔔 站内通知 | 评论回复/系统/公告等通知、未读徽标、批量已读 |
 | 📢 公告管理 | 发布/置顶/管理公告 |
 
-### 运营与变现
+### 运营能力
 | 功能 | 说明 |
 |------|------|
-| 💰 付费内容 | 文章定价、可配置预览比例（默认 30%）、购买记录 |
 | 📧 邮件订阅 | 双重确认订阅、退订、新文章推送通知 |
 | 🔗 友情链接 | 展示、申请提交、审核管理 |
 | 📊 访客统计 | PV/UV、设备/浏览器/OS、热门页面、来源分析 |
@@ -165,7 +164,6 @@
 - 分享功能（原生分享、微博、X/Twitter、复制链接）
 - 目录导航（根据 h2/h3 自动生成，移动端可折叠）
 - 页面顶部阅读进度条
-- 付费内容门控（未购买显示价格与购买按钮）
 - 相关文章推荐（基于标签/分类/阅读量权重排序）
 - 侧栏热门文章（Top 4）
 - 收藏按钮（登录用户可收藏/取消）
@@ -203,7 +201,6 @@
 - 修改密码（旧密码验证、新密码强度指示器）
 - 我的收藏（收藏文章列表，可跳转原文）
 - 通知中心（未读徽标、回复/点赞/系统通知、已读/删除）
-- 已购内容（付费文章购买记录）
 
 ### 管理后台（需登录 + 角色权限）
 
@@ -256,7 +253,7 @@
 |-------|------|
 | `auth` | JWT Token、用户信息、登录/注册/登出/二次认证 |
 | `content` | 文章/分类/标签 CRUD、公共内容加载 |
-| `ecosystem` | 归档、搜索、付费内容、购买记录 |
+| `ecosystem` | 归档、搜索 |
 | `user` | 个人资料、收藏、通知、头像上传 |
 | `community` | 公告、留言板、访客统计 |
 | `pages` | 自定义页面 CRUD |
@@ -426,20 +423,7 @@
 
 - SMTP 邮件发送、Token 验证双重确认、最多 3 次重试
 
-### 14. 付费内容（Paid Content）
-
-| 端点 | 说明 | 角色 |
-|------|------|------|
-| `GET /api/paid-content/:articleId/info` | 获取定价信息 | 可选 |
-| `GET /api/paid-content/:articleId/content` | 获取内容（未购显示预览） | 可选 |
-| `POST /api/paid-content/purchase` | 购买文章 | JWT |
-| `GET /api/paid-content/:articleId/check` | 检查购买状态 | JWT |
-| `GET /api/paid-content/my-purchases` | 我的购买记录 | JWT |
-| `PUT /api/admin/paid-content/:articleId` | 设置付费（价格/预览比例） | Author+ |
-| `DELETE /api/admin/paid-content/:articleId` | 取消付费 | Author+ |
-| `GET /api/admin/paid-content/:articleId/purchases` | 购买记录统计 | Author+ |
-
-### 15. 用户中心（Users）
+### 14. 用户中心（Users）
 
 | 端点 | 说明 | 角色 |
 |------|------|------|
@@ -451,7 +435,7 @@
 
 - 头像压缩：WebP 格式、最大 1024px、质量 85%、自动 EXIF 旋转
 
-### 16. 公告（Announcements）
+### 15. 公告（Announcements）
 
 | 端点 | 说明 | 角色 |
 |------|------|------|
@@ -459,7 +443,7 @@
 | `GET /api/announcements/pinned` | 最新置顶公告 | 无 |
 | `CRUD /api/admin/announcements` | 公告管理 | Admin+ |
 
-### 17. 站点设置（Settings）
+### 16. 站点设置（Settings）
 
 | 端点 | 说明 | 角色 |
 |------|------|------|
@@ -469,7 +453,7 @@
 
 - Key-Value 存储、类型标注、分组管理、公开/私有标志
 
-### 18. SEO 模块
+### 17. SEO 模块
 
 | 端点 | 说明 | 角色 |
 |------|------|------|
@@ -480,7 +464,7 @@
 
 - OpenGraph 标签、作者归属、发布日期、分类信息
 
-### 19. 国际化（i18n）
+### 18. 国际化（i18n）
 
 | 端点 | 说明 | 角色 |
 |------|------|------|
@@ -491,14 +475,14 @@
 
 - 支持 zh-CN / en-US，内置翻译 + 数据库自定义覆盖
 
-### 20. 仪表盘（Dashboard）
+### 19. 仪表盘（Dashboard）
 
 | 端点 | 说明 | 角色 |
 |------|------|------|
 | `GET /api/admin/dashboard/stats` | 综合统计数据 | Admin+ |
 | `GET /api/admin/dashboard/recent-articles` | 近期文章列表 | Admin+ |
 
-### 21. 访客统计（Visitor Stats）
+### 20. 访客统计（Visitor Stats）
 
 | 端点 | 说明 | 角色 |
 |------|------|------|
@@ -509,7 +493,7 @@
 | `GET /api/admin/stats/referers` | 来源统计 | Admin+ |
 | `GET /api/admin/stats/devices` | 设备/浏览器/OS 分布 | Admin+ |
 
-### 22. 数据备份（Backup）
+### 21. 数据备份（Backup）
 
 | 端点 | 说明 | 角色 |
 |------|------|------|
@@ -519,7 +503,7 @@
 | `POST /api/admin/backup/:filename/restore` | 恢复备份（需二次认证） | Admin+ |
 | `DELETE /api/admin/backup/:filename` | 删除备份 | Admin+ |
 
-### 23. 多人协作（Collaboration）
+### 22. 多人协作（Collaboration）
 
 | 端点 | 说明 | 角色 |
 |------|------|------|
@@ -531,7 +515,7 @@
 
 - 权限等级：viewer / editor，变更追踪记录
 
-### 24. 媒体库（Media Assets）
+### 23. 媒体库（Media Assets）
 
 | 端点 | 说明 | 角色 |
 |------|------|------|
@@ -543,7 +527,7 @@
 - 支持：JPEG、PNG、WebP、GIF、PDF、TXT、JSON、Markdown
 - SHA256 内容去重、Alt 文本支持
 
-### 25. 操作日志（Operation Logs）
+### 24. 操作日志（Operation Logs）
 
 | 端点 | 说明 | 角色 |
 |------|------|------|
@@ -551,7 +535,7 @@
 
 - 全局拦截器自动记录：模块名/操作名/目标/请求/响应/IP
 
-### 26. 健康检查（Health）
+### 25. 健康检查（Health）
 
 | 端点 | 说明 | 角色 |
 |------|------|------|
@@ -559,7 +543,7 @@
 
 - 检测 MySQL 和 Redis 连通性，返回 ok / degraded
 
-### 27. RSS/Atom 订阅源（Feed）
+### 26. RSS/Atom 订阅源（Feed）
 
 | 端点 | 说明 | 角色 |
 |------|------|------|
@@ -568,7 +552,7 @@
 
 - Redis 缓存（5 分钟服务端缓存，2 分钟客户端缓存）
 
-### 28. 数据库管理（Database Admin）
+### 27. 数据库管理（Database Admin）
 
 | 端点 | 说明 | 角色 |
 |------|------|------|
@@ -609,7 +593,7 @@
 | `article_series_items` | 系列文章关联（series_id, article_id, sort_order） |
 | `email_subscribers` | 邮件订阅（email, confirm_token, is_confirmed） |
 
-### 社区与变现表
+### 社区扩展表
 | 表名 | 说明 |
 |------|------|
 | `user_favorites` | 文章收藏（user_id, article_id） |
@@ -617,8 +601,6 @@
 | `visitor_logs` | 访客日志（ip, path, device, browser, os） |
 | `guestbook` | 留言板（nickname, content, status） |
 | `announcements` | 公告（title, content, status, is_pinned） |
-| `paid_contents` | 付费设置（article_id, price, preview_percent） |
-| `article_purchases` | 购买记录（article_id, user_id, paid_amount） |
 | `draft_collaborators` | 协作者（article_id, user_id, permission） |
 | `draft_edit_logs` | 协作编辑历史（article_id, field_changed, old_value） |
 | `email_notifications` | 邮件队列（to_email, subject, status, retry_count） |
@@ -775,7 +757,7 @@ boke/
 ├── server/                         # 后端（NestJS）
 │   ├── src/
 │   │   ├── main.ts                # 应用入口
-│   │   ├── app.module.ts          # 根模块（28 模块注册）
+│   │   ├── app.module.ts          # 根模块（27 模块注册）
 │   │   ├── config/                # 配置管理（Joi 验证）
 │   │   ├── common/                # 公共工具
 │   │   │   ├── filters/           # 全局异常过滤器
@@ -784,7 +766,7 @@ boke/
 │   │   │   ├── redis/             # Redis 模块
 │   │   │   └── security/          # 安全模块（响应头/缓存）
 │   │   ├── database/              # 数据库（TypeORM 实体/迁移）
-│   │   └── modules/               # 功能模块（28 个）
+│   │   └── modules/               # 功能模块（27 个）
 │   │       ├── announcements/     # 公告
 │   │       ├── archives/          # 归档
 │   │       ├── article-series/    # 文章系列
@@ -805,7 +787,6 @@ boke/
 │   │       ├── notifications/     # 邮件通知/订阅
 │   │       ├── operation-logs/    # 操作日志
 │   │       ├── pages/             # 页面与友链
-│   │       ├── paid-content/      # 付费内容
 │   │       ├── search/            # 全文搜索
 │   │       ├── seo/               # SEO
 │   │       ├── settings/          # 站点设置

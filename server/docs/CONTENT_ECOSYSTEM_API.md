@@ -1,6 +1,6 @@
 # 内容生态扩展接口文档
 
-本文档覆盖博客系统"内容生态"模块的全部接口，包括：文章归档、全文搜索、草稿协作、付费内容、邮件通知/订阅。
+本文档覆盖博客系统"内容生态"模块的全部接口，包括：文章归档、全文搜索、草稿协作、邮件通知/订阅。
 
 ## 基础信息
 
@@ -17,8 +17,6 @@
 | 搜索 | 公开 | 无需登录 |
 | 搜索管理 | 管理端 | admin |
 | 草稿协作 | 管理端 | author |
-| 付费内容管理 | 管理端 | author |
-| 付费内容（公开） | 部分需认证 | user（购买时） |
 | 通知管理 | 管理端 | admin |
 | 订阅 | 公开 | 无需登录 |
 
@@ -399,216 +397,11 @@ GET /api/admin/collaboration/:articleId/history
 
 ---
 
-## 四、付费内容
-
-### 管理端接口
-
-#### 4.1 设置文章为付费
-
-**请求**
-
-```
-PUT /api/admin/paid-content/:articleId
-```
-
-**权限**：author 及以上（仅文章作者或 admin）
-
-**请求体**
-
-```json
-{
-  "price": 9.99,
-  "previewPercent": 30,
-  "isActive": true,
-  "description": "本文为付费文章，支付后可查看完整内容"
-}
-```
-
-| 字段 | 类型 | 必填 | 说明 |
-|------|------|------|------|
-| price | number | 是 | 价格（0.01 ~ 99999.99，最多两位小数） |
-| previewPercent | int | 否 | 免费预览比例（0-100），默认 30 |
-| isActive | boolean | 否 | 是否生效 |
-| description | string | 否 | 付费说明 |
-
-**响应**：返回付费配置对象
-
-#### 4.2 移除付费设置
-
-**请求**
-
-```
-DELETE /api/admin/paid-content/:articleId
-```
-
-**权限**：author 及以上（仅文章作者或 admin）
-
-**响应**：返回 `{ deleted: true }`
-
-#### 4.3 查看文章购买记录
-
-**请求**
-
-```
-GET /api/admin/paid-content/:articleId/purchases
-```
-
-**权限**：admin 及以上
-
-**响应示例**
-
-```json
-{
-  "success": true,
-  "statusCode": 200,
-  "data": [
-    {
-      "id": "uuid",
-      "articleId": "uuid",
-      "userId": "uuid",
-      "paidAmount": 9.99,
-      "paymentMethod": "wechat",
-      "transactionId": "tx_123456",
-      "purchasedAt": "2026-04-16T10:00:00.000Z"
-    }
-  ],
-  "message": "Success",
-  "timestamp": "2026-04-16T10:00:00.000Z"
-}
-```
-
-### 公开端接口
-
-#### 4.4 获取付费信息
-
-**请求**
-
-```
-GET /api/paid-content/:articleId/info
-```
-
-**权限**：无需登录
-
-**响应示例**
-
-```json
-{
-  "success": true,
-  "statusCode": 200,
-  "data": {
-    "isPaid": true,
-    "price": 9.99,
-    "previewPercent": 30,
-    "description": "付费后可查看完整内容"
-  },
-  "message": "Success",
-  "timestamp": "2026-04-16T10:00:00.000Z"
-}
-```
-
-#### 4.5 获取文章内容（自动截断）
-
-未购买的付费文章，内容会按 previewPercent 比例截断。
-
-**请求**
-
-```
-GET /api/paid-content/:articleId/content
-```
-
-**权限**：无需登录（未登录/未购买返回截断内容）
-
-**响应示例**（未购买时）
-
-```json
-{
-  "success": true,
-  "statusCode": 200,
-  "data": {
-    "content": "截断后的正文...",
-    "isTruncated": true,
-    "previewPercent": 30
-  },
-  "message": "Success",
-  "timestamp": "2026-04-16T10:00:00.000Z"
-}
-```
-
-**说明**：文章作者始终看到完整内容
-
-#### 4.6 购买文章
-
-**请求**
-
-```
-POST /api/paid-content/purchase
-```
-
-**权限**：需登录（user 及以上）
-
-**请求体**
-
-```json
-{
-  "articleId": "uuid",
-  "paymentMethod": "wechat",
-  "transactionId": "tx_123456"
-}
-```
-
-| 字段 | 类型 | 必填 | 说明 |
-|------|------|------|------|
-| articleId | UUID | 是 | 文章 ID |
-| paymentMethod | string | 否 | 支付方式，最长 50 |
-| transactionId | string | 否 | 交易流水号，最长 200 |
-
-**响应**：返回购买记录对象
-
-**错误场景**：
-- 非付费文章：400
-- 已购买：409
-
-#### 4.7 检查是否已购买
-
-**请求**
-
-```
-GET /api/paid-content/:articleId/check
-```
-
-**权限**：需登录
-
-**响应示例**
-
-```json
-{
-  "success": true,
-  "statusCode": 200,
-  "data": { "purchased": true },
-  "message": "Success",
-  "timestamp": "2026-04-16T10:00:00.000Z"
-}
-```
-
-#### 4.8 获取我的购买列表
-
-**请求**
-
-```
-GET /api/paid-content/my-purchases
-```
-
-**权限**：需登录
-
-**响应**：返回当前用户的所有购买记录数组
-
----
-
-## 五、通知与订阅
+## 四、通知与订阅
 
 ### 公开端 - 邮件订阅
 
-#### 5.1 订阅
+#### 4.1 订阅
 
 **请求**
 
@@ -644,7 +437,7 @@ POST /api/subscriptions
 }
 ```
 
-#### 5.2 确认订阅
+#### 4.2 确认订阅
 
 **请求**
 
@@ -662,7 +455,7 @@ GET /api/subscriptions/confirm/:token
 
 **响应**：`{ confirmed: true }`
 
-#### 5.3 取消订阅
+#### 4.3 取消订阅
 
 **请求**
 
@@ -682,7 +475,7 @@ GET /api/subscriptions/unsubscribe/:token
 
 ### 管理端 - 通知管理
 
-#### 5.4 发送自定义通知邮件
+#### 4.4 发送自定义通知邮件
 
 **请求**
 
@@ -712,7 +505,7 @@ POST /api/admin/notifications/send
 
 **响应**：返回通知记录对象
 
-#### 5.5 通知订阅者新文章
+#### 4.5 通知订阅者新文章
 
 向所有已确认的活跃订阅者发送新文章通知邮件。
 
@@ -745,7 +538,7 @@ POST /api/admin/notifications/notify-subscribers
 }
 ```
 
-#### 5.6 重试发送失败的邮件
+#### 4.6 重试发送失败的邮件
 
 重试状态为 `failed` 且重试次数 < 3 的通知。
 
@@ -759,7 +552,7 @@ POST /api/admin/notifications/retry-failed
 
 **响应**：返回重试结果统计
 
-#### 5.7 获取通知记录列表
+#### 4.7 获取通知记录列表
 
 **请求**
 
@@ -778,7 +571,7 @@ GET /api/admin/notifications?page=1&pageSize=20
 
 **响应**：分页返回通知记录，含 `items`、`total`、`page`、`pageSize`
 
-#### 5.8 获取订阅者列表
+#### 4.8 获取订阅者列表
 
 **请求**
 
@@ -797,7 +590,7 @@ GET /api/admin/notifications/subscribers?page=1&pageSize=20
 
 **响应**：分页返回订阅者列表
 
-#### 5.9 删除订阅者
+#### 4.9 删除订阅者
 
 **请求**
 
@@ -817,7 +610,7 @@ DELETE /api/admin/notifications/subscribers/:id
 
 ---
 
-## 六、环境变量配置
+## 五、环境变量配置
 
 以下新增环境变量均为**可选**，未配置时对应功能以降级模式运行。
 
@@ -837,13 +630,11 @@ SMTP_FROM=Blog System <noreply@example.com>
 
 ---
 
-## 七、数据库新增实体
+## 六、数据库新增实体
 
 | 实体 | 表名 | 说明 |
 |------|------|------|
 | DraftCollaborator | draft_collaborators | 草稿协作者（文章-用户多对多） |
 | DraftEditLog | draft_edit_logs | 协作编辑日志 |
-| PaidContent | paid_contents | 文章付费配置 |
-| ArticlePurchase | article_purchases | 文章购买记录 |
 | EmailSubscriber | email_subscribers | 邮件订阅用户 |
 | EmailNotification | email_notifications | 邮件通知队列/日志 |

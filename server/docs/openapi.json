@@ -1774,198 +1774,6 @@
         "summary": "GET /api/admin/collaboration/{articleId}/history"
       }
     },
-    "/api/admin/paid-content/{articleId}": {
-      "put": {
-        "operationId": "AdminPaidContentController_setPaidContent",
-        "parameters": [
-          {
-            "name": "articleId",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/SetPaidContentDto"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "tags": [
-          "admin/paid-content"
-        ],
-        "summary": "PUT /api/admin/paid-content/{articleId}"
-      },
-      "delete": {
-        "operationId": "AdminPaidContentController_removePaidContent",
-        "parameters": [
-          {
-            "name": "articleId",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "tags": [
-          "admin/paid-content"
-        ],
-        "summary": "DELETE /api/admin/paid-content/{articleId}"
-      }
-    },
-    "/api/admin/paid-content/{articleId}/purchases": {
-      "get": {
-        "operationId": "AdminPaidContentController_getPurchaseRecords",
-        "parameters": [
-          {
-            "name": "articleId",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "tags": [
-          "admin/paid-content"
-        ],
-        "summary": "GET /api/admin/paid-content/{articleId}/purchases"
-      }
-    },
-    "/api/paid-content/{articleId}/info": {
-      "get": {
-        "operationId": "PublicPaidContentController_getPaidInfo",
-        "parameters": [
-          {
-            "name": "articleId",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "tags": [
-          "paid-content"
-        ],
-        "summary": "GET /api/paid-content/{articleId}/info"
-      }
-    },
-    "/api/paid-content/{articleId}/content": {
-      "get": {
-        "operationId": "PublicPaidContentController_getContent",
-        "parameters": [
-          {
-            "name": "articleId",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "tags": [
-          "paid-content"
-        ],
-        "summary": "GET /api/paid-content/{articleId}/content"
-      }
-    },
-    "/api/paid-content/purchase": {
-      "post": {
-        "operationId": "PublicPaidContentController_purchase",
-        "parameters": [],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/PurchaseArticleDto"
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": ""
-          }
-        },
-        "tags": [
-          "paid-content"
-        ],
-        "summary": "POST /api/paid-content/purchase"
-      }
-    },
-    "/api/paid-content/{articleId}/check": {
-      "get": {
-        "operationId": "PublicPaidContentController_checkPurchase",
-        "parameters": [
-          {
-            "name": "articleId",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "tags": [
-          "paid-content"
-        ],
-        "summary": "GET /api/paid-content/{articleId}/check"
-      }
-    },
-    "/api/paid-content/my-purchases": {
-      "get": {
-        "operationId": "PublicPaidContentController_getMyPurchases",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "tags": [
-          "paid-content"
-        ],
-        "summary": "GET /api/paid-content/my-purchases"
-      }
-    },
     "/api/admin/notifications/send": {
       "post": {
         "operationId": "AdminNotificationsController_sendNotification",
@@ -3832,9 +3640,6 @@
       "name": "admin/pages"
     },
     {
-      "name": "admin/paid-content"
-    },
-    {
       "name": "admin/search"
     },
     {
@@ -3893,9 +3698,6 @@
     },
     {
       "name": "pages"
-    },
-    {
-      "name": "paid-content"
     },
     {
       "name": "search"
@@ -4374,10 +4176,6 @@
         "properties": {}
       },
       "UpdateDraftDto": {
-        "type": "object",
-        "properties": {}
-      },
-      "SetPaidContentDto": {
         "type": "object",
         "properties": {}
       },

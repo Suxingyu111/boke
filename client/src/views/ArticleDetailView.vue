@@ -13,7 +13,6 @@ import * as contentApi from "@/api/content";
 import CommentSection from "@/components/CommentSection.vue";
 import { useAuthStore } from "@/stores/auth";
 import { useContentStore } from "@/stores/content";
-import { useEcosystemStore } from "@/stores/ecosystem";
 import { useUserStore } from "@/stores/user";
 import { handleMarkdownInteraction, renderStoredRichText } from "@/utils/markdown";
 
@@ -25,7 +24,6 @@ interface ArticleHeading {
 
 const route = useRoute();
 const contentStore = useContentStore();
-const ecosystemStore = useEcosystemStore();
 const authStore = useAuthStore();
 const userStore = useUserStore();
 
@@ -303,7 +301,6 @@ watch(
     } catch {
       articleError.value =
         contentStore.errorMessage ||
-        ecosystemStore.errorMessage ||
         "文章详情加载失败";
     } finally {
       detailReady.value = true;
