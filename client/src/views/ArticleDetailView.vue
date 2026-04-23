@@ -46,33 +46,9 @@ const articleHeadings = ref<ArticleHeading[]>([]);
 const articleBodyRef = ref<HTMLElement | null>(null);
 
 const renderedContent = computed(() =>
-  ecosystemStore.paidContent
-    ? renderStoredRichText(
-        ecosystemStore.paidContent.content,
-        ecosystemStore.paidContent.contentHtml,
-      )
-    : article.value
-      ? renderStoredRichText(article.value.content, article.value.contentHtml)
-      : "",
-);
-
-const paidGateVisible = computed(() =>
-  Boolean(
-    ecosystemStore.paidContent?.isPaid && !ecosystemStore.paidContent.hasAccess,
-  ),
-);
-
-const paidDescription = computed(
-  () =>
-    ecosystemStore.paidInfo?.description ||
-    "这篇文章包含付费正文，解锁后可以继续阅读全文。",
-);
-
-const paidPrice = computed(
-  () =>
-    ecosystemStore.paidContent?.price ??
-    ecosystemStore.paidInfo?.price ??
-    undefined,
+  article.value
+    ? renderStoredRichText(article.value.content, article.value.contentHtml)
+    : "",
 );
 
 const relatedArticles = computed(() => {
@@ -246,18 +222,6 @@ function updateReadingProgress() {
   readingProgress.value = Math.round(ratio * 100);
 }
 
-async function purchaseCurrentArticle() {
-  if (!article.value) {
-    return;
-  }
-
-  try {
-    await ecosystemStore.purchaseArticle(article.value.id);
-  } catch {
-    articleError.value = ecosystemStore.errorMessage || "购买文章失败";
-  }
-}
-
 async function toggleFavorite() {
   if (!article.value) {
     return;
@@ -332,7 +296,6 @@ watch(
           : contentStore.loadPublicContent().catch(() => undefined);
       const [detail] = await Promise.all([detailPromise, listPromise]);
 
-      await ecosystemStore.loadPaidArticle(detail.id);
       await loadLikeState(detail.id);
       if (authStore.isAuthenticated) {
         await userStore.checkFavorite(detail.id);
@@ -525,42 +488,6 @@ onBeforeUnmount(() => {
           @click="handleMarkdownInteraction"
           v-html="processedContent"
         ></div>
-
-        <div
-          v-if="paidGateVisible"
-          class="ui-surface grid gap-4 border-coral/30 p-5 md:p-6"
-        >
-          <p class="text-sm font-semibold text-coral">付费内容</p>
-          <h2 class="font-display text-3xl text-brand">继续阅读全文</h2>
-          <p class="leading-7 text-ink/68">{{ paidDescription }}</p>
-          <p v-if="paidPrice" class="font-semibold text-brand">
-            解锁价格：¥{{ Number(paidPrice).toFixed(2) }}
-          </p>
-          <div class="flex flex-wrap gap-3">
-            <button
-              v-if="authStore.isAuthenticated"
-              class="focus-ring ui-button-primary px-5 py-3"
-              :disabled="ecosystemStore.loading"
-              type="button"
-              @click="purchaseCurrentArticle"
-            >
-              创建购买记录
-            </button>
-            <RouterLink
-              v-else
-              class="focus-ring ui-button-primary px-5 py-3"
-              :to="{ name: 'login', query: { redirect: route.fullPath } }"
-            >
-              登录后解锁
-            </RouterLink>
-          </div>
-          <p v-if="ecosystemStore.notice" class="text-sm text-moss">
-            {{ ecosystemStore.notice }}
-          </p>
-          <p v-if="ecosystemStore.errorMessage" class="text-sm text-coral">
-            {{ ecosystemStore.errorMessage }}
-          </p>
-        </div>
 
         <section v-if="relatedArticles.length" class="ui-surface p-5 md:p-6">
           <div class="flex flex-wrap items-end justify-between gap-4">

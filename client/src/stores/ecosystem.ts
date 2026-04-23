@@ -1,6 +1,6 @@
 import { defineStore } from "pinia";
 import { getApiErrorMessage } from "@/api/auth";
-import { request, post } from "@/api/http";
+import { request } from "@/api/http";
 
 interface ArchiveMonth {
   year: number;
@@ -38,31 +38,6 @@ interface SearchResult {
   category?: { id: string; name: string; slug: string } | null;
 }
 
-interface PaidInfo {
-  isPaid: boolean;
-  price: number;
-  description?: string | null;
-}
-
-interface PaidContent {
-  content: string;
-  contentHtml?: string | null;
-  isPaid: boolean;
-  hasAccess: boolean;
-  price?: number | null;
-}
-
-interface Purchase {
-  id: string;
-  articleId: string;
-  articleTitle?: string;
-  articleSlug?: string;
-  purchasedAt: string;
-  price: number;
-  paidAmount?: number;
-  paymentMethod?: string;
-}
-
 function asRecord(v: unknown) {
   return typeof v === "object" && v !== null ? (v as Record<string, unknown>) : null;
 }
@@ -73,10 +48,6 @@ function asString(v: unknown, fallback = "") {
 
 function asNumber(v: unknown, fallback = 0) {
   return typeof v === "number" && Number.isFinite(v) ? v : fallback;
-}
-
-function asBoolean(v: unknown, fallback = false) {
-  return typeof v === "boolean" ? v : fallback;
 }
 
 function mapArchiveMonth(raw: unknown): ArchiveMonth {
@@ -121,22 +92,6 @@ function mapSearchResult(raw: unknown): SearchResult {
   };
 }
 
-function mapPurchase(raw: unknown): Purchase {
-  const r = asRecord(raw) ?? {};
-  const article = asRecord(r.article);
-  return {
-    id: asString(r.id),
-    articleId: asString(r.articleId ?? article?.id),
-    articleTitle: article ? asString(article.title) : undefined,
-    articleSlug: article ? asString(article.slug) : undefined,
-    purchasedAt: asString(r.purchasedAt ?? r.createdAt, new Date().toISOString()),
-    price: asNumber(r.price ?? r.amount),
-    paidAmount: asNumber(r.paidAmount ?? r.amount ?? r.price),
-    paymentMethod:
-      typeof r.paymentMethod === "string" ? r.paymentMethod : undefined,
-  };
-}
-
 export const useEcosystemStore = defineStore("ecosystem", {
   state: () => ({
     // Archives
@@ -146,11 +101,6 @@ export const useEcosystemStore = defineStore("ecosystem", {
     // Search
     searchResults: [] as SearchResult[],
     searchMeta: { total: 0, page: 1, pageSize: 20, totalPages: 0 } as SearchMeta,
-    // Paid content
-    paidContent: null as PaidContent | null,
-    paidInfo: null as PaidInfo | null,
-    // Profile
-    myPurchases: [] as Purchase[],
     // Status
     loading: false,
     errorMessage: "",
@@ -235,64 +185,6 @@ export const useEcosystemStore = defineStore("ecosystem", {
       } catch (error) {
         this.errorMessage = getApiErrorMessage(error, "搜索失败");
         throw error;
-      } finally {
-        this.loading = false;
-      }
-    },
-    async loadPaidArticle(articleId: string) {
-      this.loading = true;
-      this.errorMessage = "";
-      try {
-        const [infoRes, contentRes] = await Promise.all([
-          request<unknown>(`/paid-content/${articleId}/info`),
-          request<unknown>(`/paid-content/${articleId}/content`),
-        ]);
-        const info = asRecord(infoRes.data) ?? {};
-        const content = asRecord(contentRes.data) ?? {};
-        this.paidInfo = {
-          isPaid: asBoolean(info.isPaid),
-          price: asNumber(info.price),
-          description: typeof info.description === "string" ? info.description : null,
-        };
-        this.paidContent = {
-          content: asString(content.content ?? content.contentHtml),
-          contentHtml: typeof content.contentHtml === "string" ? content.contentHtml : null,
-          isPaid: asBoolean(content.isPaid ?? info.isPaid),
-          hasAccess: asBoolean(content.hasAccess, true),
-          price: typeof content.price === "number" ? content.price : asNumber(info.price),
-        };
-      } catch (error) {
-        this.errorMessage = getApiErrorMessage(error, "付费内容加载失败");
-      } finally {
-        this.loading = false;
-      }
-    },
-    async purchaseArticle(articleId: string) {
-      this.loading = true;
-      this.notice = "";
-      this.errorMessage = "";
-      try {
-        await post("/paid-content/purchase", { articleId });
-        this.notice = "购买成功！";
-        if (this.paidContent) {
-          this.paidContent.hasAccess = true;
-        }
-      } catch (error) {
-        this.errorMessage = getApiErrorMessage(error, "购买失败");
-        throw error;
-      } finally {
-        this.loading = false;
-      }
-    },
-    async loadMyPurchases() {
-      this.loading = true;
-      this.errorMessage = "";
-      try {
-        const res = await request<unknown[]>("/paid-content/my-purchases");
-        const items = Array.isArray(res.data) ? res.data : [];
-        this.myPurchases = items.map(mapPurchase);
-      } catch (error) {
-        this.errorMessage = getApiErrorMessage(error, "购买记录加载失败");
       } finally {
         this.loading = false;
       }
