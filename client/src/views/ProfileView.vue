@@ -1,11 +1,9 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref, watch } from "vue";
 import { useAuthStore } from "@/stores/auth";
-import { useEcosystemStore } from "@/stores/ecosystem";
 import { useUserStore } from "@/stores/user";
 
 const authStore = useAuthStore();
-const ecosystemStore = useEcosystemStore();
 const userStore = useUserStore();
 
 const mode = ref<"view" | "edit-profile" | "edit-password">("view");
@@ -111,7 +109,7 @@ function notificationTypeLabel(type: string) {
 }
 
 onMounted(async () => {
-  await Promise.allSettled([userStore.loadProfile(), userStore.loadFavorites(), userStore.loadNotifications(), ecosystemStore.loadMyPurchases()]);
+  await Promise.allSettled([userStore.loadProfile(), userStore.loadFavorites(), userStore.loadNotifications()]);
   syncProfileForm();
 });
 </script>
@@ -274,26 +272,6 @@ onMounted(async () => {
             </RouterLink>
           </div>
           <p v-else class="mt-5 rounded-md border border-line bg-paper p-4 text-ink/60">还没有收藏文章。读到喜欢的内容时，可以在详情页点收藏。</p>
-        </section>
-
-        <section class="ui-surface p-6">
-          <div><p class="eyebrow">Purchases</p><h2 class="mt-2 font-display text-4xl text-brand">已购内容</h2></div>
-          <div v-if="ecosystemStore.myPurchases.length" class="mt-5 grid gap-3">
-            <article v-for="purchase in ecosystemStore.myPurchases" :key="purchase.id" class="rounded-md border border-line bg-paper p-4">
-              <div class="flex flex-wrap items-start justify-between gap-3">
-                <div>
-                  <RouterLink v-if="purchase.articleSlug" class="font-semibold text-brand hover:text-coral" :to="`/articles/${purchase.articleSlug}`">{{ purchase.articleTitle || purchase.articleSlug }}</RouterLink>
-                  <p v-else class="font-semibold text-brand">{{ purchase.articleTitle || "付费内容" }}</p>
-                  <p class="mt-2 text-sm text-ink/56">支付方式：{{ purchase.paymentMethod || "manual" }}</p>
-                </div>
-                <div class="text-right">
-                  <p class="font-display text-3xl text-brand">￥{{ Number(purchase.paidAmount || 0).toFixed(2) }}</p>
-                  <p class="mt-2 text-xs text-ink/48">{{ new Date(purchase.purchasedAt).toLocaleString("zh-CN") }}</p>
-                </div>
-              </div>
-            </article>
-          </div>
-          <p v-else class="mt-5 rounded-md border border-line bg-paper p-4 text-ink/60">还没有已购内容记录。</p>
         </section>
 
         <section class="ui-surface p-6">

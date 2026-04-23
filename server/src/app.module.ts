@@ -19,7 +19,6 @@ import { DashboardModule } from './modules/dashboard/dashboard.module';
 import { ArchivesModule } from './modules/archives/archives.module';
 import { SearchModule } from './modules/search/search.module';
 import { CollaborationModule } from './modules/collaboration/collaboration.module';
-import { PaidContentModule } from './modules/paid-content/paid-content.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
 import { SeoModule } from './modules/seo/seo.module';
 import { BackupModule } from './modules/backup/backup.module';
@@ -108,9 +107,6 @@ import { OperationLogInterceptor } from './modules/operation-logs/operation-log.
 
     // 草稿协作模块
     CollaborationModule,
-
-    // 付费内容模块
-    PaidContentModule,
 
     // 邮件通知模块
     NotificationsModule,
