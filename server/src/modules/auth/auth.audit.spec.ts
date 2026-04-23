@@ -2,7 +2,7 @@ import { UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { hashSync } from 'bcrypt';
-import { User, VerificationCode } from '@database/entities';
+import { User } from '@database/entities';
 import { NotificationsService } from '../notifications/notifications.service';
 import { SecurityAuditService } from '../operation-logs/security-audit.service';
 import { AuthService } from './auth.service';
