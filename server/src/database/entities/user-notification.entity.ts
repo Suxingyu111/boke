@@ -16,12 +16,12 @@ export class UserNotification {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column({ name: 'user_id', type: 'char', length: 36 })
+  @Column({ name: 'user_id', type: 'varchar', length: 36 })
   userId: string;
 
   @ManyToOne(() => User, { nullable: false })
-  @JoinColumn({ name: 'user_id' })
-  user: User;
+  @JoinColumn({ name: 'user_id', foreignKeyConstraintName: 'fk_user_notifications_user' })
+  user!: User;
 
   @Column({
     type: 'enum',
@@ -36,7 +36,7 @@ export class UserNotification {
   @Column({ type: 'text', nullable: true })
   content: string | null;
 
-  @Column({ name: 'related_id', type: 'char', length: 36, nullable: true })
+  @Column({ name: 'related_id', type: 'varchar', length: 36, nullable: true })
   relatedId: string | null;
 
   @Column({ name: 'related_type', type: 'varchar', length: 50, nullable: true })

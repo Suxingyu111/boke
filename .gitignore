@@ -1,5 +1,6 @@
 # Dependencies
 node_modules/
+.npm-cache/
 
 # Logs
 *.log
@@ -28,3 +29,11 @@ task_plan.md
 
 # Large binaries
 *.zip
+
+# Docker env
+.env.docker
+.env.docker.dev
+.env.docker.prod.verify
+
+# Database backups
+server/backups/

@@ -175,6 +175,8 @@ export const configuration = (): {
     node: string;
     username: string;
     password: string;
+    caCertPath: string;
+    tlsRejectUnauthorized: boolean;
   };
   email: {
     host: string;
@@ -309,6 +311,11 @@ export const configuration = (): {
     node: process.env.ES_NODE || 'http://localhost:9200',
     username: process.env.ES_USERNAME || '',
     password: process.env.ES_PASSWORD || '',
+    caCertPath: process.env.ES_CA_CERT_PATH || '',
+    tlsRejectUnauthorized:
+      process.env.ES_TLS_REJECT_UNAUTHORIZED !== undefined
+        ? process.env.ES_TLS_REJECT_UNAUTHORIZED === 'true'
+        : true,
   },
   email: {
     host: process.env.SMTP_HOST || '',

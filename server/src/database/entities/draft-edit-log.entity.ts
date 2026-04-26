@@ -17,19 +17,19 @@ export class DraftEditLog {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column({ name: 'article_id', type: 'char', length: 36 })
+  @Column({ name: 'article_id', type: 'varchar', length: 36 })
   articleId: string;
 
   @ManyToOne(() => Article, { onDelete: 'CASCADE' })
-  @JoinColumn({ name: 'article_id' })
-  article: Article;
+  @JoinColumn({ name: 'article_id', foreignKeyConstraintName: 'fk_draft_edit_logs_article' })
+  article!: Article;
 
-  @Column({ name: 'user_id', type: 'char', length: 36 })
+  @Column({ name: 'user_id', type: 'varchar', length: 36 })
   userId: string;
 
   @ManyToOne(() => User, { onDelete: 'CASCADE' })
-  @JoinColumn({ name: 'user_id' })
-  user: User;
+  @JoinColumn({ name: 'user_id', foreignKeyConstraintName: 'fk_draft_edit_logs_user' })
+  user!: User;
 
   @Column({ name: 'field_changed', type: 'varchar', length: 50 })
   fieldChanged: string;

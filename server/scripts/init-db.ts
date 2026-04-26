@@ -237,7 +237,7 @@ async function ensureArticleVersionsCompatibility(connection: Connection): Promi
   const missingColumnDefinitions = [
     ['slug', "`slug` VARCHAR(255) NOT NULL DEFAULT '' AFTER `title`"],
     ['cover_image_url', "`cover_image_url` VARCHAR(500) DEFAULT NULL AFTER `content_html`"],
-    ['category_id', "`category_id` CHAR(36) NOT NULL DEFAULT '00000000-0000-4000-8000-000000000000' AFTER `cover_image_url`"],
+    ['category_id', "`category_id` VARCHAR(36) NOT NULL DEFAULT '00000000-0000-4000-8000-000000000000' AFTER `cover_image_url`"],
     [
       'status',
       "`status` ENUM('draft', 'scheduled', 'published', 'archived') NOT NULL DEFAULT 'draft' AFTER `category_id`",
@@ -268,6 +268,26 @@ async function ensureArticleVersionsCompatibility(connection: Connection): Promi
   }
 
   await connection.query(`ALTER TABLE \`article_versions\` ${alterFragments.join(', ')}`);
+}
+
+async function ensureFriendLinksCompatibility(connection: Connection): Promise<void> {
+  await connection.query(`
+    CREATE TABLE IF NOT EXISTS \`friend_links\` (
+      \`id\` VARCHAR(36) NOT NULL,
+      \`site_name\` VARCHAR(100) NOT NULL,
+      \`site_url\` VARCHAR(255) NOT NULL,
+      \`logo_url\` VARCHAR(500) DEFAULT NULL,
+      \`description\` VARCHAR(255) DEFAULT NULL,
+      \`contact_email\` VARCHAR(255) DEFAULT NULL,
+      \`applicant_name\` VARCHAR(100) DEFAULT NULL,
+      \`sort_order\` INT NOT NULL DEFAULT 0,
+      \`status\` ENUM('pending','approved','rejected','offline') NOT NULL DEFAULT 'pending',
+      \`approved_at\` DATETIME DEFAULT NULL,
+      \`created_at\` DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+      \`updated_at\` DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
+      PRIMARY KEY (\`id\`)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+  `);
 }
 
 async function ensureConfiguredSuperAdmin(connection: Connection): Promise<void> {
@@ -400,6 +420,7 @@ async function bootstrap(): Promise<void> {
     await ensureUserRolesCompatibility(connection);
     await ensureUsersCompatibility(connection);
     await ensureArticleVersionsCompatibility(connection);
+    await ensureFriendLinksCompatibility(connection);
     await ensureConfiguredSuperAdmin(connection);
 
     const [rows] = await connection.query('SHOW TABLES');

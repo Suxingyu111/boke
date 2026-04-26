@@ -1,4 +1,14 @@
-import { Column, CreateDateColumn, Entity, Index, PrimaryGeneratedColumn, UpdateDateColumn } from 'typeorm';
+import {
+  Column,
+  CreateDateColumn,
+  Entity,
+  Index,
+  JoinColumn,
+  ManyToOne,
+  PrimaryGeneratedColumn,
+  UpdateDateColumn,
+} from 'typeorm';
+import { User } from './user.entity';
 
 @Entity('media_assets')
 @Index('idx_media_assets_hash', ['hashValue'], { unique: true })
@@ -44,8 +54,12 @@ export class MediaAsset {
   @Column({ name: 'hash_value', type: 'varchar', length: 64, nullable: true })
   hashValue: string | null;
 
-  @Column({ name: 'uploaded_by', type: 'char', length: 36, nullable: true })
+  @Column({ name: 'uploaded_by', type: 'varchar', length: 36, nullable: true })
   uploadedBy: string | null;
+
+  @ManyToOne(() => User, { nullable: true, onDelete: 'SET NULL' })
+  @JoinColumn({ name: 'uploaded_by', foreignKeyConstraintName: 'fk_media_assets_uploaded_by' })
+  uploader!: User | null;
 
   @CreateDateColumn({ name: 'created_at', type: 'datetime' })
   createdAt: Date;

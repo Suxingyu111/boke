@@ -1,4 +1,14 @@
-import { Column, CreateDateColumn, Entity, Index, PrimaryGeneratedColumn, UpdateDateColumn } from 'typeorm';
+import {
+  Column,
+  CreateDateColumn,
+  Entity,
+  Index,
+  JoinColumn,
+  ManyToOne,
+  PrimaryGeneratedColumn,
+  UpdateDateColumn,
+} from 'typeorm';
+import { User } from './user.entity';
 
 @Entity('article_series')
 @Index('idx_article_series_slug', ['slug'], { unique: true })
@@ -9,7 +19,7 @@ export class ArticleSeries {
   @Column({ type: 'varchar', length: 100 })
   name: string;
 
-  @Column({ type: 'varchar', length: 100, unique: true })
+  @Column({ type: 'varchar', length: 100 })
   slug: string;
 
   @Column({ type: 'text', nullable: true })
@@ -21,8 +31,12 @@ export class ArticleSeries {
   @Column({ type: 'enum', enum: ['draft', 'published'], default: 'draft' })
   status: 'draft' | 'published';
 
-  @Column({ name: 'created_by', type: 'char', length: 36, nullable: true })
+  @Column({ name: 'created_by', type: 'varchar', length: 36, nullable: true })
   createdBy: string | null;
+
+  @ManyToOne(() => User, { nullable: true, onDelete: 'SET NULL' })
+  @JoinColumn({ name: 'created_by', foreignKeyConstraintName: 'fk_article_series_created_by' })
+  creator!: User | null;
 
   @CreateDateColumn({ name: 'created_at', type: 'datetime' })
   createdAt: Date;

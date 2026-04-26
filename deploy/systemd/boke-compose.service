@@ -1,0 +1,17 @@
+[Unit]
+Description=Boke Docker Compose Stack
+Requires=docker.service
+After=docker.service network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+Environment=PROJECT_ROOT=/path/to/boke
+Environment=ENV_FILE=.env.docker
+ExecStart=/usr/bin/env bash -lc "cd \"$PROJECT_ROOT\" && ./scripts/start-prod.sh \"$ENV_FILE\""
+ExecStop=/usr/bin/env bash -lc "cd \"$PROJECT_ROOT\" && ./scripts/stop-prod.sh \"$ENV_FILE\""
+TimeoutStartSec=0
+
+[Install]
+WantedBy=multi-user.target

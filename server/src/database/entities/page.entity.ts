@@ -3,9 +3,12 @@ import {
   CreateDateColumn,
   Entity,
   Index,
+  JoinColumn,
+  ManyToOne,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
+import { User } from './user.entity';
 
 @Entity('pages')
 @Index('idx_pages_slug', ['slug'], { unique: true })
@@ -18,7 +21,7 @@ export class Page {
   @Column({ type: 'varchar', length: 255 })
   title: string;
 
-  @Column({ type: 'varchar', length: 255, unique: true })
+  @Column({ type: 'varchar', length: 255 })
   slug: string;
 
   @Column({
@@ -53,11 +56,19 @@ export class Page {
   @Column({ name: 'published_at', type: 'datetime', nullable: true })
   publishedAt: Date | null;
 
-  @Column({ name: 'created_by', type: 'char', length: 36 })
+  @Column({ name: 'created_by', type: 'varchar', length: 36 })
   createdBy: string;
 
-  @Column({ name: 'updated_by', type: 'char', length: 36, nullable: true })
+  @ManyToOne(() => User, { nullable: false })
+  @JoinColumn({ name: 'created_by', foreignKeyConstraintName: 'fk_pages_created_by' })
+  creator!: User;
+
+  @Column({ name: 'updated_by', type: 'varchar', length: 36, nullable: true })
   updatedBy: string | null;
+
+  @ManyToOne(() => User, { nullable: true })
+  @JoinColumn({ name: 'updated_by', foreignKeyConstraintName: 'fk_pages_updated_by' })
+  updater!: User | null;
 
   @CreateDateColumn({ name: 'created_at', type: 'datetime' })
   createdAt: Date;

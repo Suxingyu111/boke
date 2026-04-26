@@ -9,12 +9,12 @@ export class ArticleVersion {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column({ name: 'article_id', type: 'char', length: 36 })
+  @Column({ name: 'article_id', type: 'varchar', length: 36 })
   articleId: string;
 
   @ManyToOne(() => Article, { nullable: false, onDelete: 'CASCADE' })
-  @JoinColumn({ name: 'article_id' })
-  article: Article;
+  @JoinColumn({ name: 'article_id', foreignKeyConstraintName: 'fk_article_versions_article' })
+  article!: Article;
 
   @Column({ name: 'version_no', type: 'int' })
   versionNo: number;
@@ -37,7 +37,7 @@ export class ArticleVersion {
   @Column({ name: 'cover_image_url', type: 'varchar', length: 500, nullable: true })
   coverImage: string | null;
 
-  @Column({ name: 'category_id', type: 'char', length: 36 })
+  @Column({ name: 'category_id', type: 'varchar', length: 36 })
   categoryId: string;
 
   @Column({
@@ -81,15 +81,15 @@ export class ArticleVersion {
   @Column({ name: 'deleted_at', type: 'datetime', nullable: true })
   deletedAt: Date | null;
 
-  @Column({ name: 'tag_ids', type: 'simple-json', nullable: true })
+  @Column({ name: 'tag_ids', type: 'json', nullable: true })
   tagIds: string[] | null;
 
-  @Column({ name: 'operator_id', type: 'char', length: 36, nullable: true })
+  @Column({ name: 'operator_id', type: 'varchar', length: 36, nullable: true })
   operatorId: string | null;
 
   @ManyToOne(() => User, { nullable: true, onDelete: 'SET NULL' })
-  @JoinColumn({ name: 'operator_id' })
-  operator: User | null;
+  @JoinColumn({ name: 'operator_id', foreignKeyConstraintName: 'fk_article_versions_operator' })
+  operator!: User | null;
 
   @Column({ name: 'change_note', type: 'varchar', length: 255, nullable: true })
   changeNote: string | null;

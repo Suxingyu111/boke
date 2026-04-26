@@ -161,6 +161,26 @@ npm run start:prod
 npm run backup:drill -- --filename backup_blog_system_2026-04-20.sql
 ```
 
+如果以前后端一体容器方式部署，优先使用根目录 compose 脚本而不是分别启动 Node 进程：
+
+```bash
+cd /path/to/boke
+./scripts/start-prod.sh
+```
+
+这套入口会同时拉起 MySQL、Redis、Elasticsearch、Kibana、NestJS 服务和 Nginx，并自动执行数据库初始化。生产环境保持以下参数：
+
+```env
+DOCKER_BOOTSTRAP_INIT_DB=true
+DOCKER_BOOTSTRAP_SEED_DEMO=false
+DOCKER_BOOTSTRAP_REINDEX=false
+DB_SYNCHRONIZE=false
+```
+
+不要在生产环境打开 `DB_SYNCHRONIZE`。初始化 SQL 已经和当前实体对齐，继续依赖 TypeORM 自动同步只会放大旧库上的结构漂移风险。
+
+根目录的 [.env.docker.example](../.env.docker.example) 已整理为生产模板；`./scripts/start-prod.sh` 在 `.env.docker` 缺失时会自动按该模板生成一份，再由你补齐域名、强密码和管理员信息。
+
 默认安全基线包含：`HttpOnly + SameSite=Strict` Cookie、带凭证的精确 CORS 白名单、`Content-Security-Policy`、`Referrer-Policy`、`Permissions-Policy`，以及针对认证异常和高危后台动作的结构化安全审计/告警。若已配置 SMTP，可通过 `SECURITY_ALERT_RECIPIENTS` 指定告警邮箱列表；未配置时仍会保留结构化审计日志。备份模块进一步提供恢复演练记录、RTO/RPO 指标与 `npm run backup:drill` 自动化入口，可配合月度演练制度化执行。如果前后端部署在真正跨站点域名下，需要显式将 `AUTH_COOKIE_SAME_SITE=none` 且同时开启 `AUTH_COOKIE_SECURE=true`。
 
 ## 供应链与镜像基线

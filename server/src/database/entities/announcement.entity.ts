@@ -32,7 +32,7 @@ export class Announcement {
   @Column({ name: 'published_at', type: 'datetime', nullable: true })
   publishedAt: Date | null;
 
-  @Column({ name: 'created_by', type: 'char', length: 36 })
+  @Column({ name: 'created_by', type: 'varchar', length: 36 })
   createdBy: string;
 
   @CreateDateColumn({ name: 'created_at', type: 'datetime' })

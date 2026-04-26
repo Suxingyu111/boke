@@ -113,6 +113,8 @@ export const validationSchema = Joi.object({
   ES_NODE: Joi.string().uri().optional().default('http://localhost:9200'),
   ES_USERNAME: Joi.string().allow('').optional().default(''),
   ES_PASSWORD: Joi.string().allow('').optional().default(''),
+  ES_CA_CERT_PATH: Joi.string().allow('').optional().default(''),
+  ES_TLS_REJECT_UNAUTHORIZED: Joi.boolean().optional().default(true),
 
   // SMTP 邮件（可选）
   SMTP_HOST: Joi.string().allow('').optional().default(''),

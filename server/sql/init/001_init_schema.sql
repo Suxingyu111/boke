@@ -6,8 +6,8 @@ CREATE TABLE IF NOT EXISTS user_roles (
   description VARCHAR(255) DEFAULT NULL,
   sort_order INT NOT NULL DEFAULT 0,
   is_system TINYINT(1) NOT NULL DEFAULT 1,
-  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  created_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+  updated_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
   PRIMARY KEY (code),
   UNIQUE KEY idx_user_roles_name (name)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -25,7 +25,7 @@ ON DUPLICATE KEY UPDATE
   is_system = VALUES(is_system);
 
 CREATE TABLE IF NOT EXISTS users (
-  id CHAR(36) NOT NULL,
+  id VARCHAR(36) NOT NULL,
   username VARCHAR(50) NOT NULL,
   email VARCHAR(255) DEFAULT NULL,
   phone VARCHAR(20) DEFAULT NULL,
@@ -42,8 +42,8 @@ CREATE TABLE IF NOT EXISTS users (
   status ENUM('active', 'disabled') NOT NULL DEFAULT 'active',
   last_login_at DATETIME DEFAULT NULL,
   password_changed_at DATETIME DEFAULT NULL,
-  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  created_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+  updated_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
   PRIMARY KEY (id),
   UNIQUE KEY idx_users_username (username),
   UNIQUE KEY idx_users_email (email),
@@ -57,7 +57,7 @@ CREATE TABLE IF NOT EXISTS users (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS verification_codes (
-  id CHAR(36) NOT NULL,
+  id VARCHAR(36) NOT NULL,
   target_type ENUM('email', 'phone') NOT NULL,
   target_value VARCHAR(255) NOT NULL,
   purpose ENUM('registration') NOT NULL DEFAULT 'registration',
@@ -71,15 +71,15 @@ CREATE TABLE IF NOT EXISTS verification_codes (
   consumed_at DATETIME DEFAULT NULL,
   request_ip VARCHAR(45) DEFAULT NULL,
   user_agent VARCHAR(500) DEFAULT NULL,
-  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  created_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+  updated_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
   PRIMARY KEY (id),
   KEY idx_verification_codes_target (target_type, target_value, purpose),
   KEY idx_verification_codes_expires_at (expires_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS categories (
-  id CHAR(36) NOT NULL,
+  id VARCHAR(36) NOT NULL,
   name VARCHAR(100) NOT NULL,
   slug VARCHAR(100) NOT NULL,
   description TEXT,
@@ -87,34 +87,34 @@ CREATE TABLE IF NOT EXISTS categories (
   sort_order INT NOT NULL DEFAULT 0,
   article_count INT NOT NULL DEFAULT 0,
   is_visible TINYINT(1) NOT NULL DEFAULT 1,
-  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  created_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+  updated_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
   PRIMARY KEY (id),
   UNIQUE KEY idx_categories_slug (slug),
   KEY idx_categories_visible_sort (is_visible, sort_order)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS tags (
-  id CHAR(36) NOT NULL,
+  id VARCHAR(36) NOT NULL,
   name VARCHAR(50) NOT NULL,
   slug VARCHAR(100) NOT NULL,
   article_count INT NOT NULL DEFAULT 0,
-  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  created_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+  updated_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
   PRIMARY KEY (id),
   UNIQUE KEY idx_tags_slug (slug)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS articles (
-  id CHAR(36) NOT NULL,
+  id VARCHAR(36) NOT NULL,
   title VARCHAR(255) NOT NULL,
   slug VARCHAR(255) NOT NULL,
   summary TEXT,
   content_markdown LONGTEXT NOT NULL,
   content_html LONGTEXT,
   cover_image_url VARCHAR(500) DEFAULT NULL,
-  category_id CHAR(36) NOT NULL,
-  author_id CHAR(36) NOT NULL,
+  category_id VARCHAR(36) NOT NULL,
+  author_id VARCHAR(36) NOT NULL,
   status ENUM('draft', 'scheduled', 'published', 'archived') NOT NULL DEFAULT 'draft',
   visibility ENUM('public', 'private', 'password') NOT NULL DEFAULT 'public',
   allow_comment TINYINT(1) NOT NULL DEFAULT 1,
@@ -129,8 +129,8 @@ CREATE TABLE IF NOT EXISTS articles (
   scheduled_at DATETIME DEFAULT NULL,
   published_at DATETIME DEFAULT NULL,
   deleted_at DATETIME DEFAULT NULL,
-  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  created_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+  updated_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
   PRIMARY KEY (id),
   UNIQUE KEY idx_articles_slug (slug),
   KEY idx_articles_category_status (category_id, status),
@@ -143,9 +143,9 @@ CREATE TABLE IF NOT EXISTS articles (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS article_tags (
-  article_id CHAR(36) NOT NULL,
-  tag_id CHAR(36) NOT NULL,
-  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  article_id VARCHAR(36) NOT NULL,
+  tag_id VARCHAR(36) NOT NULL,
+  created_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
   PRIMARY KEY (article_id, tag_id),
   KEY idx_article_tags_tag_id (tag_id),
   CONSTRAINT fk_article_tags_article FOREIGN KEY (article_id) REFERENCES articles (id) ON DELETE CASCADE,
@@ -153,13 +153,13 @@ CREATE TABLE IF NOT EXISTS article_tags (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS article_likes (
-  id CHAR(36) NOT NULL,
-  article_id CHAR(36) NOT NULL,
-  user_id CHAR(36) DEFAULT NULL,
+  id VARCHAR(36) NOT NULL,
+  article_id VARCHAR(36) NOT NULL,
+  user_id VARCHAR(36) DEFAULT NULL,
   visitor_key VARCHAR(80) NOT NULL,
   ip_address VARCHAR(45) DEFAULT NULL,
   user_agent VARCHAR(500) DEFAULT NULL,
-  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  created_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
   PRIMARY KEY (id),
   UNIQUE KEY idx_article_likes_article_visitor (article_id, visitor_key),
   KEY idx_article_likes_article_created (article_id, created_at),
@@ -169,7 +169,7 @@ CREATE TABLE IF NOT EXISTS article_likes (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS pages (
-  id CHAR(36) NOT NULL,
+  id VARCHAR(36) NOT NULL,
   title VARCHAR(255) NOT NULL,
   slug VARCHAR(255) NOT NULL,
   page_type ENUM('about', 'custom', 'resume', 'portfolio') NOT NULL DEFAULT 'custom',
@@ -181,10 +181,10 @@ CREATE TABLE IF NOT EXISTS pages (
   seo_title VARCHAR(255) DEFAULT NULL,
   seo_description VARCHAR(500) DEFAULT NULL,
   published_at DATETIME DEFAULT NULL,
-  created_by CHAR(36) NOT NULL,
-  updated_by CHAR(36) DEFAULT NULL,
-  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  created_by VARCHAR(36) NOT NULL,
+  updated_by VARCHAR(36) DEFAULT NULL,
+  created_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+  updated_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
   PRIMARY KEY (id),
   UNIQUE KEY idx_pages_slug (slug),
   KEY idx_pages_type_status (page_type, status),
@@ -193,11 +193,27 @@ CREATE TABLE IF NOT EXISTS pages (
   CONSTRAINT fk_pages_updated_by FOREIGN KEY (updated_by) REFERENCES users (id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+CREATE TABLE IF NOT EXISTS friend_links (
+  id VARCHAR(36) NOT NULL,
+  site_name VARCHAR(100) NOT NULL,
+  site_url VARCHAR(255) NOT NULL,
+  logo_url VARCHAR(500) DEFAULT NULL,
+  description VARCHAR(255) DEFAULT NULL,
+  contact_email VARCHAR(255) DEFAULT NULL,
+  applicant_name VARCHAR(100) DEFAULT NULL,
+  sort_order INT NOT NULL DEFAULT 0,
+  status ENUM('pending', 'approved', 'rejected', 'offline') NOT NULL DEFAULT 'pending',
+  approved_at DATETIME DEFAULT NULL,
+  created_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+  updated_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
+  PRIMARY KEY (id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 CREATE TABLE IF NOT EXISTS comments (
-  id CHAR(36) NOT NULL,
-  article_id CHAR(36) NOT NULL,
-  parent_id CHAR(36) DEFAULT NULL,
-  user_id CHAR(36) DEFAULT NULL,
+  id VARCHAR(36) NOT NULL,
+  article_id VARCHAR(36) NOT NULL,
+  parent_id VARCHAR(36) DEFAULT NULL,
+  user_id VARCHAR(36) DEFAULT NULL,
   author_name VARCHAR(100) NOT NULL,
   author_email VARCHAR(255) NOT NULL,
   author_website VARCHAR(255) DEFAULT NULL,
@@ -207,8 +223,8 @@ CREATE TABLE IF NOT EXISTS comments (
   like_count INT NOT NULL DEFAULT 0,
   status ENUM('pending', 'approved', 'spam', 'rejected') NOT NULL DEFAULT 'pending',
   replied_at DATETIME DEFAULT NULL,
-  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  created_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+  updated_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
   deleted_at DATETIME DEFAULT NULL,
   PRIMARY KEY (id),
   KEY idx_comments_article_status_created (article_id, status, created_at),
@@ -220,6 +236,22 @@ CREATE TABLE IF NOT EXISTS comments (
   CONSTRAINT fk_comments_user FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+CREATE TABLE IF NOT EXISTS guestbook (
+  id VARCHAR(36) NOT NULL,
+  nickname VARCHAR(100) NOT NULL,
+  email VARCHAR(255) DEFAULT NULL,
+  website VARCHAR(500) DEFAULT NULL,
+  avatar_url VARCHAR(500) DEFAULT NULL,
+  content TEXT NOT NULL,
+  parent_id VARCHAR(36) DEFAULT NULL,
+  ip VARCHAR(45) DEFAULT NULL,
+  status ENUM('pending', 'approved', 'rejected') NOT NULL DEFAULT 'pending',
+  is_admin_reply TINYINT(1) NOT NULL DEFAULT 0,
+  created_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+  PRIMARY KEY (id),
+  KEY idx_guestbook_status_created (status, created_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 CREATE TABLE IF NOT EXISTS site_settings (
   id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   setting_key VARCHAR(100) NOT NULL,
@@ -227,17 +259,17 @@ CREATE TABLE IF NOT EXISTS site_settings (
   value_type ENUM('string', 'number', 'boolean', 'json') NOT NULL DEFAULT 'string',
   group_name VARCHAR(50) NOT NULL DEFAULT 'general',
   description VARCHAR(255) DEFAULT NULL,
-  is_public TINYINT(1) NOT NULL DEFAULT 0,
-  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  is_public TINYINT(1) NOT NULL DEFAULT '0',
+  created_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+  updated_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
   PRIMARY KEY (id),
   UNIQUE KEY idx_site_settings_key (setting_key),
   KEY idx_site_settings_group (group_name)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS article_versions (
-  id CHAR(36) NOT NULL,
-  article_id CHAR(36) NOT NULL,
+  id VARCHAR(36) NOT NULL,
+  article_id VARCHAR(36) NOT NULL,
   version_no INT NOT NULL,
   title VARCHAR(255) NOT NULL,
   slug VARCHAR(255) NOT NULL,
@@ -245,7 +277,7 @@ CREATE TABLE IF NOT EXISTS article_versions (
   content_markdown LONGTEXT NOT NULL,
   content_html LONGTEXT,
   cover_image_url VARCHAR(500) DEFAULT NULL,
-  category_id CHAR(36) NOT NULL,
+  category_id VARCHAR(36) NOT NULL,
   status ENUM('draft', 'scheduled', 'published', 'archived') NOT NULL DEFAULT 'draft',
   visibility ENUM('public', 'private', 'password') NOT NULL DEFAULT 'public',
   allow_comment TINYINT(1) NOT NULL DEFAULT 1,
@@ -258,9 +290,9 @@ CREATE TABLE IF NOT EXISTS article_versions (
   published_at DATETIME DEFAULT NULL,
   deleted_at DATETIME DEFAULT NULL,
   tag_ids JSON DEFAULT NULL,
-  operator_id CHAR(36) DEFAULT NULL,
+  operator_id VARCHAR(36) DEFAULT NULL,
   change_note VARCHAR(255) DEFAULT NULL,
-  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  created_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
   PRIMARY KEY (id),
   UNIQUE KEY uk_article_versions_article_version (article_id, version_no),
   KEY idx_article_versions_operator (operator_id),
@@ -268,8 +300,40 @@ CREATE TABLE IF NOT EXISTS article_versions (
   CONSTRAINT fk_article_versions_operator FOREIGN KEY (operator_id) REFERENCES users (id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+CREATE TABLE IF NOT EXISTS draft_collaborators (
+  id VARCHAR(36) NOT NULL,
+  article_id VARCHAR(36) NOT NULL,
+  user_id VARCHAR(36) NOT NULL,
+  permission ENUM('editor', 'viewer') NOT NULL DEFAULT 'editor',
+  invited_by VARCHAR(36) NOT NULL,
+  created_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+  PRIMARY KEY (id),
+  UNIQUE KEY idx_draft_collab_article_user (article_id, user_id),
+  KEY idx_draft_collaborators_user_id (user_id),
+  KEY idx_draft_collaborators_invited_by (invited_by),
+  CONSTRAINT fk_draft_collaborators_article FOREIGN KEY (article_id) REFERENCES articles (id) ON DELETE CASCADE,
+  CONSTRAINT fk_draft_collaborators_user FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE,
+  CONSTRAINT fk_draft_collaborators_invited_by FOREIGN KEY (invited_by) REFERENCES users (id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS draft_edit_logs (
+  id VARCHAR(36) NOT NULL,
+  article_id VARCHAR(36) NOT NULL,
+  user_id VARCHAR(36) NOT NULL,
+  field_changed VARCHAR(50) NOT NULL,
+  old_value LONGTEXT DEFAULT NULL,
+  new_value LONGTEXT DEFAULT NULL,
+  summary VARCHAR(200) DEFAULT NULL,
+  created_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+  PRIMARY KEY (id),
+  KEY idx_draft_edit_article (article_id),
+  KEY idx_draft_edit_user (user_id),
+  CONSTRAINT fk_draft_edit_logs_article FOREIGN KEY (article_id) REFERENCES articles (id) ON DELETE CASCADE,
+  CONSTRAINT fk_draft_edit_logs_user FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 CREATE TABLE IF NOT EXISTS media_assets (
-  id CHAR(36) NOT NULL,
+  id VARCHAR(36) NOT NULL,
   file_name VARCHAR(255) NOT NULL,
   original_name VARCHAR(255) NOT NULL,
   mime_type VARCHAR(100) NOT NULL,
@@ -282,9 +346,9 @@ CREATE TABLE IF NOT EXISTS media_assets (
   alt_text VARCHAR(255) DEFAULT NULL,
   storage_disk VARCHAR(50) NOT NULL DEFAULT 'local',
   hash_value VARCHAR(64) DEFAULT NULL,
-  uploaded_by CHAR(36) DEFAULT NULL,
-  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  uploaded_by VARCHAR(36) DEFAULT NULL,
+  created_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+  updated_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
   PRIMARY KEY (id),
   UNIQUE KEY idx_media_assets_hash (hash_value),
   KEY idx_media_assets_uploaded_by (uploaded_by),
@@ -294,7 +358,7 @@ CREATE TABLE IF NOT EXISTS media_assets (
 
 CREATE TABLE IF NOT EXISTS operation_logs (
   id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-  operator_id CHAR(36) DEFAULT NULL,
+  operator_id VARCHAR(36) DEFAULT NULL,
   module_name VARCHAR(50) NOT NULL,
   action_name VARCHAR(50) NOT NULL,
   target_type VARCHAR(50) DEFAULT NULL,
@@ -305,7 +369,7 @@ CREATE TABLE IF NOT EXISTS operation_logs (
   response_code INT DEFAULT NULL,
   ip_address VARCHAR(45) DEFAULT NULL,
   user_agent VARCHAR(500) DEFAULT NULL,
-  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  created_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
   PRIMARY KEY (id),
   KEY idx_operation_logs_operator (operator_id),
   KEY idx_operation_logs_module_action (module_name, action_name),
@@ -314,25 +378,25 @@ CREATE TABLE IF NOT EXISTS operation_logs (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS article_series (
-  id CHAR(36) NOT NULL,
+  id VARCHAR(36) NOT NULL,
   name VARCHAR(100) NOT NULL,
   slug VARCHAR(100) NOT NULL,
   description TEXT,
   cover_image_url VARCHAR(500) DEFAULT NULL,
   status ENUM('draft', 'published') NOT NULL DEFAULT 'draft',
-  created_by CHAR(36) DEFAULT NULL,
-  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  created_by VARCHAR(36) DEFAULT NULL,
+  created_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+  updated_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
   PRIMARY KEY (id),
   UNIQUE KEY idx_article_series_slug (slug),
   CONSTRAINT fk_article_series_created_by FOREIGN KEY (created_by) REFERENCES users (id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS article_series_items (
-  series_id CHAR(36) NOT NULL,
-  article_id CHAR(36) NOT NULL,
+  series_id VARCHAR(36) NOT NULL,
+  article_id VARCHAR(36) NOT NULL,
   sort_order INT NOT NULL DEFAULT 0,
-  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  created_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
   PRIMARY KEY (series_id, article_id),
   UNIQUE KEY uk_series_order (series_id, sort_order),
   CONSTRAINT fk_article_series_items_series FOREIGN KEY (series_id) REFERENCES article_series (id) ON DELETE CASCADE,
@@ -340,7 +404,7 @@ CREATE TABLE IF NOT EXISTS article_series_items (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS email_subscribers (
-  id CHAR(36) NOT NULL,
+  id VARCHAR(36) NOT NULL,
   email VARCHAR(255) NOT NULL,
   name VARCHAR(100) DEFAULT NULL,
   is_confirmed TINYINT(1) NOT NULL DEFAULT 0,
@@ -348,7 +412,7 @@ CREATE TABLE IF NOT EXISTS email_subscribers (
   confirm_token_hash VARCHAR(64) DEFAULT NULL,
   unsubscribe_token VARCHAR(100) NOT NULL,
   is_active TINYINT(1) NOT NULL DEFAULT 1,
-  subscribed_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  subscribed_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
   confirmed_at DATETIME DEFAULT NULL,
   unsubscribed_at DATETIME DEFAULT NULL,
   PRIMARY KEY (id),
@@ -359,45 +423,82 @@ CREATE TABLE IF NOT EXISTS email_subscribers (
   KEY idx_email_subscribers_is_confirmed (is_confirmed)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE TABLE IF NOT EXISTS notices (
-  id CHAR(36) NOT NULL,
-  title VARCHAR(255) NOT NULL,
-  content VARCHAR(1000) NOT NULL,
-  status ENUM('draft', 'published', 'offline') NOT NULL DEFAULT 'draft',
-  sort_order INT NOT NULL DEFAULT 0,
-  starts_at DATETIME DEFAULT NULL,
-  ends_at DATETIME DEFAULT NULL,
-  created_by CHAR(36) DEFAULT NULL,
-  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+CREATE TABLE IF NOT EXISTS email_notifications (
+  id VARCHAR(36) NOT NULL,
+  to_email VARCHAR(255) NOT NULL,
+  subject VARCHAR(255) NOT NULL,
+  body LONGTEXT NOT NULL,
+  type ENUM('comment', 'subscription', 'system') NOT NULL DEFAULT 'system',
+  status ENUM('pending', 'sent', 'failed') NOT NULL DEFAULT 'pending',
+  retry_count INT NOT NULL DEFAULT 0,
+  error_message TEXT DEFAULT NULL,
+  sent_at DATETIME DEFAULT NULL,
+  created_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
   PRIMARY KEY (id),
-  KEY idx_notices_status_time (status, starts_at, ends_at),
-  CONSTRAINT fk_notices_created_by FOREIGN KEY (created_by) REFERENCES users (id) ON DELETE SET NULL
+  KEY idx_email_notif_type (type),
+  KEY idx_email_notif_status (status)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE TABLE IF NOT EXISTS user_favorites (
-  user_id CHAR(36) NOT NULL,
-  article_id CHAR(36) NOT NULL,
-  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  PRIMARY KEY (user_id, article_id),
-  KEY idx_user_favorites_article (article_id),
-  CONSTRAINT fk_user_favorites_user FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE,
-  CONSTRAINT fk_user_favorites_article FOREIGN KEY (article_id) REFERENCES articles (id) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
-CREATE TABLE IF NOT EXISTS notifications (
-  id CHAR(36) NOT NULL,
-  user_id CHAR(36) NOT NULL,
-  type ENUM('comment_reply', 'article_like', 'system') NOT NULL,
+CREATE TABLE IF NOT EXISTS announcements (
+  id VARCHAR(36) NOT NULL,
   title VARCHAR(255) NOT NULL,
-  content VARCHAR(1000) NOT NULL,
+  content TEXT NOT NULL,
+  status ENUM('draft', 'published', 'archived') NOT NULL DEFAULT 'draft',
+  is_pinned TINYINT(1) NOT NULL DEFAULT 0,
+  published_at DATETIME DEFAULT NULL,
+  created_by VARCHAR(36) NOT NULL,
+  created_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+  updated_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
+  PRIMARY KEY (id),
+  KEY idx_announcements_status_pinned (status, is_pinned, published_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS favorites (
+  id VARCHAR(36) NOT NULL,
+  user_id VARCHAR(36) NOT NULL,
+  article_id VARCHAR(36) NOT NULL,
+  created_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+  PRIMARY KEY (id),
+  UNIQUE KEY idx_favorites_user_article (user_id, article_id),
+  KEY idx_favorites_user_created (user_id, created_at),
+  KEY idx_favorites_article_id (article_id),
+  CONSTRAINT fk_favorites_user FOREIGN KEY (user_id) REFERENCES users (id),
+  CONSTRAINT fk_favorites_article FOREIGN KEY (article_id) REFERENCES articles (id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS user_notifications (
+  id VARCHAR(36) NOT NULL,
+  user_id VARCHAR(36) NOT NULL,
+  type ENUM('comment_reply', 'like', 'system', 'announcement', 'favorite') NOT NULL DEFAULT 'system',
+  title VARCHAR(255) NOT NULL,
+  content TEXT DEFAULT NULL,
+  related_id VARCHAR(36) DEFAULT NULL,
   related_type VARCHAR(50) DEFAULT NULL,
-  related_id CHAR(36) DEFAULT NULL,
   is_read TINYINT(1) NOT NULL DEFAULT 0,
   read_at DATETIME DEFAULT NULL,
-  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  created_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
   PRIMARY KEY (id),
-  KEY idx_notifications_user_read (user_id, is_read),
-  KEY idx_notifications_created_at (created_at),
-  CONSTRAINT fk_notifications_user FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
+  KEY idx_user_notifications_type (type),
+  KEY idx_user_notifications_user_read (user_id, is_read, created_at),
+  CONSTRAINT fk_user_notifications_user FOREIGN KEY (user_id) REFERENCES users (id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS visitor_logs (
+  id VARCHAR(36) NOT NULL,
+  ip VARCHAR(45) NOT NULL,
+  user_agent VARCHAR(500) DEFAULT NULL,
+  referer VARCHAR(500) DEFAULT NULL,
+  path VARCHAR(500) NOT NULL,
+  visit_date DATE NOT NULL,
+  stay_duration INT NOT NULL DEFAULT 0,
+  country VARCHAR(50) DEFAULT NULL,
+  city VARCHAR(50) DEFAULT NULL,
+  device VARCHAR(50) DEFAULT NULL,
+  browser VARCHAR(50) DEFAULT NULL,
+  os VARCHAR(20) DEFAULT NULL,
+  created_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+  PRIMARY KEY (id),
+  KEY idx_visitor_logs_path (path),
+  KEY idx_visitor_logs_ip_date (ip, visit_date),
+  KEY idx_visitor_logs_date (visit_date)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

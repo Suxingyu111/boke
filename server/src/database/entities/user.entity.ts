@@ -5,8 +5,11 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
   Index,
+  ManyToOne,
+  JoinColumn,
 } from 'typeorm';
 import { UserRoleCode } from '../default-user-roles';
+import { UserRoleEntity } from './user-role.entity';
 
 const userStatusTransformer = {
   to(value: boolean): 'active' | 'disabled' {
@@ -18,10 +21,11 @@ const userStatusTransformer = {
 };
 
 @Entity('users')
-@Index('idx_email', ['email'], { unique: true })
-@Index('idx_phone', ['phone'], { unique: true })
-@Index('idx_username', ['username'], { unique: true })
-@Index('idx_nickname', ['nickname'], { unique: true })
+@Index('idx_users_email', ['email'], { unique: true })
+@Index('idx_users_phone', ['phone'], { unique: true })
+@Index('idx_users_username', ['username'], { unique: true })
+@Index('idx_users_nickname', ['nickname'], { unique: true })
+@Index('idx_users_role', ['role'])
 @Index('idx_users_role_status', ['role', 'isActive'])
 @Index('idx_users_registration_type_status', ['registrationType', 'isActive'])
 @Index('idx_users_oauth_provider', ['oauthProvider', 'oauthProviderId'], { unique: true })
@@ -29,19 +33,19 @@ export class User {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column({ type: 'varchar', length: 50, unique: true })
+  @Column({ type: 'varchar', length: 50 })
   username: string;
 
-  @Column({ type: 'varchar', length: 255, unique: true, nullable: true })
+  @Column({ type: 'varchar', length: 255, nullable: true })
   email: string | null;
 
-  @Column({ type: 'varchar', length: 20, unique: true, nullable: true })
+  @Column({ type: 'varchar', length: 20, nullable: true })
   phone: string | null;
 
   @Column({ name: 'password_hash', type: 'varchar', length: 255, select: false })
   password: string;
 
-  @Column({ type: 'varchar', length: 100, unique: true, nullable: true })
+  @Column({ type: 'varchar', length: 100, nullable: true })
   nickname: string | null;
 
   @Column({
@@ -90,6 +94,14 @@ export class User {
     default: 'user',
   })
   role: UserRoleCode;
+
+  @ManyToOne(() => UserRoleEntity, { nullable: false })
+  @JoinColumn({
+    name: 'role',
+    referencedColumnName: 'code',
+    foreignKeyConstraintName: 'fk_users_role',
+  })
+  roleDefinition!: UserRoleEntity;
 
   @Column({ name: 'last_login_at', type: 'datetime', nullable: true })
   lastLoginAt: Date | null;

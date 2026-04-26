@@ -27,7 +27,7 @@ export class Guestbook {
   @Column({ type: 'text' })
   content: string;
 
-  @Column({ name: 'parent_id', type: 'char', length: 36, nullable: true })
+  @Column({ name: 'parent_id', type: 'varchar', length: 36, nullable: true })
   parentId: string | null;
 
   @Column({ type: 'varchar', length: 45, nullable: true })

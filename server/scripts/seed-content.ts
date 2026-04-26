@@ -201,6 +201,13 @@ async function seedUsers(connection: mysql.Connection) {
       [id, username, email, username === 'admin' ? adminHash : userHash, nickname, avatar, bio, role as Role],
     );
   }
+
+  const [rows] = await connection.query<mysql.RowDataPacket[]>(
+    `SELECT id, username FROM users WHERE username IN (${users.map(() => '?').join(',')})`,
+    users.map(([username]) => username),
+  );
+
+  return new Map(rows.map((row) => [String(row.username), String(row.id)]));
 }
 
 async function seedTaxonomy(connection: mysql.Connection) {
@@ -222,10 +229,9 @@ async function seedTaxonomy(connection: mysql.Connection) {
   }
 }
 
-async function seedArticles(connection: mysql.Connection) {
+async function seedArticles(connection: mysql.Connection, userByName: Map<string, string>) {
   const categoryBySlug = new Map(categories.map((item) => [item.slug, item.id]));
   const tagBySlug = new Map(tags.map((item) => [item.slug, item.id]));
-  const userByName = new Map(users.map(([username, , , , , id]) => [username, id]));
   for (let index = 0; index < articleSeeds.length; index += 1) {
     const seed = articleSeeds[index];
     const [slug, title, excerpt, categorySlug, username, tagSlugs, , , publishedAt, views, likes, rawStatus, isTop] = seed;
@@ -268,7 +274,7 @@ async function seedArticles(connection: mysql.Connection) {
   }
 }
 
-async function seedPages(connection: mysql.Connection) {
+async function seedPages(connection: mysql.Connection, adminId: string) {
   for (const [id, title, slug, pageType, summary, isHomeVisible, content] of pages) {
     await connection.execute(
       `INSERT INTO pages (id, title, slug, page_type, content_markdown, content_html, summary, is_home_visible,
@@ -278,7 +284,7 @@ async function seedPages(connection: mysql.Connection) {
         content_html = VALUES(content_html), summary = VALUES(summary), is_home_visible = VALUES(is_home_visible),
         status = 'published', seo_title = VALUES(seo_title), seo_description = VALUES(seo_description),
         updated_by = VALUES(updated_by), updated_at = CURRENT_TIMESTAMP`,
-      [id, title, slug, pageType, content, renderMarkdown(content), summary, isHomeVisible ? 1 : 0, title, summary, ADMIN_ID, ADMIN_ID],
+      [id, title, slug, pageType, content, renderMarkdown(content), summary, isHomeVisible ? 1 : 0, title, summary, adminId, adminId],
     );
   }
 }
@@ -297,7 +303,7 @@ async function seedFriendLinks(connection: mysql.Connection) {
   }
 }
 
-async function seedComments(connection: mysql.Connection) {
+async function seedComments(connection: mysql.Connection, userByName: Map<string, string>) {
   const articleIds = articleSeeds.map((_, index) => `40000000-0000-4000-8000-${String(index + 1).padStart(12, '0')}`);
   await connection.query(`DELETE FROM comments WHERE article_id IN (${articleIds.map(() => '?').join(',')})`, articleIds);
   const readers = users.filter(([, , , , role]) => role === 'user');
@@ -329,7 +335,7 @@ async function seedComments(connection: mysql.Connection) {
           ip_address, user_agent, like_count, status, replied_at, created_at, updated_at, deleted_at)
          VALUES (?, ?, NULL, ?, ?, ?, NULL, ?, ?, 'Mozilla/5.0 SeedContentBot/1.0', ?, 'approved', NULL, ?, ?, NULL)`,
         [
-          id, articleId, user[5], user[2], user[1],
+          id, articleId, userByName.get(user[0]) ?? null, user[2], user[1],
           templates[(i + j) % templates.length].replace('{point}', points[j % points.length]),
           `192.168.${i % 8}.${20 + j}`, (i + j) % 9, createdAt, createdAt,
         ],
@@ -342,7 +348,7 @@ async function seedComments(connection: mysql.Connection) {
         `INSERT INTO comments (id, article_id, parent_id, user_id, author_name, author_email, author_website, content,
           ip_address, user_agent, like_count, status, replied_at, created_at, updated_at, deleted_at)
          VALUES (?, ?, ?, ?, ?, ?, NULL, ?, '192.168.10.10', 'Mozilla/5.0 SeedContentBot/1.0', 0, 'approved', ?, ?, ?, NULL)`,
-        [randomUUID(), articleId, firstCommentId, author[5], author[2], author[1], '补充一个上下文：这篇的建议更适合从小范围试点开始，欢迎后续把实践结果贴回来。', replyAt, replyAt, replyAt],
+        [randomUUID(), articleId, firstCommentId, userByName.get(author[0]) ?? null, author[2], author[1], '补充一个上下文：这篇的建议更适合从小范围试点开始，欢迎后续把实践结果贴回来。', replyAt, replyAt, replyAt],
       );
     }
   }
@@ -412,12 +418,16 @@ async function bootstrap() {
   });
   try {
     await connection.beginTransaction();
-    await seedUsers(connection);
+    const userByName = await seedUsers(connection);
+    const adminId = userByName.get('admin');
+    if (!adminId) {
+      throw new Error('缺少管理员用户，无法继续写入页面与内容数据');
+    }
     await seedTaxonomy(connection);
-    await seedArticles(connection);
-    await seedPages(connection);
+    await seedArticles(connection, userByName);
+    await seedPages(connection, adminId);
     await seedFriendLinks(connection);
-    await seedComments(connection);
+    await seedComments(connection, userByName);
     await refreshCounts(connection);
     await seedSettings(connection);
     await connection.commit();

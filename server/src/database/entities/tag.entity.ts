@@ -8,7 +8,7 @@ import {
 } from 'typeorm';
 
 @Entity('tags')
-@Index('idx_slug', ['slug'], { unique: true })
+@Index('idx_tags_slug', ['slug'], { unique: true })
 export class Tag {
   @PrimaryGeneratedColumn('uuid')
   id: string;
@@ -16,7 +16,7 @@ export class Tag {
   @Column({ type: 'varchar', length: 50 })
   name: string;
 
-  @Column({ type: 'varchar', length: 100, unique: true })
+  @Column({ type: 'varchar', length: 100 })
   slug: string;
 
   @Column({ name: 'article_count', type: 'int', default: 0 })

@@ -1,4 +1,13 @@
-import { Column, CreateDateColumn, Entity, Index, PrimaryGeneratedColumn } from 'typeorm';
+import {
+  Column,
+  CreateDateColumn,
+  Entity,
+  Index,
+  JoinColumn,
+  ManyToOne,
+  PrimaryGeneratedColumn,
+} from 'typeorm';
+import { User } from './user.entity';
 
 @Entity('operation_logs')
 @Index('idx_operation_logs_operator', ['operatorId'])
@@ -8,8 +17,12 @@ export class OperationLog {
   @PrimaryGeneratedColumn({ type: 'bigint', unsigned: true })
   id: number;
 
-  @Column({ name: 'operator_id', type: 'char', length: 36, nullable: true })
+  @Column({ name: 'operator_id', type: 'varchar', length: 36, nullable: true })
   operatorId: string | null;
+
+  @ManyToOne(() => User, { nullable: true, onDelete: 'SET NULL' })
+  @JoinColumn({ name: 'operator_id', foreignKeyConstraintName: 'fk_operation_logs_operator' })
+  operator!: User | null;
 
   @Column({ name: 'module_name', type: 'varchar', length: 50 })
   moduleName: string;
@@ -29,7 +42,7 @@ export class OperationLog {
   @Column({ name: 'request_path', type: 'varchar', length: 255, nullable: true })
   requestPath: string | null;
 
-  @Column({ name: 'request_payload', type: 'simple-json', nullable: true })
+  @Column({ name: 'request_payload', type: 'json', nullable: true })
   requestPayload: Record<string, unknown> | null;
 
   @Column({ name: 'response_code', type: 'int', nullable: true })

@@ -17,15 +17,6 @@ type Domain = {
   topics: string[];
 };
 
-const AUTHOR_IDS: Record<string, string> = {
-  admin: '00000000-0000-4000-8000-000000000001',
-  'lin-yu': '10000000-0000-4000-8000-000000000001',
-  'chen-mo': '10000000-0000-4000-8000-000000000002',
-  'qi-an': '10000000-0000-4000-8000-000000000003',
-  'xia-zhu': '10000000-0000-4000-8000-000000000004',
-  'he-yan': '10000000-0000-4000-8000-000000000005',
-};
-
 const TAGS = [
   ['life-planning', '生活规划'],
   ['health-habits', '健康习惯'],
@@ -348,13 +339,18 @@ async function ensureTaxonomy(connection: mysql.Connection) {
 async function seedArticles(connection: mysql.Connection) {
   const [categoryRows] = await connection.query<mysql.RowDataPacket[]>('SELECT id, slug FROM categories');
   const [tagRows] = await connection.query<mysql.RowDataPacket[]>('SELECT id, slug FROM tags');
+  const [userRows] = await connection.query<mysql.RowDataPacket[]>(
+    'SELECT id, username FROM users WHERE username IN (?, ?, ?, ?, ?, ?)',
+    ['admin', 'lin-yu', 'chen-mo', 'qi-an', 'xia-zhu', 'he-yan'],
+  );
   const categoryBySlug = new Map(categoryRows.map((row) => [String(row.slug), String(row.id)]));
   const tagBySlug = new Map(tagRows.map((row) => [String(row.slug), String(row.id)]));
+  const userByUsername = new Map(userRows.map((row) => [String(row.username), String(row.id)]));
   let articleIndex = 1;
 
   for (const domain of domains) {
     const categoryId = categoryBySlug.get(domain.slug);
-    const authorId = AUTHOR_IDS[domain.authorUsername] ?? AUTHOR_IDS.admin;
+    const authorId = userByUsername.get(domain.authorUsername) ?? userByUsername.get('admin');
     if (!categoryId || !authorId) throw new Error(`分类或作者不存在: ${domain.slug}`);
 
     for (let topicIndex = 0; topicIndex < domain.topics.length; topicIndex += 1) {

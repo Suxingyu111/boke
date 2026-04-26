@@ -1,9 +1,17 @@
-version: '3.8'
+name: blog-server
 
 services:
+  setup:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.13.4@sha256:dfd318b417be1356d9c7fdd6a5577c8a45553ac9d34354929a416c69c85daa9f
+    user: "0"
+    command: ["/bin/bash", "/usr/local/bin/generate-certs.sh"]
+    volumes:
+      - ./docker/certs:/certs
+      - ./docker/elasticsearch/instances.yml:/usr/share/elasticsearch/config/certs/instances.yml:ro
+      - ./docker/elasticsearch/generate-certs.sh:/usr/local/bin/generate-certs.sh:ro
+
   mysql:
     image: mysql:8.0@sha256:d0304ed9fdb64a3f6c7ad11a5fb4f13abfc10e6dfa3f288d652e7320c34df7f9
-    container_name: blog_mysql
     restart: always
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
@@ -11,14 +19,15 @@ services:
       MYSQL_PASSWORD: ${MYSQL_PASSWORD}
       MYSQL_DATABASE: ${MYSQL_DATABASE}
     ports:
-      - "3306:3306"
+      - "127.0.0.1:${MYSQL_HOST_PORT}:3306"
     volumes:
       - mysql_data:/var/lib/mysql
     command: --default-authentication-plugin=mysql_native_password --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    networks:
+      - blog_network
 
   redis:
     image: redis:7-alpine@sha256:7aec734b2bb298a1d769fd8729f13b8514a41bf90fcdd1f38ec52267fbaa8ee6
-    container_name: blog_redis
     restart: always
     environment:
       REDIS_PASSWORD: ${REDIS_PASSWORD}
@@ -27,40 +36,100 @@ services:
     volumes:
       - redis_data:/data
     command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD}
+    networks:
+      - blog_network
 
   elasticsearch:
-    image: docker.elastic.co/elasticsearch/elasticsearch:8.13.4@sha256:dfd318b417be1356d9c7fdd6a5577c8a45553ac9d34354929a416c69c85daa9f
-    container_name: blog_elasticsearch
+    build:
+      context: .
+      dockerfile: docker/elasticsearch/Dockerfile
+      args:
+        ELASTICSEARCH_IMAGE: docker.elastic.co/elasticsearch/elasticsearch:8.13.4@sha256:dfd318b417be1356d9c7fdd6a5577c8a45553ac9d34354929a416c69c85daa9f
+        IK_VERSION: 8.13.4
+        PINYIN_VERSION: 8.13.4
+    image: blog-elasticsearch-ik:8.13.4
     restart: always
+    depends_on:
+      setup:
+        condition: service_completed_successfully
     environment:
-      - discovery.type=single-node
-      - xpack.security.enabled=false
-      - xpack.security.http.ssl.enabled=false
-      - ES_JAVA_OPTS=-Xms256m -Xmx512m
+      - ELASTIC_PASSWORD=${ES_PASSWORD}
+      - ES_PASSWORD=${ES_PASSWORD}
+      - ES_USERNAME=${ES_USERNAME}
+      - cluster.name=${ES_CLUSTER_NAME}
+      - discovery.type=${ES_DISCOVERY_TYPE}
+      - xpack.security.enabled=${ES_XPACK_SECURITY_ENABLED}
+      - xpack.security.enrollment.enabled=${ES_XPACK_SECURITY_ENROLLMENT_ENABLED}
+      - xpack.security.http.ssl.enabled=${ES_XPACK_SECURITY_HTTP_SSL_ENABLED}
+      - xpack.security.http.ssl.key=certs/elasticsearch/elasticsearch.key
+      - xpack.security.http.ssl.certificate=certs/elasticsearch/elasticsearch.crt
+      - xpack.security.http.ssl.certificate_authorities=certs/ca/ca.crt
+      - xpack.security.transport.ssl.enabled=${ES_XPACK_SECURITY_TRANSPORT_SSL_ENABLED}
+      - xpack.security.transport.ssl.verification_mode=certificate
+      - xpack.security.transport.ssl.key=certs/elasticsearch/elasticsearch.key
+      - xpack.security.transport.ssl.certificate=certs/elasticsearch/elasticsearch.crt
+      - xpack.security.transport.ssl.certificate_authorities=certs/ca/ca.crt
+      - ES_JAVA_OPTS=${ES_JAVA_OPTS}
     ports:
-      - "127.0.0.1:9200:9200"
+      - "127.0.0.1:${ES_PORT}:9200"
     volumes:
       - es_data:/usr/share/elasticsearch/data
+      - ./docker/certs:/usr/share/elasticsearch/config/certs
     ulimits:
       memlock:
         soft: -1
         hard: -1
     healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:9200/_cluster/health || exit 1"]
+      test: ["CMD-SHELL", "curl -fsS --cacert /usr/share/elasticsearch/config/certs/ca/ca.crt -u \"$${ES_USERNAME}:$${ES_PASSWORD}\" https://localhost:9200/_cluster/health || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 5
+    networks:
+      - blog_network
+
+  kibana:
+    image: docker.elastic.co/kibana/kibana:8.13.4
+    restart: always
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+    environment:
+      SERVER_NAME: blog-kibana
+      SERVER_PUBLICBASEURL: ${KIBANA_SERVER_PUBLIC_BASE_URL}
+      SERVER_SSL_ENABLED: ${KIBANA_SSL_ENABLED}
+      SERVER_SSL_CERTIFICATE: /usr/share/kibana/config/certs/kibana/kibana.crt
+      SERVER_SSL_KEY: /usr/share/kibana/config/certs/kibana/kibana.key
+      ELASTICSEARCH_HOSTS: https://elasticsearch:9200
+      ELASTICSEARCH_USERNAME: ${KIBANA_SYSTEM_USERNAME}
+      ELASTICSEARCH_PASSWORD: ${KIBANA_SYSTEM_PASSWORD}
+      ELASTICSEARCH_SSL_CERTIFICATEAUTHORITIES: /usr/share/kibana/config/certs/ca/ca.crt
+      XPACK_SECURITY_ENCRYPTIONKEY: ${KIBANA_SECURITY_ENCRYPTION_KEY}
+      XPACK_ENCRYPTEDSAVEDOBJECTS_ENCRYPTIONKEY: ${KIBANA_ENCRYPTED_SAVED_OBJECTS_ENCRYPTION_KEY}
+      XPACK_REPORTING_ENCRYPTIONKEY: ${KIBANA_REPORTING_ENCRYPTION_KEY}
+    ports:
+      - "127.0.0.1:${KIBANA_PORT}:5601"
+    volumes:
+      - ./docker/certs:/usr/share/kibana/config/certs:ro
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS --cacert /usr/share/kibana/config/certs/ca/ca.crt https://localhost:5601/api/status || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 10
+    networks:
+      - blog_network
 
   blog-api:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: blog_api
     restart: always
     depends_on:
-      - mysql
-      - redis
-      - elasticsearch
+      mysql:
+        condition: service_started
+      redis:
+        condition: service_started
+      elasticsearch:
+        condition: service_healthy
     ports:
       - "3000:3000"
     environment:
@@ -74,11 +143,17 @@ services:
       REDIS_HOST: redis
       REDIS_PORT: 6379
       REDIS_PASSWORD: ${REDIS_PASSWORD}
+      ES_NODE: https://elasticsearch:9200
+      ES_USERNAME: ${ES_USERNAME}
+      ES_PASSWORD: ${ES_PASSWORD}
+      ES_CA_CERT_PATH: docker/certs/ca/ca.crt
+      ES_TLS_REJECT_UNAUTHORIZED: "true"
       JWT_SECRET: ${JWT_SECRET}
       SUPER_ADMIN_USERNAME: ${SUPER_ADMIN_USERNAME}
       SUPER_ADMIN_PASSWORD: ${SUPER_ADMIN_PASSWORD}
     volumes:
       - ./logs:/app/logs
+      - ./docker/certs:/app/docker/certs:ro
     security_opt:
       - no-new-privileges:true
     cap_drop:

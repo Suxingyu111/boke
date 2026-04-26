@@ -1,12 +1,16 @@
 import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn, Index } from 'typeorm';
 
 @Entity('email_subscribers')
-@Index('idx_subscriber_email', ['email'], { unique: true })
+@Index('idx_email_subscribers_email', ['email'], { unique: true })
+@Index('idx_email_subscribers_unsubscribe_token', ['unsubscribeToken'], { unique: true })
+@Index('idx_email_subscribers_confirm_token_hash', ['confirmTokenHash'])
+@Index('idx_email_subscribers_is_active', ['isActive'])
+@Index('idx_email_subscribers_is_confirmed', ['isConfirmed'])
 export class EmailSubscriber {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column({ type: 'varchar', length: 255, unique: true })
+  @Column({ type: 'varchar', length: 255 })
   email: string;
 
   @Column({ type: 'varchar', length: 100, nullable: true })
@@ -21,7 +25,7 @@ export class EmailSubscriber {
   @Column({ name: 'confirm_token_hash', type: 'varchar', length: 64, nullable: true })
   confirmTokenHash: string | null;
 
-  @Column({ name: 'unsubscribe_token', type: 'varchar', length: 100, unique: true })
+  @Column({ name: 'unsubscribe_token', type: 'varchar', length: 100 })
   unsubscribeToken: string;
 
   @Column({ name: 'is_active', type: 'boolean', default: true })

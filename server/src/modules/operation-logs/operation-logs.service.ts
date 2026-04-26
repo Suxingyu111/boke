@@ -3,7 +3,19 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { FindOptionsWhere, Repository } from 'typeorm';
 import { OperationLog } from '@database/entities';
 
-type RecordOperationLogInput = Omit<OperationLog, 'id' | 'createdAt'>;
+type RecordOperationLogInput = {
+  operatorId: string | null;
+  moduleName: string;
+  actionName: string;
+  targetType: string | null;
+  targetId: string | null;
+  requestMethod: string | null;
+  requestPath: string | null;
+  requestPayload: Record<string, unknown> | null;
+  responseCode: number | null;
+  ipAddress: string | null;
+  userAgent: string | null;
+};
 
 @Injectable()
 export class OperationLogsService {

@@ -8,7 +8,7 @@ import {
 } from 'typeorm';
 
 @Entity('categories')
-@Index('idx_slug', ['slug'], { unique: true })
+@Index('idx_categories_slug', ['slug'], { unique: true })
 @Index('idx_categories_visible_sort', ['isVisible', 'sortOrder'])
 export class Category {
   @PrimaryGeneratedColumn('uuid')
@@ -17,7 +17,7 @@ export class Category {
   @Column({ type: 'varchar', length: 100 })
   name: string;
 
-  @Column({ type: 'varchar', length: 100, unique: true })
+  @Column({ type: 'varchar', length: 100 })
   slug: string;
 
   @Column({ type: 'text', nullable: true })

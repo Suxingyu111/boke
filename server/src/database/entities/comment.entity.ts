@@ -20,26 +20,26 @@ export class CommentEntity {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column({ name: 'article_id', type: 'char', length: 36 })
+  @Column({ name: 'article_id', type: 'varchar', length: 36 })
   articleId: string;
 
   @ManyToOne(() => Article, { nullable: false, onDelete: 'CASCADE' })
-  @JoinColumn({ name: 'article_id' })
-  article: Article;
+  @JoinColumn({ name: 'article_id', foreignKeyConstraintName: 'fk_comments_article' })
+  article!: Article;
 
-  @Column({ name: 'parent_id', type: 'char', length: 36, nullable: true })
+  @Column({ name: 'parent_id', type: 'varchar', length: 36, nullable: true })
   parentId: string | null;
 
   @ManyToOne(() => CommentEntity, { nullable: true, onDelete: 'CASCADE' })
-  @JoinColumn({ name: 'parent_id' })
-  parent: CommentEntity | null;
+  @JoinColumn({ name: 'parent_id', foreignKeyConstraintName: 'fk_comments_parent' })
+  parent!: CommentEntity | null;
 
-  @Column({ name: 'user_id', type: 'char', length: 36, nullable: true })
+  @Column({ name: 'user_id', type: 'varchar', length: 36, nullable: true })
   userId: string | null;
 
   @ManyToOne(() => User, { nullable: true, onDelete: 'SET NULL' })
-  @JoinColumn({ name: 'user_id' })
-  user: User | null;
+  @JoinColumn({ name: 'user_id', foreignKeyConstraintName: 'fk_comments_user' })
+  user!: User | null;
 
   @Column({ name: 'author_name', type: 'varchar', length: 100 })
   authorName: string;

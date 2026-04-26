@@ -177,10 +177,10 @@ export const useEcosystemStore = defineStore("ecosystem", {
         const meta = asRecord(data.meta);
         this.searchResults = items.map(mapSearchResult);
         this.searchMeta = {
-          total: asNumber(meta?.total),
-          page: asNumber(meta?.page, 1),
-          pageSize: asNumber(meta?.pageSize, 20),
-          totalPages: asNumber(meta?.totalPages),
+          total: asNumber(meta?.total, asNumber(data.total)),
+          page: asNumber(meta?.page, asNumber(data.page, 1)),
+          pageSize: asNumber(meta?.pageSize, asNumber(data.pageSize, 20)),
+          totalPages: asNumber(meta?.totalPages, asNumber(data.totalPages)),
         };
       } catch (error) {
         this.errorMessage = getApiErrorMessage(error, "搜索失败");

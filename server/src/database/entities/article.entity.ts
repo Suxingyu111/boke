@@ -17,6 +17,7 @@ import { User } from './user.entity';
 @Index('idx_articles_author_status', ['userId', 'status'])
 @Index('idx_articles_publish_sort', ['isTop', 'publishedAt'])
 @Index('idx_articles_scheduled_at', ['scheduledAt'])
+@Index('idx_articles_search', ['title', 'excerpt', 'content'], { fulltext: true })
 export class Article {
   @PrimaryGeneratedColumn('uuid')
   id: string;
@@ -24,7 +25,7 @@ export class Article {
   @Column({ type: 'varchar', length: 255 })
   title: string;
 
-  @Column({ type: 'varchar', length: 255, unique: true })
+  @Column({ type: 'varchar', length: 255 })
   slug: string;
 
   @Column({ name: 'summary', type: 'text', nullable: true })
@@ -39,12 +40,12 @@ export class Article {
   @Column({ name: 'cover_image_url', type: 'varchar', length: 500, nullable: true })
   coverImage: string | null;
 
-  @Column({ name: 'category_id', type: 'char', length: 36 })
+  @Column({ name: 'category_id', type: 'varchar', length: 36 })
   categoryId: string;
 
   @ManyToOne(() => Category, { nullable: false })
-  @JoinColumn({ name: 'category_id' })
-  category: Category;
+  @JoinColumn({ name: 'category_id', foreignKeyConstraintName: 'fk_articles_category' })
+  category!: Category;
 
   @Column({
     type: 'enum',
@@ -87,12 +88,12 @@ export class Article {
   @Column({ name: 'seo_keywords', type: 'varchar', length: 255, nullable: true })
   seoKeywords: string | null;
 
-  @Column({ name: 'author_id', type: 'char', length: 36 })
+  @Column({ name: 'author_id', type: 'varchar', length: 36 })
   userId: string;
 
   @ManyToOne(() => User, { nullable: false })
-  @JoinColumn({ name: 'author_id' })
-  author: User;
+  @JoinColumn({ name: 'author_id', foreignKeyConstraintName: 'fk_articles_author' })
+  author!: User;
 
   @Column({ name: 'scheduled_at', type: 'datetime', nullable: true })
   scheduledAt: Date | null;

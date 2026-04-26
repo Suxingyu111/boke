@@ -8,12 +8,13 @@ import {
 } from 'typeorm';
 
 @Entity('site_settings')
+@Index('idx_site_settings_key', ['settingKey'], { unique: true })
 @Index('idx_site_settings_group', ['groupName'])
 export class SiteSetting {
   @PrimaryGeneratedColumn({ type: 'bigint', unsigned: true })
   id: number;
 
-  @Column({ name: 'setting_key', type: 'varchar', length: 100, unique: true })
+  @Column({ name: 'setting_key', type: 'varchar', length: 100 })
   settingKey: string;
 
   @Column({ name: 'setting_value', type: 'json' })
@@ -33,7 +34,7 @@ export class SiteSetting {
   @Column({ type: 'varchar', length: 255, nullable: true })
   description: string | null;
 
-  @Column({ name: 'is_public', type: 'tinyint', width: 1, default: 0 })
+  @Column({ name: 'is_public', type: 'boolean', default: false })
   isPublic: boolean;
 
   @CreateDateColumn({ name: 'created_at', type: 'datetime' })

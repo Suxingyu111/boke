@@ -25,7 +25,7 @@ const TIMELINE = [
 const SETTINGS = [
   {
     settingKey: 'about_tech_stack',
-    settingValue: JSON.stringify(TECH_STACK),
+    settingValue: TECH_STACK,
     valueType: 'json',
     groupName: 'about',
     description: '关于页技术栈标签列表',
@@ -33,7 +33,7 @@ const SETTINGS = [
   },
   {
     settingKey: 'about_timeline',
-    settingValue: JSON.stringify(TIMELINE),
+    settingValue: TIMELINE,
     valueType: 'json',
     groupName: 'about',
     description: '关于页成长轨迹时间线',
@@ -71,14 +71,21 @@ async function main() {
   for (const s of SETTINGS) {
     await connection.execute(
       `INSERT INTO site_settings (setting_key, setting_value, value_type, group_name, description, is_public)
-       VALUES (?, ?, ?, ?, ?, ?)
+       VALUES (?, CAST(? AS JSON), ?, ?, ?, ?)
        ON DUPLICATE KEY UPDATE
          setting_value = VALUES(setting_value),
          value_type    = VALUES(value_type),
          group_name    = VALUES(group_name),
          description   = VALUES(description),
          is_public     = VALUES(is_public)`,
-      [s.settingKey, s.settingValue, s.valueType, s.groupName, s.description, s.isPublic ? 1 : 0],
+      [
+        s.settingKey,
+        JSON.stringify(s.settingValue),
+        s.valueType,
+        s.groupName,
+        s.description,
+        s.isPublic ? 1 : 0,
+      ],
     );
     console.log(`  ↳ ${s.settingKey} 已写入`);
   }

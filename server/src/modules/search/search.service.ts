@@ -8,6 +8,7 @@ import { SearchArticlesDto } from './dto/search-articles.dto';
 
 const INDEX_NAME = 'blog_articles';
 const ES_RECOVERY_COOLDOWN_MS = 10000;
+
 interface EsArticleDoc {
   id: string;
   title: string;
@@ -101,17 +102,28 @@ export class SearchService implements OnModuleInit {
     const exists = await this.esClient.indices.exists({ index: INDEX_NAME });
     if (exists) return;
 
-    await this.esClient.indices.create({
+    const indexDefinition = {
       index: INDEX_NAME,
       settings: {
         number_of_shards: 1,
         number_of_replicas: 0,
         analysis: {
           analyzer: {
-            blog_analyzer: {
+            pinyin_analyzer: {
               type: 'custom',
-              tokenizer: 'standard',
-              filter: ['lowercase', 'stop'],
+              tokenizer: 'pinyin_tokenizer',
+            },
+          },
+          tokenizer: {
+            pinyin_tokenizer: {
+              type: 'pinyin',
+              keep_separate_first_letter: false,
+              keep_full_pinyin: true,
+              keep_joined_full_pinyin: true,
+              keep_original: true,
+              lowercase: true,
+              remove_duplicated_term: true,
+              trim_whitespace: true,
             },
           },
         },
@@ -119,10 +131,43 @@ export class SearchService implements OnModuleInit {
       mappings: {
         properties: {
           id: { type: 'keyword' },
-          title: { type: 'text', analyzer: 'blog_analyzer' },
+          title: {
+            type: 'text',
+            analyzer: 'ik_max_word',
+            search_analyzer: 'ik_smart',
+            fields: {
+              pinyin: {
+                type: 'text',
+                analyzer: 'pinyin_analyzer',
+                search_analyzer: 'pinyin_analyzer',
+              },
+            },
+          },
           slug: { type: 'keyword' },
-          excerpt: { type: 'text', analyzer: 'blog_analyzer' },
-          content: { type: 'text', analyzer: 'blog_analyzer' },
+          excerpt: {
+            type: 'text',
+            analyzer: 'ik_max_word',
+            search_analyzer: 'ik_smart',
+            fields: {
+              pinyin: {
+                type: 'text',
+                analyzer: 'pinyin_analyzer',
+                search_analyzer: 'pinyin_analyzer',
+              },
+            },
+          },
+          content: {
+            type: 'text',
+            analyzer: 'ik_max_word',
+            search_analyzer: 'ik_smart',
+            fields: {
+              pinyin: {
+                type: 'text',
+                analyzer: 'pinyin_analyzer',
+                search_analyzer: 'pinyin_analyzer',
+              },
+            },
+          },
           categoryId: { type: 'keyword' },
           userId: { type: 'keyword' },
           status: { type: 'keyword' },
@@ -130,7 +175,10 @@ export class SearchService implements OnModuleInit {
           tags: { type: 'keyword' },
         },
       },
-    });
+    };
+
+    // ES 官方 TS 类型不识别第三方 pinyin tokenizer，这里仅对请求体做局部放宽。
+    await this.esClient.indices.create(indexDefinition as never);
   }
 
   /** 全文搜索文章 */
@@ -158,7 +206,14 @@ export class SearchService implements OnModuleInit {
       must.push({
         multi_match: {
           query: keyword,
-          fields: ['title^3', 'excerpt^2', 'content'],
+          fields: [
+            'title^4',
+            'title.pinyin^5',
+            'excerpt^2',
+            'excerpt.pinyin^3',
+            'content',
+            'content.pinyin^1.5',
+          ],
           type: 'best_fields',
           fuzziness: 'AUTO',
         },

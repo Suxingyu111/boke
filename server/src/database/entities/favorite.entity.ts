@@ -13,23 +13,24 @@ import { Article } from './article.entity';
 @Entity('favorites')
 @Index('idx_favorites_user_article', ['userId', 'articleId'], { unique: true })
 @Index('idx_favorites_user_created', ['userId', 'createdAt'])
+@Index('idx_favorites_article_id', ['articleId'])
 export class Favorite {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column({ name: 'user_id', type: 'char', length: 36 })
+  @Column({ name: 'user_id', type: 'varchar', length: 36 })
   userId: string;
 
   @ManyToOne(() => User, { nullable: false })
-  @JoinColumn({ name: 'user_id' })
-  user: User;
+  @JoinColumn({ name: 'user_id', foreignKeyConstraintName: 'fk_favorites_user' })
+  user!: User;
 
-  @Column({ name: 'article_id', type: 'char', length: 36 })
+  @Column({ name: 'article_id', type: 'varchar', length: 36 })
   articleId: string;
 
   @ManyToOne(() => Article, { nullable: false })
-  @JoinColumn({ name: 'article_id' })
-  article: Article;
+  @JoinColumn({ name: 'article_id', foreignKeyConstraintName: 'fk_favorites_article' })
+  article!: Article;
 
   @CreateDateColumn({ name: 'created_at', type: 'datetime' })
   createdAt: Date;

@@ -16,7 +16,7 @@ export class UserRoleEntity {
   @Column({ name: 'sort_order', type: 'int', default: 0 })
   sortOrder: number;
 
-  @Column({ name: 'is_system', type: 'tinyint', width: 1, default: () => '1' })
+  @Column({ name: 'is_system', type: 'boolean', default: true })
   isSystem: boolean;
 
   @CreateDateColumn({ name: 'created_at', type: 'datetime' })
