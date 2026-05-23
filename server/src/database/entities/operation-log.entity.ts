@@ -22,7 +22,7 @@ export class OperationLog {
 
   @ManyToOne(() => User, { nullable: true, onDelete: 'SET NULL' })
   @JoinColumn({ name: 'operator_id', foreignKeyConstraintName: 'fk_operation_logs_operator' })
-  operator!: User | null;
+  operator?: User | null;
 
   @Column({ name: 'module_name', type: 'varchar', length: 50 })
   moduleName: string;

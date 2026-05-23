@@ -1,5 +1,6 @@
 import {
   extractComposeImageReferences,
+  isLocalBuildImageReference,
   extractDockerfileBaseImages,
   getFinalDockerfileUser,
   isDigestPinnedImage,
@@ -37,6 +38,9 @@ services:
     expect(getFinalDockerfileUser(dockerfile)).toBe('node');
     expect(isNonRootUser('node')).toBe(true);
     expect(isNonRootUser('root')).toBe(false);
+    expect(isLocalBuildImageReference('blog-server:local')).toBe(true);
+    expect(isLocalBuildImageReference('blog-elasticsearch-ik:8.13.4')).toBe(true);
+    expect(isLocalBuildImageReference('mysql:8.0')).toBe(false);
   });
 
   it('应校验 digest 固定策略', () => {
@@ -80,5 +84,37 @@ services:
         'Dockerfile 最终运行用户必须是非 root。',
       ]),
     );
+  });
+
+  it('应忽略本地构建产物镜像，但校验构建参数中的远程基础镜像', () => {
+    const result = verifySupplyChainPolicy({
+      packageManager: 'npm@10.8.2',
+      hasPackageLock: true,
+      hasPnpmLock: false,
+      dockerfileContent: dockerfile,
+      composeContent: `
+services:
+  elasticsearch:
+    build:
+      context: ./server
+      args:
+        ELASTICSEARCH_IMAGE: docker.elastic.co/elasticsearch/elasticsearch:8.13.4
+    image: blog-elasticsearch-ik:8.13.4
+  server:
+    build:
+      context: ./server
+    image: blog-server:local
+`,
+    });
+
+    expect(result.ok).toBe(false);
+    expect(result.errors).toEqual([
+      '镜像未固定 digest：docker.elastic.co/elasticsearch/elasticsearch:8.13.4',
+    ]);
+    expect(result.imageReferences).toEqual([
+      'node:18-alpine@sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+      'node:18-alpine@sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
+      'docker.elastic.co/elasticsearch/elasticsearch:8.13.4',
+    ]);
   });
 });

@@ -56,7 +56,7 @@ Authorization: Bearer <accessToken>
   "success": true,
   "statusCode": 201,
   "data": {
-    "accessToken": "eyJhbGciOiJIUzI1NiIs...",
+    "accessToken": "<access-token>",
     "tokenType": "Bearer",
     "expiresIn": "7d",
     "user": {

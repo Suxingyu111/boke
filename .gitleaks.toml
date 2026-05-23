@@ -1,0 +1,4 @@
+title = "boke gitleaks configuration"
+
+[extend]
+useDefault = true

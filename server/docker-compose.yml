@@ -88,7 +88,7 @@ services:
       - blog_network
 
   kibana:
-    image: docker.elastic.co/kibana/kibana:8.13.4
+    image: docker.elastic.co/kibana/kibana:8.13.4@sha256:aa596f0f8eac0529b4275128699db835e1d839d60ac5af05e3f3a1764d52ae79
     restart: always
     depends_on:
       elasticsearch:

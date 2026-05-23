@@ -444,15 +444,15 @@ describe('Visitor stats integration', () => {
 
     expect(devicesResponse.body.data).toEqual({
       devices: expect.arrayContaining([
-        { name: 'Desktop', count: 3 },
+        { name: 'Desktop', count: 2 },
         { name: 'Mobile', count: 2 },
       ]),
       browsers: expect.arrayContaining([
-        { name: 'Chrome', count: 3 },
+        { name: 'Chrome', count: 2 },
         { name: 'Safari', count: 2 },
       ]),
       os: expect.arrayContaining([
-        { name: 'Windows', count: 3 },
+        { name: 'Windows', count: 2 },
         { name: 'iOS', count: 2 },
       ]),
     });

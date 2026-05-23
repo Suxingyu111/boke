@@ -394,5 +394,5 @@ curl -X POST http://localhost:3000/api/auth/login \
 
 ```bash
 curl http://localhost:3000/api/auth/me \
-  -H "Authorization: Bearer jwt-token"
+  -H "Authorization: Bearer <access-token>"
 ```

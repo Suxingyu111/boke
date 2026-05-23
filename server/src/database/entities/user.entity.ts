@@ -101,7 +101,7 @@ export class User {
     referencedColumnName: 'code',
     foreignKeyConstraintName: 'fk_users_role',
   })
-  roleDefinition!: UserRoleEntity;
+  roleDefinition?: UserRoleEntity;
 
   @Column({ name: 'last_login_at', type: 'datetime', nullable: true })
   lastLoginAt: Date | null;

@@ -2,7 +2,7 @@ name: blog-root
 
 services:
   mysql:
-    image: mysql:8.0
+    image: mysql:8.0@sha256:7dcddc01f13bab2f15cde676d44d01f61fc9f99fe7785e86196dfc07d358ae2b
     restart: unless-stopped
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
@@ -31,7 +31,7 @@ services:
       - blog_network
 
   redis:
-    image: redis:7-alpine
+    image: redis:7-alpine@sha256:6ab0b6e7381779332f97b8ca76193e45b0756f38d4c0dcda72dbb3c32061ab99
     restart: unless-stopped
     environment:
       REDIS_PASSWORD: ${REDIS_PASSWORD}
@@ -54,7 +54,7 @@ services:
       context: ./server
       dockerfile: docker/elasticsearch/Dockerfile
       args:
-        ELASTICSEARCH_IMAGE: docker.elastic.co/elasticsearch/elasticsearch:8.13.4
+        ELASTICSEARCH_IMAGE: docker.elastic.co/elasticsearch/elasticsearch:8.13.4@sha256:dfd318b417be1356d9c7fdd6a5577c8a45553ac9d34354929a416c69c85daa9f
         IK_VERSION: 8.13.4
         PINYIN_VERSION: 8.13.4
     image: blog-elasticsearch-ik:8.13.4
@@ -81,7 +81,7 @@ services:
       - blog_network
 
   kibana:
-    image: docker.elastic.co/kibana/kibana:8.13.4
+    image: docker.elastic.co/kibana/kibana:8.13.4@sha256:aa596f0f8eac0529b4275128699db835e1d839d60ac5af05e3f3a1764d52ae79
     restart: unless-stopped
     depends_on:
       elasticsearch:

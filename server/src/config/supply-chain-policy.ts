@@ -5,6 +5,7 @@ export interface SupplyChainVerificationResult {
 }
 
 const IMAGE_PATTERN = /^\s*image:\s*([^\s#]+)\s*$/gm;
+const BUILD_ARG_IMAGE_PATTERN = /^\s*(?:[A-Z0-9_]+_)?IMAGE\s*:\s*([^\s#]+)\s*$/gm;
 const FROM_PATTERN = /^\s*FROM\s+([^\s]+)(?:\s+AS\s+\S+)?\s*$/gim;
 const USER_PATTERN = /^\s*USER\s+([^\s#]+)\s*$/gim;
 
@@ -14,6 +15,10 @@ export const isDigestPinnedImage = (value: string): boolean => {
 
 export const extractComposeImageReferences = (composeContent: string): string[] => {
   return [...composeContent.matchAll(IMAGE_PATTERN)].map(match => match[1].trim());
+};
+
+export const extractComposeBuildArgImageReferences = (composeContent: string): string[] => {
+  return [...composeContent.matchAll(BUILD_ARG_IMAGE_PATTERN)].map(match => match[1].trim());
 };
 
 export const extractDockerfileBaseImages = (dockerfileContent: string): string[] => {
@@ -38,6 +43,11 @@ export const isNonRootUser = (user: string | null): boolean => {
   return normalizedUser !== 'root' && normalizedUser !== '0' && normalizedUser !== '0:0';
 };
 
+export const isLocalBuildImageReference = (value: string): boolean => {
+  const normalizedValue = value.trim();
+  return normalizedValue.endsWith(':local') || normalizedValue.startsWith('blog-');
+};
+
 export const verifySupplyChainPolicy = (input: {
   packageManager?: string;
   hasPackageLock: boolean;
@@ -47,8 +57,11 @@ export const verifySupplyChainPolicy = (input: {
 }): SupplyChainVerificationResult => {
   const errors: string[] = [];
   const dockerfileImages = extractDockerfileBaseImages(input.dockerfileContent);
-  const composeImages = extractComposeImageReferences(input.composeContent);
-  const imageReferences = [...dockerfileImages, ...composeImages];
+  const composeImages = extractComposeImageReferences(input.composeContent).filter(
+    imageReference => !isLocalBuildImageReference(imageReference),
+  );
+  const composeBuildArgImages = extractComposeBuildArgImageReferences(input.composeContent);
+  const imageReferences = [...dockerfileImages, ...composeImages, ...composeBuildArgImages];
 
   if (!input.packageManager?.startsWith('npm@')) {
     errors.push('package.json 必须使用 packageManager 锁定 npm 版本。');

@@ -1,0 +1,11 @@
+{
+  "name": "boke",
+  "version": "1.0.0",
+  "private": true,
+  "description": "开源个人博客系统，包含 Vue 前端、NestJS 后端、MySQL、Redis、Elasticsearch 和 Docker 编排。",
+  "license": "MIT",
+  "scripts": {
+    "open-source:check": "bash scripts/open-source-check.sh"
+  },
+  "packageManager": "npm@10.8.2"
+}

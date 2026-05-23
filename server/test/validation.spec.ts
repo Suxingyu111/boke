@@ -8,7 +8,7 @@ describe('validationSchema', () => {
     DB_HOST: 'localhost',
     DB_PORT: 3306,
     DB_USERNAME: 'root',
-    DB_PASSWORD: 'root123456789',
+    DB_PASSWORD: 'example-test-db-password',
     DB_DATABASE: 'blog_system',
     REDIS_HOST: 'localhost',
     REDIS_PORT: 6379,

@@ -61,14 +61,14 @@ export class Page {
 
   @ManyToOne(() => User, { nullable: false })
   @JoinColumn({ name: 'created_by', foreignKeyConstraintName: 'fk_pages_created_by' })
-  creator!: User;
+  creator?: User;
 
   @Column({ name: 'updated_by', type: 'varchar', length: 36, nullable: true })
   updatedBy: string | null;
 
   @ManyToOne(() => User, { nullable: true })
   @JoinColumn({ name: 'updated_by', foreignKeyConstraintName: 'fk_pages_updated_by' })
-  updater!: User | null;
+  updater?: User | null;
 
   @CreateDateColumn({ name: 'created_at', type: 'datetime' })
   createdAt: Date;

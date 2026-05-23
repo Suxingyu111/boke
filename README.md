@@ -344,7 +344,7 @@ docker compose --env-file .env.docker.dev -f docker-compose.yml up -d --build
 | Kibana 端口 | `5601` |
 | 数据库名 | `blog_system_dev` |
 | 超管用户名 | `rootmaster` |
-| 超管密码 | `dev_super_admin_password_2026` |
+| 超管密码 | 复制 `.env.docker.dev.example` 后自行设置 |
 | 自动建库 | `DOCKER_BOOTSTRAP_INIT_DB=true` |
 | 自动灌入演示数据 | `DOCKER_BOOTSTRAP_SEED_DEMO=true` |
 | 自动重建索引 | `DOCKER_BOOTSTRAP_REINDEX=true` |
@@ -890,13 +890,13 @@ npm run search:rebuild
 
 ## 相关文档
 
-- [后端 README](/Users/suxingyu/boke/server/README.md)
-- [前端 README](/Users/suxingyu/boke/client/README.md)
-- [数据库设计](/Users/suxingyu/boke/DATABASE.md)
-- [系统架构](/Users/suxingyu/boke/ARCHITECTURE.md)
-- [技术设计文档](/Users/suxingyu/boke/技术设计文档.md)
-- [需求文档](/Users/suxingyu/boke/需求文档.md)
-- [后端 OpenAPI JSON](/Users/suxingyu/boke/server/docs/openapi.json)
+- [后端 README](server/README.md)
+- [前端 README](client/README.md)
+- [数据库设计](DATABASE.md)
+- [系统架构](ARCHITECTURE.md)
+- [技术设计文档](技术设计文档.md)
+- [需求文档](需求文档.md)
+- [后端 OpenAPI JSON](server/docs/openapi.json)
 
 ## 开发建议
 

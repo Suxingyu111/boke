@@ -203,7 +203,7 @@ describe('BackupService', () => {
         return '';
       });
     (fs.statSync as jest.MockedFunction<typeof fs.statSync>).mockReturnValue({
-      mtime: new Date('2026-04-20T10:00:00.000Z'),
+      mtime: new Date(Date.now() - 60_000),
     } as fs.Stats);
 
     const report = await service.runRecoveryDrill('backup_blog_system_2026-04-20.sql');

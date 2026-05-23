@@ -27,6 +27,11 @@ findings.md
 progress.md
 task_plan.md
 
+# Local agent/tooling context
+.agents/
+CLAUDE.md
+skills-lock.json
+
 # Large binaries
 *.zip
 
